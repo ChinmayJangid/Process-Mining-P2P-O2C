@@ -129,11 +129,54 @@ EXPECTED_TABLES = {"EKKO", "EKPO", "EBAN", "EKBE", "LFA1"}
 
 # Minimum required columns for each SAP table — used to validate uploads
 REQUIRED_COLS = {
-    "EKKO": {"EBELN", "BEDAT", "BSART", "LIFNR", "BUKRS", "EKGRP"},
-    "EKPO": {"EBELN", "EBELP", "MATNR", "WERKS", "MATKL"},
-    "EBAN": {"BANFN", "BNFPO", "BADAT"},
-    "EKBE": {"EBELN", "EBELP", "VGABE", "BUDAT"},
-    "LFA1": {"LIFNR", "NAME1"},
+    # Every column the pipeline and charts actually read from each SAP table
+    "EKKO": {
+        "EBELN",    # PO number — join key
+        "AEDAT",    # PO creation date → renamed PO Creation
+        "BEDAT",    # PO document date → renamed PO Date
+        "BSART",    # Document type  — filter/chart
+        "LIFNR",    # Vendor ID       — filter/chart
+        "BUKRS",    # Company code    — filter/chart
+        "EKGRP",    # Purchasing group — filter/chart
+        "ERNAM",    # PO creator (user) — SOD + chart
+        "LOEKZ",    # Deletion flag   — PO Reversal rule
+    },
+    "EKPO": {
+        "EBELN",    # PO number — join key
+        "EBELP",    # PO item   — part of UniqueID_PO
+        "MATNR",    # Material number
+        "WERKS",    # Plant           — filter/chart
+        "MATKL",    # Material group  — filter/chart
+        "BANFN",    # PR number       — part of UniqueID_PR
+        "BNFPO",    # PR item         — part of UniqueID_PR
+        "LOEKZ",    # Deletion flag (EKPO) → PO Reversal Date
+        "AEDAT",    # Item change date (EKPO)
+    },
+    "EBAN": {
+        "BANFN",    # PR number — join key
+        "BNFPO",    # PR item   — join key
+        "BADAT",    # PR requirement date → renamed PR Creation
+        "FRGDT",    # PR release date    → renamed PR Release Date
+        "ERNAM",    # PR creator (user)  — SOD + chart
+        "ERDAT",    # PR creation date   — PR Reversal rule
+        "LOEKZ",    # Deletion flag      — PR Reversal rule
+    },
+    "EKBE": {
+        "EBELN",    # PO number  — join key
+        "EBELP",    # PO item    — join key
+        "VGABE",    # Movement type: 1=GR, 2=Invoice
+        "BUDAT",    # Posting date → GR Posting / Invoice Posting
+        "SHKZG",    # Debit/Credit: S=normal, H=reversal
+        "ERNAM",    # User who posted — GR/Invoice Creation User (SOD)
+        "BELNR",    # Accounting document
+        "GJAHR",    # Fiscal year
+        "MENGE",    # Quantity
+        "DMBTR",    # Amount in local currency
+    },
+    "LFA1": {
+        "LIFNR",    # Vendor ID — join key
+        "NAME1",    # Vendor name — vendor filter/chart
+    },
 }
 
 
@@ -172,14 +215,14 @@ async def upload_raw_table(
     if table_name not in EXPECTED_TABLES:
         raise HTTPException(400, f"Unknown table '{table_name}'. Expected: {sorted(EXPECTED_TABLES)}")
 
-    # ── 2. Check for duplicate — already uploaded ────────────────────────────
+    # ── 2. Check for duplicate — already uploaded in this session ────────────
     user_tables = RAW_TABLES.get(username, {})
     if table_name in user_tables:
         existing = user_tables[table_name]
         raise HTTPException(400,
-            f"Table '{table_name}' has already been uploaded "
-            f"({len(existing):,} rows already loaded). "
-            f"Click the ✕ button next to {table_name} to clear it, then upload again."
+            f"Table '{table_name}' has already been uploaded this session "
+            f"({len(existing):,} rows). "
+            f"Use the ✕ button to clear it first before uploading again."
         )
 
     # ── 3. Parse CSV ─────────────────────────────────────────────────────────
@@ -787,4 +830,4 @@ def _collapse_ekbe_branch(
     for c in [out_posting, out_reversal]:
         result[c] = pd.to_datetime(result[c], errors="coerce")
 
-    return result 
+    return result
