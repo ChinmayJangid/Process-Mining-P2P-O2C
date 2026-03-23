@@ -56,6 +56,19 @@ o2c_transformer_router = APIRouter(prefix="/o2c/transform", tags=["O2C-Transform
 O2C_RAW_TABLES: dict = {}
 EXPECTED_TABLES = ["VBAK", "VBAP", "VBFA", "LIKP", "LIPS", "VBRK", "VBRP", "BSAD", "KNA1"]
 
+# Minimum required columns for each SAP table — used to validate uploads
+REQUIRED_COLS = {
+    "VBAK": {"VBELN", "ERDAT", "ERNAM", "AUART", "LIFSK", "FAKSK", "VKORG", "KUNNR", "AEDAT"},
+    "VBAP": {"VBELN", "POSNR", "MATNR", "ABGRU", "AEDAT"},
+    "VBFA": {"VBELV", "POSNV", "VBELN", "POSNN", "VBTYP_N", "ERDAT"},
+    "LIKP": {"VBELN", "ERDAT", "WADAT_IST"},
+    "LIPS": {"VBELN", "POSNR", "MATNR"},
+    "VBRK": {"VBELN", "ERDAT", "ERNAM"},
+    "VBRP": {"VBELN", "POSNR"},
+    "BSAD": {"VBELN", "AUGDT"},
+    "KNA1": {"KUNNR", "NAME1"},
+}
+
 O2C_OUTPUT_DIR    = os.path.join("o2c_user_data", "o2c_outputs")
 O2C_FILE_REGISTRY = "o2c_file_registry.json"
 os.makedirs(O2C_OUTPUT_DIR, exist_ok=True)
@@ -581,20 +594,47 @@ async def upload_o2c_table(
     username: str = Form("Unknown"),
 ):
     table_name = table_name.strip().upper()
-    if table_name not in EXPECTED_TABLES:
-        raise HTTPException(400, f"Unknown table '{table_name}'. Expected: {EXPECTED_TABLES}")
 
-    content = await file.read()
+    # ── 1. Validate table name ───────────────────────────────────────────────
+    if table_name not in EXPECTED_TABLES:
+        raise HTTPException(400, f"Unknown table '{table_name}'. Expected one of: {EXPECTED_TABLES}")
+
+    # ── 2. Check for duplicate — already uploaded in this session ────────────
+    if username in O2C_RAW_TABLES and table_name in O2C_RAW_TABLES[username]:
+        existing = O2C_RAW_TABLES[username][table_name]
+        raise HTTPException(400,
+            f"Table '{table_name}' has already been uploaded this session "
+            f"({len(existing):,} rows). "
+            f"Use the ✕ button to clear it first before uploading again."
+        )
+
+    # ── 3. Parse CSV ─────────────────────────────────────────────────────────
+    raw = await file.read()
     df = None
     for enc in ("utf-8", "latin-1", "windows-1252"):
         try:
-            df = pd.read_csv(io.BytesIO(content), encoding=enc, low_memory=False)
+            df = pd.read_csv(io.BytesIO(raw), encoding=enc, low_memory=False)
             break
         except Exception:
             continue
     if df is None:
-        raise HTTPException(400, "Could not decode CSV.")
+        raise HTTPException(400, "Could not decode CSV — try saving as UTF-8.")
 
+    # Normalise column names: strip whitespace
+    df.columns = [c.strip() for c in df.columns]
+
+    # ── 4. Validate required columns ─────────────────────────────────────────
+    required = REQUIRED_COLS.get(table_name, set())
+    uploaded_cols = {c.upper() for c in df.columns}
+    missing = {c for c in required if c.upper() not in uploaded_cols}
+    if missing:
+        raise HTTPException(400,
+            f"Wrong file for '{table_name}'. "
+            f"Missing required columns: {sorted(missing)}. "
+            f"Please upload the correct SAP '{table_name}' table."
+        )
+
+    # ── 5. Store ──────────────────────────────────────────────────────────────
     if username not in O2C_RAW_TABLES:
         O2C_RAW_TABLES[username] = {}
     O2C_RAW_TABLES[username][table_name] = df
