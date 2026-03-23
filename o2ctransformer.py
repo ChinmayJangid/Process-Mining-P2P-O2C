@@ -58,15 +58,74 @@ EXPECTED_TABLES = ["VBAK", "VBAP", "VBFA", "LIKP", "LIPS", "VBRK", "VBRP", "BSAD
 
 # Minimum required columns for each SAP table — used to validate uploads
 REQUIRED_COLS = {
-    "VBAK": {"VBELN", "ERDAT", "ERNAM", "AUART", "LIFSK", "FAKSK", "VKORG", "KUNNR", "AEDAT"},
-    "VBAP": {"VBELN", "POSNR", "MATNR", "ABGRU", "AEDAT"},
-    "VBFA": {"VBELV", "POSNV", "VBELN", "POSNN", "VBTYP_N", "ERDAT"},
-    "LIKP": {"VBELN", "ERDAT", "WADAT_IST"},
-    "LIPS": {"VBELN", "POSNR", "MATNR"},
-    "VBRK": {"VBELN", "ERDAT", "ERNAM"},
-    "VBRP": {"VBELN", "POSNR"},
-    "BSAD": {"VBELN", "AUGDT"},
-    "KNA1": {"KUNNR", "NAME1"},
+    # Every column the pipeline and O2C charts actually read from each SAP table
+    "VBAK": {
+        "VBELN",   # Sales order number — join key
+        "ERDAT",   # Sales document creation date → SO Created activity
+        "ERNAM",   # Sales document creator — filter & chart
+        "AUART",   # Sales document type — filter & chart
+        "LIFSK",   # Delivery block — Delivery Blocked Date rule
+        "FAKSK",   # Billing block  — Billing Block Date rule
+        "VKORG",   # Sales organisation — filter & chart
+        "KUNNR",   # Customer number — lookup key for KNA1
+        "AEDAT",   # Header changed date — used by block date rules
+        "VBTYP",   # Document category — RowFilter keeps only C (orders)
+    },
+    "VBAP": {
+        "VBELN",   # Sales order number — join key
+        "POSNR",   # Item number — part of Preceding Document key
+        "MATNR",   # Material number — filter & chart
+        "ABGRU",   # Reason for rejection — SO Rejected Date rule
+        "AEDAT",   # Item changed date — SO Rejected Date rule
+        "NETWR",   # Net value of order item — chart
+    },
+    "VBFA": {
+        "VBELV",   # Preceding document number — Preceding Document key
+        "POSNV",   # Preceding item number    — Preceding Document key
+        "VBELN",   # Subsequent document       — Subsequent Document key
+        "POSNN",   # Subsequent item number    — Subsequent Document key
+        "VBTYP_N", # Subsequent document type — routes to Delivery/Goods/Invoice branch
+        "ERDAT",   # Document date — all activity dates come from here
+    },
+    "LIKP": {
+        "VBELN",      # Delivery document number — join key
+        "ERDAT",      # Delivery creation date
+        "WADAT_IST",  # Actual goods issue date → Goods Issued fallback
+        "ERNAM",      # Delivery document maker
+        "WADAT",      # Planned delivery date → Delivery Posted
+    },
+    "LIPS": {
+        "VBELN",   # Delivery number — part of Delivery Document key
+        "POSNR",   # Delivery item   — part of Delivery Document key
+        "MATNR",   # Material number — filter & chart
+        "WERKS",   # Plant           — filter & chart
+        "LFIMG",   # Actual quantity delivered
+    },
+    "VBRK": {
+        "VBELN",   # Billing document number — join key
+        "ERDAT",   # Invoice creation date
+        "ERNAM",   # Invoice maker — filter & chart
+        "FKTYP",   # Billing type
+        "FKART",   # Billing document type
+    },
+    "VBRP": {
+        "VBELN",   # Billing document number — join key
+        "POSNR",   # Billing item number     — part of Billing Document key
+        "MATNR",   # Billing material
+        "FKIMG",   # Actual billed quantity
+        "NETWR",   # Net value of billing item
+    },
+    "BSAD": {
+        "VBELN",   # Billing document number — join key
+        "AUGDT",   # Clearing date → Invoice Cleared / Invoice Posted activity
+        "DMBTR",   # Amount in local currency
+        "AUGBL",   # Clearing document number
+        "BUKRS",   # Company code
+    },
+    "KNA1": {
+        "KUNNR",   # Customer number — join key
+        "NAME1",   # Customer name   — customer filter & chart
+    },
 }
 
 O2C_OUTPUT_DIR    = os.path.join("o2c_user_data", "o2c_outputs")
