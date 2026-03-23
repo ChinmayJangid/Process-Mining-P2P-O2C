@@ -127,6 +127,15 @@ transformer_router = APIRouter(prefix="/p2p/transform", tags=["P2P Transformer"]
 RAW_TABLES: dict[str, dict[str, pd.DataFrame]] = {}
 EXPECTED_TABLES = {"EKKO", "EKPO", "EBAN", "EKBE", "LFA1"}
 
+# Minimum required columns for each SAP table — used to validate uploads
+REQUIRED_COLS = {
+    "EKKO": {"EBELN", "BEDAT", "BSART", "LIFNR", "BUKRS", "EKGRP"},
+    "EKPO": {"EBELN", "EBELP", "MATNR", "WERKS", "MATKL"},
+    "EBAN": {"BANFN", "BNFPO", "BADAT"},
+    "EKBE": {"EBELN", "EBELP", "VGABE", "BUDAT"},
+    "LFA1": {"LIFNR", "NAME1"},
+}
+
 
 def _log(msg: str):
     print(f"[P2P TRANSFORM] {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | {msg}")
@@ -158,15 +167,45 @@ async def upload_raw_table(
     username: str = Form("Unknown"),
 ):
     table_name = table_name.strip().upper()
+
+    # ── 1. Validate table name ───────────────────────────────────────────────
     if table_name not in EXPECTED_TABLES:
         raise HTTPException(400, f"Unknown table '{table_name}'. Expected: {sorted(EXPECTED_TABLES)}")
+
+    # ── 2. Check for duplicate — already uploaded ────────────────────────────
+    user_tables = RAW_TABLES.get(username, {})
+    if table_name in user_tables:
+        existing = user_tables[table_name]
+        raise HTTPException(400,
+            f"Table '{table_name}' has already been uploaded "
+            f"({len(existing):,} rows already loaded). "
+            f"Click the ✕ button next to {table_name} to clear it, then upload again."
+        )
+
+    # ── 3. Parse CSV ─────────────────────────────────────────────────────────
     if not file.filename.lower().endswith(".csv"):
         raise HTTPException(400, "Only CSV files are supported.")
-    content = await file.read()
+    raw = await file.read()
     try:
-        df = _read_csv(content, file.filename)
+        df = _read_csv(raw, file.filename)
     except Exception as e:
         raise HTTPException(500, f"Failed to parse {file.filename}: {e}")
+
+    # Normalise column names: strip whitespace
+    df.columns = [c.strip() for c in df.columns]
+
+    # ── 4. Validate required columns ─────────────────────────────────────────
+    required = REQUIRED_COLS.get(table_name, set())
+    uploaded_cols = {c.upper() for c in df.columns}
+    missing = {c for c in required if c.upper() not in uploaded_cols}
+    if missing:
+        raise HTTPException(400,
+            f"Wrong file for '{table_name}'. "
+            f"Missing required columns: {sorted(missing)}. "
+            f"Please upload the correct SAP '{table_name}' table."
+        )
+
+    # ── 5. Store ──────────────────────────────────────────────────────────────
     RAW_TABLES.setdefault(username, {})[table_name] = df
     _log(f"User '{username}' uploaded {table_name}: {len(df)} rows, {len(df.columns)} cols.")
     return {"status": "ok", "table": table_name, "rows": len(df), "columns": list(df.columns)}
@@ -748,4 +787,4 @@ def _collapse_ekbe_branch(
     for c in [out_posting, out_reversal]:
         result[c] = pd.to_datetime(result[c], errors="coerce")
 
-    return result
+    return result 
