@@ -1587,34 +1587,66 @@ const P2PIntroScreen = ({ onGoTableBuild, onGoCsvUpload, currentUser }) => {
 /* ── Table Upload Screen (Build Event Log path) ────────────────────────── */
 const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFiles, fetchingFiles, handleLoadOldFile }) => {
   const tables = [
-    { name:'EKKO', desc:'Purchasing Document Header',
-      required:['EBELN','BEDAT','BSART','LIFNR','BUKRS','EKGRP'],
-      optional:['AEDAT','FRGGR','FRGCO','FRGRL','LOEKZ','MEMORY'] },
-    { name:'EKPO', desc:'Purchasing Document Item',
-      required:['EBELN','EBELP','MATNR','WERKS','MATKL'],
-      optional:['MENGE','MEINS','NETWR','PEINH','NETPR'] },
-    { name:'EBAN', desc:'Purchase Requisition',
-      required:['BANFN','BNFPO','BADAT'],
-      optional:['FRGDT','EKGRP','MATNR','WERKS','LOEKZ'] },
-    { name:'EKBE', desc:'PO History (GR/IR events)',
-      required:['EBELN','EBELP','VGABE','BUDAT'],
-      optional:['BELNR','MENGE','DMBTR','SHKZG','XBLNR'] },
-    { name:'LFA1', desc:'Vendor Master — General',
-      required:['LIFNR','NAME1'],
-      optional:['ORT01','LAND1','STRAS','TELF1'] },
+    { name:'EKKO', desc:'Purchasing Document Header', required:[
+      {col:'EBELN',  note:'PO number — join key'},
+      {col:'AEDAT',  note:'PO creation date → PO Creation'},
+      {col:'BEDAT',  note:'PO document date → PO Date'},
+      {col:'BSART',  note:'Document type — filter & chart'},
+      {col:'LIFNR',  note:'Vendor ID — filter & chart'},
+      {col:'BUKRS',  note:'Company code — filter & chart'},
+      {col:'EKGRP',  note:'Purchasing group — filter & chart'},
+      {col:'ERNAM',  note:'PO creator — SOD checks & chart'},
+      {col:'LOEKZ',  note:'Deletion flag — PO Reversal rule'},
+    ]},
+    { name:'EKPO', desc:'Purchasing Document Item', required:[
+      {col:'EBELN',  note:'PO number — join key'},
+      {col:'EBELP',  note:'PO item — part of UniqueID_PO'},
+      {col:'MATNR',  note:'Material number'},
+      {col:'WERKS',  note:'Plant — filter & chart'},
+      {col:'MATKL',  note:'Material group — filter & chart'},
+      {col:'BANFN',  note:'PR number — part of UniqueID_PR'},
+      {col:'BNFPO',  note:'PR item — part of UniqueID_PR'},
+      {col:'LOEKZ',  note:'Deletion flag — PO Reversal Date'},
+      {col:'AEDAT',  note:'Item change date'},
+    ]},
+    { name:'EBAN', desc:'Purchase Requisition', required:[
+      {col:'BANFN',  note:'PR number — join key'},
+      {col:'BNFPO',  note:'PR item — join key'},
+      {col:'BADAT',  note:'PR requirement date → PR Creation'},
+      {col:'FRGDT',  note:'PR release date → PR Release Date'},
+      {col:'ERNAM',  note:'PR creator — SOD checks & chart'},
+      {col:'ERDAT',  note:'PR creation date — PR Reversal rule'},
+      {col:'LOEKZ',  note:'Deletion flag — PR Reversal rule'},
+    ]},
+    { name:'EKBE', desc:'PO History / GR & Invoice Events', required:[
+      {col:'EBELN',  note:'PO number — join key'},
+      {col:'EBELP',  note:'PO item — join key'},
+      {col:'VGABE',  note:'Movement type: 1=GR, 2=Invoice'},
+      {col:'BUDAT',  note:'Posting date → GR / Invoice dates'},
+      {col:'SHKZG',  note:'Debit/Credit: S=normal, H=reversal'},
+      {col:'ERNAM',  note:'Posting user — GR/Invoice Creation User'},
+      {col:'BELNR',  note:'Accounting document number'},
+      {col:'GJAHR',  note:'Fiscal year'},
+      {col:'MENGE',  note:'Quantity'},
+      {col:'DMBTR',  note:'Amount in local currency'},
+    ]},
+    { name:'LFA1', desc:'Vendor Master — General', required:[
+      {col:'LIFNR',  note:'Vendor ID — join key'},
+      {col:'NAME1',  note:'Vendor name — vendor filter & chart'},
+    ]},
   ];
   const [tableStatus, setTableStatus] = useState(Object.fromEntries(tables.map(t=>[t.name,'idle'])));
   const [tableMsg,    setTableMsg]    = useState(Object.fromEntries(tables.map(t=>[t.name,''])));
   const [building,    setBuilding]    = useState(false);
   const [buildMsg,    setBuildMsg]    = useState('');
-  const [colPreview,  setColPreview]  = useState(null);
+  const [colPreview,  setColPreview]  = useState(null); // {tableDef, uploadedCols:[]}
   const [tableCols,   setTableCols]   = useState({});
   const fileRefs = useRef(Object.fromEntries(tables.map(t=>[t.name,React.createRef()])));
 
   const allDone      = tables.every(t=>tableStatus[t.name]==='done');
   const anyUploading = tables.some(t=>tableStatus[t.name]==='uploading')||building;
 
-  // ── On mount: restore already-uploaded tables from server ─────────────────
+  // ── Restore already-uploaded tables from server on mount ──────────────────
   React.useEffect(()=>{
     fetch(`${API}/p2p/transform/status?username=${encodeURIComponent(currentUser||'Unknown')}`)
       .then(r=>r.ok?r.json():null)
@@ -1624,8 +1656,7 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
           setTableStatus(p=>({...p,[tName]:'done'}));
           setTableMsg(p=>({...p,[tName]:'Already on server'}));
         });
-      })
-      .catch(()=>{});
+      }).catch(()=>{});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
@@ -1649,7 +1680,7 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
       if(d.columns){
         setTableCols(p=>({...p,[tableName]:d.columns}));
         const tDef=tables.find(t=>t.name===tableName);
-        if(tDef) setColPreview({tableName,uploaded:d.columns,required:tDef.required||[],optional:tDef.optional||[]});
+        if(tDef) setColPreview({tableDef:tDef, uploadedCols:d.columns});
       }
     }catch(e){
       setTableStatus(p=>({...p,[tableName]:'error'}));
@@ -1688,113 +1719,150 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',padding:'28px 24px 48px',overflowY:'auto'}}>
 
-      {/* ── Column Preview Modal ─────────────────────────────────────────── */}
+      {/* ══ Column Check Modal ══════════════════════════════════════════════ */}
       {colPreview&&(
-        <div style={{position:'fixed',inset:0,zIndex:9999,background:'rgba(0,0,0,0.45)',
-          display:'flex',alignItems:'center',justifyContent:'center',padding:24}}
+        <div style={{position:'fixed',inset:0,zIndex:9999,background:'rgba(0,0,0,0.5)',
+          display:'flex',alignItems:'center',justifyContent:'center',padding:16}}
           onClick={()=>setColPreview(null)}>
-          <div style={{background:'#fff',borderRadius:12,padding:'24px 28px',maxWidth:600,width:'100%',
-            maxHeight:'85vh',overflowY:'auto',boxShadow:'0 20px 60px rgba(0,0,0,0.3)'}}
+          <div style={{background:'#fff',borderRadius:12,width:'100%',maxWidth:700,
+            maxHeight:'88vh',display:'flex',flexDirection:'column',
+            boxShadow:'0 24px 64px rgba(0,0,0,0.35)'}}
             onClick={e=>e.stopPropagation()}>
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',
-              marginBottom:20,borderBottom:'2px solid #E2E8F0',paddingBottom:14}}>
-              <div>
-                <div style={{fontSize:11,fontWeight:700,color:'#0078D4',textTransform:'uppercase',
-                  letterSpacing:0.8,marginBottom:4}}>Table Column Check</div>
-                <div style={{fontSize:18,fontWeight:700,color:'#1e293b'}}>{colPreview.tableName}</div>
-                <div style={{fontSize:12,color:'#64748b',marginTop:2}}>
-                  {colPreview.uploaded.length>0
-                    ? `${colPreview.uploaded.length} columns found in uploaded file`
-                    : 'Required columns for this table'}
-                </div>
-              </div>
-              <button onClick={()=>setColPreview(null)}
-                style={{width:32,height:32,borderRadius:'50%',border:'1.5px solid #E2E8F0',
-                  background:'#F8FAFC',color:'#64748b',cursor:'pointer',fontSize:16,
-                  display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,flexShrink:0}}>
-                ✕
-              </button>
-            </div>
 
-            {/* Required columns check */}
-            <div style={{marginBottom:18}}>
-              <div style={{fontSize:11,fontWeight:700,color:'#64748b',textTransform:'uppercase',
-                letterSpacing:0.8,marginBottom:10}}>Required Columns</div>
-              <div style={{display:'flex',flexDirection:'column',gap:6}}>
-                {colPreview.required.map(col=>{
-                  const found = colPreview.uploaded.length===0
-                    ? null
-                    : colPreview.uploaded.map(c=>c.toUpperCase()).includes(col.toUpperCase());
-                  return(
-                    <div key={col} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 12px',
-                      borderRadius:6,
-                      background:found===null?'#F8FAFC':found?'#F0FBF4':'#FEF2F2',
-                      border:`1px solid ${found===null?'#E2E8F0':found?'#86EFAC':'#FECACA'}`}}>
-                      <span style={{width:20,height:20,borderRadius:'50%',flexShrink:0,
-                        background:found===null?'#94a3b8':found?'#16A34A':'#DC2626',
-                        color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',
-                        fontSize:11,fontWeight:800}}>
-                        {found===null?'?':found?'✓':'✕'}
-                      </span>
-                      <span style={{fontFamily:'monospace',fontSize:13,fontWeight:700,
-                        color:found===null?'#475569':found?'#15803D':'#DC2626'}}>{col}</span>
-                      <span style={{fontSize:11,color:'#64748b',marginLeft:'auto'}}>
-                        {found===null?'Required'
-                          :found?'✅ Present in file'
-                          :'❌ Missing from file'}
-                      </span>
+            {/* Modal header */}
+            <div style={{padding:'20px 24px 16px',borderBottom:'1px solid #E2E8F0',flexShrink:0}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
+                <div>
+                  <div style={{fontSize:10,fontWeight:700,color:'#0078D4',textTransform:'uppercase',
+                    letterSpacing:1,marginBottom:4}}>Column Check</div>
+                  <div style={{fontSize:17,fontWeight:700,color:'#1e293b'}}>
+                    {colPreview.tableDef.name} — {colPreview.tableDef.desc}
+                  </div>
+                  {colPreview.uploadedCols.length>0&&(
+                    <div style={{fontSize:12,color:'#64748b',marginTop:3}}>
+                      {colPreview.uploadedCols.length} columns in uploaded file ·{' '}
+                      {colPreview.tableDef.required.filter(r=>colPreview.uploadedCols.map(c=>c.toUpperCase()).includes(r.col.toUpperCase())).length}
+                      /{colPreview.tableDef.required.length} required present
                     </div>
-                  );
-                })}
+                  )}
+                </div>
+                <button onClick={()=>setColPreview(null)}
+                  style={{width:30,height:30,borderRadius:'50%',border:'1px solid #E2E8F0',
+                    background:'#F8FAFC',color:'#64748b',cursor:'pointer',fontSize:15,
+                    display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,flexShrink:0}}>
+                  ✕
+                </button>
               </div>
             </div>
 
-            {/* All uploaded columns */}
-            {colPreview.uploaded.length>0&&(
-              <div style={{marginBottom:14}}>
-                <div style={{fontSize:11,fontWeight:700,color:'#64748b',textTransform:'uppercase',
-                  letterSpacing:0.8,marginBottom:10}}>All Columns in Your File</div>
-                <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
-                  {colPreview.uploaded.map(col=>{
-                    const isReq=colPreview.required.map(c=>c.toUpperCase()).includes(col.toUpperCase());
+            {/* Side-by-side table */}
+            <div style={{overflowY:'auto',flex:1,padding:'0 0 8px'}}>
+              <table style={{width:'100%',borderCollapse:'collapse',fontSize:12}}>
+                <thead style={{position:'sticky',top:0,zIndex:2}}>
+                  <tr style={{background:'#F8FAFC'}}>
+                    <th style={{padding:'10px 16px',textAlign:'left',fontWeight:700,color:'#64748b',
+                      fontSize:10,textTransform:'uppercase',letterSpacing:0.8,
+                      borderBottom:'2px solid #E2E8F0',width:'28%'}}>
+                      Required Column
+                    </th>
+                    <th style={{padding:'10px 12px',textAlign:'left',fontWeight:700,color:'#64748b',
+                      fontSize:10,textTransform:'uppercase',letterSpacing:0.8,
+                      borderBottom:'2px solid #E2E8F0',width:'14%'}}>
+                      In File?
+                    </th>
+                    <th style={{padding:'10px 12px',textAlign:'left',fontWeight:700,color:'#64748b',
+                      fontSize:10,textTransform:'uppercase',letterSpacing:0.8,
+                      borderBottom:'2px solid #E2E8F0'}}>
+                      Purpose
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {colPreview.tableDef.required.map((r,i)=>{
+                    const found = colPreview.uploadedCols.length===0
+                      ? null
+                      : colPreview.uploadedCols.map(c=>c.toUpperCase()).includes(r.col.toUpperCase());
                     return(
-                      <span key={col} style={{
-                        fontFamily:'monospace',fontSize:11,fontWeight:600,
-                        padding:'3px 9px',borderRadius:12,
-                        background:isReq?'#DBEAFE':'#F1F5F9',
-                        color:isReq?'#1D4ED8':'#475569',
-                        border:`1px solid ${isReq?'#93C5FD':'#CBD5E1'}`}}>
-                        {col}
-                      </span>
+                      <tr key={r.col} style={{
+                        background:found===null?'#fff':found?'#F0FBF4':'#FEF2F2',
+                        borderBottom:'1px solid #F1F5F9'}}>
+                        <td style={{padding:'10px 16px'}}>
+                          <span style={{fontFamily:'monospace',fontWeight:700,fontSize:13,
+                            color:found===null?'#334155':found?'#15803D':'#DC2626'}}>
+                            {r.col}
+                          </span>
+                        </td>
+                        <td style={{padding:'10px 12px'}}>
+                          {found===null?(
+                            <span style={{fontSize:11,color:'#94a3b8'}}>—</span>
+                          ):found?(
+                            <span style={{display:'inline-flex',alignItems:'center',gap:4,
+                              fontWeight:700,fontSize:11,color:'#15803D'}}>
+                              <span style={{width:16,height:16,borderRadius:'50%',background:'#16A34A',
+                                color:'#fff',display:'inline-flex',alignItems:'center',
+                                justifyContent:'center',fontSize:9,fontWeight:900}}>✓</span>
+                              Present
+                            </span>
+                          ):(
+                            <span style={{display:'inline-flex',alignItems:'center',gap:4,
+                              fontWeight:700,fontSize:11,color:'#DC2626'}}>
+                              <span style={{width:16,height:16,borderRadius:'50%',background:'#DC2626',
+                                color:'#fff',display:'inline-flex',alignItems:'center',
+                                justifyContent:'center',fontSize:9,fontWeight:900}}>✕</span>
+                              Missing
+                            </span>
+                          )}
+                        </td>
+                        <td style={{padding:'10px 12px',color:'#64748b',fontSize:11,lineHeight:1.4}}>
+                          {r.note}
+                        </td>
+                      </tr>
                     );
                   })}
-                </div>
-                <div style={{fontSize:11,color:'#94a3b8',marginTop:8}}>
-                  <span style={{background:'#DBEAFE',color:'#1D4ED8',padding:'1px 6px',
-                    borderRadius:4,fontWeight:600,marginRight:4}}>Blue</span> = required &nbsp;
-                  <span style={{background:'#F1F5F9',color:'#475569',padding:'1px 6px',
-                    borderRadius:4,fontWeight:600,marginRight:4}}>Grey</span> = additional
-                </div>
+                </tbody>
+              </table>
+
+              {/* Extra columns in file (not required) */}
+              {colPreview.uploadedCols.length>0&&(()=>{
+                const reqUpper=colPreview.tableDef.required.map(r=>r.col.toUpperCase());
+                const extra=colPreview.uploadedCols.filter(c=>!reqUpper.includes(c.toUpperCase()));
+                return extra.length>0?(
+                  <div style={{padding:'14px 16px 6px'}}>
+                    <div style={{fontSize:10,fontWeight:700,color:'#94a3b8',textTransform:'uppercase',
+                      letterSpacing:0.8,marginBottom:8}}>
+                      Additional columns in file ({extra.length})
+                    </div>
+                    <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
+                      {extra.map(c=>(
+                        <span key={c} style={{fontFamily:'monospace',fontSize:11,fontWeight:600,
+                          padding:'2px 8px',borderRadius:10,background:'#F1F5F9',
+                          color:'#475569',border:'1px solid #CBD5E1'}}>
+                          {c}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ):null;
+              })()}
+            </div>
+
+            {/* Footer */}
+            {colPreview.uploadedCols.length>0&&
+              colPreview.tableDef.required.some(r=>!colPreview.uploadedCols.map(c=>c.toUpperCase()).includes(r.col.toUpperCase()))&&(
+              <div style={{padding:'10px 20px',background:'#FEF2F2',borderTop:'1px solid #FECACA',
+                fontSize:12,color:'#DC2626',fontWeight:600,flexShrink:0}}>
+                ⚠ Missing required columns — build may fail or produce incomplete results.
               </div>
             )}
-
-            {/* Missing warning */}
-            {colPreview.uploaded.length>0&&colPreview.required.some(
-              c=>!colPreview.uploaded.map(u=>u.toUpperCase()).includes(c.toUpperCase())
-            )&&(
-              <div style={{padding:'10px 14px',background:'#FEF2F2',border:'1px solid #FECACA',
-                borderRadius:6,fontSize:12,color:'#DC2626',fontWeight:600,marginBottom:14}}>
-                ⚠ Some required columns are missing — the build may fail or produce incomplete results.
-              </div>
-            )}
-
-            <button onClick={()=>setColPreview(null)}
-              style={{width:'100%',padding:'11px',background:'#0078D4',color:'#fff',
-                border:'none',borderRadius:6,fontSize:13,fontWeight:700,cursor:'pointer'}}
-              onMouseOver={e=>e.currentTarget.style.background='#005A9E'}
-              onMouseOut={e=>e.currentTarget.style.background='#0078D4'}>
-              Close
-            </button>
+            <div style={{padding:'14px 20px',borderTop:'1px solid #E2E8F0',flexShrink:0}}>
+              <button onClick={()=>setColPreview(null)}
+                style={{width:'100%',padding:'10px',background:'#0078D4',color:'#fff',
+                  border:'none',borderRadius:6,fontSize:13,fontWeight:700,cursor:'pointer'}}
+                onMouseOver={e=>e.currentTarget.style.background='#005A9E'}
+                onMouseOut={e=>e.currentTarget.style.background='#0078D4'}>
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1861,14 +1929,10 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
                     {tableStatus[t.name]==='done'&&(
                       <div style={{display:'flex',gap:4,alignItems:'center'}}>
                         <button
-                          onClick={()=>{
-                            const tDef=tables.find(x=>x.name===t.name);
-                            if(tDef) setColPreview({tableName:t.name,uploaded:tableCols[t.name]||[],required:tDef.required||[],optional:tDef.optional||[]});
-                          }}
+                          onClick={()=>{const tDef=tables.find(x=>x.name===t.name);if(tDef)setColPreview({tableDef:tDef,uploadedCols:tableCols[t.name]||[]});}}
                           title='View column check'
                           style={{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:4,
-                            background:'#EFF6FF',color:'#1D4ED8',border:'1px solid #93C5FD',
-                            cursor:'pointer',whiteSpace:'nowrap'}}
+                            background:'#EFF6FF',color:'#1D4ED8',border:'1px solid #93C5FD',cursor:'pointer'}}
                           onMouseOver={e=>e.currentTarget.style.background='#DBEAFE'}
                           onMouseOut={e=>e.currentTarget.style.background='#EFF6FF'}>
                           Columns
