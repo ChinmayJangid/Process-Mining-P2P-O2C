@@ -1567,25 +1567,99 @@ const O2CIntroScreen = ({ onGoTableBuild, onGoCsvUpload }) => {
 /* ── O2C Table Upload Screen ─────────────────────────────────────────────── */
 const O2CTableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFiles, fetchingFiles, handleLoadOldFile }) => {
   const tables = [
-    { name:'VBAK', desc:'Sales Document Header' },
-    { name:'VBAP', desc:'Sales Document Item' },
-    { name:'VBFA', desc:'Sales Document Flow (process links)' },
-    { name:'LIKP', desc:'Delivery Header' },
-    { name:'LIPS', desc:'Delivery Item' },
-    { name:'VBRK', desc:'Billing Document Header' },
-    { name:'VBRP', desc:'Billing Document Item' },
-    { name:'BSAD', desc:'Cleared Customer Items (FI)' },
-    { name:'KNA1', desc:'Customer Master — General' },
+    { name:'VBAK', desc:'Sales Document Header', required:[
+      {col:'VBELN',  note:'Sales order number — join key'},
+      {col:'ERDAT',  note:'Creation date → SO Created activity'},
+      {col:'ERNAM',  note:'SO creator — filter & chart'},
+      {col:'AUART',  note:'Document type — filter & chart'},
+      {col:'LIFSK',  note:'Delivery block — Delivery Blocked Date rule'},
+      {col:'FAKSK',  note:'Billing block — Billing Block Date rule'},
+      {col:'VKORG',  note:'Sales organisation — filter & chart'},
+      {col:'KUNNR',  note:'Customer number — lookup key for KNA1'},
+      {col:'AEDAT',  note:'Header changed date — used by block date rules'},
+      {col:'VBTYP',  note:'Document category — filter keeps only C (orders)'},
+    ]},
+    { name:'VBAP', desc:'Sales Document Item', required:[
+      {col:'VBELN',  note:'Sales order number — join key'},
+      {col:'POSNR',  note:'Item number — part of Preceding Document key'},
+      {col:'MATNR',  note:'Material number — filter & chart'},
+      {col:'ABGRU',  note:'Reason for rejection — SO Rejected Date rule'},
+      {col:'AEDAT',  note:'Item changed date — SO Rejected Date rule'},
+      {col:'NETWR',  note:'Net value of order item — chart'},
+    ]},
+    { name:'VBFA', desc:'Sales Document Flow (process links)', required:[
+      {col:'VBELV',   note:'Preceding document number — Preceding Document key'},
+      {col:'POSNV',   note:'Preceding item number — Preceding Document key'},
+      {col:'VBELN',   note:'Subsequent document — Subsequent Document key'},
+      {col:'POSNN',   note:'Subsequent item number — Subsequent Document key'},
+      {col:'VBTYP_N', note:'Subsequent doc type — routes Delivery / Goods / Invoice'},
+      {col:'ERDAT',   note:'Document date — all activity dates come from here'},
+    ]},
+    { name:'LIKP', desc:'Delivery Header', required:[
+      {col:'VBELN',      note:'Delivery document number — join key'},
+      {col:'ERDAT',      note:'Delivery creation date'},
+      {col:'WADAT_IST',  note:'Actual goods issue date → Goods Issued fallback'},
+      {col:'ERNAM',      note:'Delivery document maker — chart'},
+      {col:'WADAT',      note:'Planned delivery date → Delivery Posted'},
+    ]},
+    { name:'LIPS', desc:'Delivery Item', required:[
+      {col:'VBELN',  note:'Delivery number — part of Delivery Document key'},
+      {col:'POSNR',  note:'Delivery item — part of Delivery Document key'},
+      {col:'MATNR',  note:'Material number — filter & chart'},
+      {col:'WERKS',  note:'Plant — filter & chart'},
+      {col:'LFIMG',  note:'Actual quantity delivered'},
+    ]},
+    { name:'VBRK', desc:'Billing Document Header', required:[
+      {col:'VBELN',  note:'Billing document number — join key'},
+      {col:'ERDAT',  note:'Invoice creation date'},
+      {col:'ERNAM',  note:'Invoice maker — filter & chart'},
+      {col:'FKTYP',  note:'Billing type'},
+      {col:'FKART',  note:'Billing document type'},
+    ]},
+    { name:'VBRP', desc:'Billing Document Item', required:[
+      {col:'VBELN',  note:'Billing document number — join key'},
+      {col:'POSNR',  note:'Billing item number — part of Billing Document key'},
+      {col:'MATNR',  note:'Billing material'},
+      {col:'FKIMG',  note:'Actual billed quantity'},
+      {col:'NETWR',  note:'Net value of billing item'},
+    ]},
+    { name:'BSAD', desc:'Cleared Customer Items (FI)', required:[
+      {col:'VBELN',  note:'Billing document number — join key'},
+      {col:'AUGDT',  note:'Clearing date → Invoice Cleared / Invoice Posted'},
+      {col:'DMBTR',  note:'Amount in local currency'},
+      {col:'AUGBL',  note:'Clearing document number'},
+      {col:'BUKRS',  note:'Company code'},
+    ]},
+    { name:'KNA1', desc:'Customer Master — General', required:[
+      {col:'KUNNR',  note:'Customer number — join key'},
+      {col:'NAME1',  note:'Customer name — customer filter & chart'},
+    ]},
   ];
   const [tableStatus, setTableStatus] = useState(Object.fromEntries(tables.map(t=>[t.name,'idle'])));
   const [tableMsg,    setTableMsg]    = useState(Object.fromEntries(tables.map(t=>[t.name,''])));
   const [building,    setBuilding]    = useState(false);
   const [buildMsg,    setBuildMsg]    = useState('');
+  const [colPreview,  setColPreview]  = useState(null);
+  const [tableCols,   setTableCols]   = useState({});
   const fileRefs = useRef(Object.fromEntries(tables.map(t=>[t.name,React.createRef()])));
 
   const allDone      = tables.every(t=>tableStatus[t.name]==='done');
   const anyUploading = tables.some(t=>tableStatus[t.name]==='uploading')||building;
   const tableBuilds  = (myFiles||[]).filter(f=>f.source==='table_build');
+
+  // ── Restore already-uploaded tables from server on mount ──────────────────
+  React.useEffect(()=>{
+    fetch(`${API}/o2c/transform/status?username=${encodeURIComponent(currentUser||'Unknown')}`)
+      .then(r=>r.ok?r.json():null)
+      .then(d=>{
+        if(!d||!d.loaded) return;
+        d.loaded.forEach(tName=>{
+          setTableStatus(p=>({...p,[tName]:'done'}));
+          setTableMsg(p=>({...p,[tName]:'Already on server'}));
+        });
+      }).catch(()=>{});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
 
   const uploadTable = async(tName, file) => {
     if(!file) return;
@@ -1601,6 +1675,11 @@ const O2CTableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, m
       if(!r.ok) throw new Error(d.detail||`HTTP ${r.status}`);
       setTableStatus(p=>({...p,[tName]:'done'}));
       setTableMsg(p=>({...p,[tName]:`${Number(d.rows).toLocaleString()} rows`}));
+      if(d.columns){
+        setTableCols(p=>({...p,[tName]:d.columns}));
+        const tDef=tables.find(t=>t.name===tName);
+        if(tDef) setColPreview({tableDef:tDef, uploadedCols:d.columns});
+      }
     }catch(e){
       setTableStatus(p=>({...p,[tName]:'error'})); setTableMsg(p=>({...p,[tName]:e.message}));
     }
@@ -1632,6 +1711,158 @@ const O2CTableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, m
 
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',padding:'28px 24px 48px',overflowY:'auto'}}>
+
+      {/* ══ Column Check Modal ══════════════════════════════════════════════ */}
+      {colPreview&&(
+        <div style={{position:'fixed',inset:0,zIndex:9999,background:'rgba(0,0,0,0.5)',
+          display:'flex',alignItems:'center',justifyContent:'center',padding:16}}
+          onClick={()=>setColPreview(null)}>
+          <div style={{background:'#fff',borderRadius:12,width:'100%',maxWidth:700,
+            maxHeight:'88vh',display:'flex',flexDirection:'column',
+            boxShadow:'0 24px 64px rgba(0,0,0,0.35)'}}
+            onClick={e=>e.stopPropagation()}>
+
+            {/* Modal header */}
+            <div style={{padding:'20px 24px 16px',borderBottom:'1px solid #E2E8F0',flexShrink:0}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
+                <div>
+                  <div style={{fontSize:10,fontWeight:700,color:'#006B3C',textTransform:'uppercase',
+                    letterSpacing:1,marginBottom:4}}>Column Check</div>
+                  <div style={{fontSize:17,fontWeight:700,color:'#1e293b'}}>
+                    {colPreview.tableDef.name} — {colPreview.tableDef.desc}
+                  </div>
+                  {colPreview.uploadedCols.length>0&&(
+                    <div style={{fontSize:12,color:'#64748b',marginTop:3}}>
+                      {colPreview.uploadedCols.length} columns in uploaded file ·{' '}
+                      {colPreview.tableDef.required.filter(r=>
+                        colPreview.uploadedCols.map(c=>c.toUpperCase()).includes(r.col.toUpperCase())
+                      ).length}/{colPreview.tableDef.required.length} required present
+                    </div>
+                  )}
+                </div>
+                <button onClick={()=>setColPreview(null)}
+                  style={{width:30,height:30,borderRadius:'50%',border:'1px solid #E2E8F0',
+                    background:'#F8FAFC',color:'#64748b',cursor:'pointer',fontSize:15,
+                    display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,flexShrink:0}}>
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Side-by-side table */}
+            <div style={{overflowY:'auto',flex:1,padding:'0 0 8px'}}>
+              <table style={{width:'100%',borderCollapse:'collapse',fontSize:12}}>
+                <thead style={{position:'sticky',top:0,zIndex:2}}>
+                  <tr style={{background:'#F8FAFC'}}>
+                    <th style={{padding:'10px 16px',textAlign:'left',fontWeight:700,color:'#64748b',
+                      fontSize:10,textTransform:'uppercase',letterSpacing:0.8,
+                      borderBottom:'2px solid #E2E8F0',width:'28%'}}>
+                      Required Column
+                    </th>
+                    <th style={{padding:'10px 12px',textAlign:'left',fontWeight:700,color:'#64748b',
+                      fontSize:10,textTransform:'uppercase',letterSpacing:0.8,
+                      borderBottom:'2px solid #E2E8F0',width:'14%'}}>
+                      In File?
+                    </th>
+                    <th style={{padding:'10px 12px',textAlign:'left',fontWeight:700,color:'#64748b',
+                      fontSize:10,textTransform:'uppercase',letterSpacing:0.8,
+                      borderBottom:'2px solid #E2E8F0'}}>
+                      Purpose
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {colPreview.tableDef.required.map((r,i)=>{
+                    const found=colPreview.uploadedCols.length===0
+                      ? null
+                      : colPreview.uploadedCols.map(c=>c.toUpperCase()).includes(r.col.toUpperCase());
+                    return(
+                      <tr key={r.col} style={{
+                        background:found===null?'#fff':found?'#F0FBF4':'#FEF2F2',
+                        borderBottom:'1px solid #F1F5F9'}}>
+                        <td style={{padding:'10px 16px'}}>
+                          <span style={{fontFamily:'monospace',fontWeight:700,fontSize:13,
+                            color:found===null?'#334155':found?'#15803D':'#DC2626'}}>
+                            {r.col}
+                          </span>
+                        </td>
+                        <td style={{padding:'10px 12px'}}>
+                          {found===null?(
+                            <span style={{fontSize:11,color:'#94a3b8'}}>—</span>
+                          ):found?(
+                            <span style={{display:'inline-flex',alignItems:'center',gap:4,
+                              fontWeight:700,fontSize:11,color:'#15803D'}}>
+                              <span style={{width:16,height:16,borderRadius:'50%',background:'#16A34A',
+                                color:'#fff',display:'inline-flex',alignItems:'center',
+                                justifyContent:'center',fontSize:9,fontWeight:900}}>✓</span>
+                              Present
+                            </span>
+                          ):(
+                            <span style={{display:'inline-flex',alignItems:'center',gap:4,
+                              fontWeight:700,fontSize:11,color:'#DC2626'}}>
+                              <span style={{width:16,height:16,borderRadius:'50%',background:'#DC2626',
+                                color:'#fff',display:'inline-flex',alignItems:'center',
+                                justifyContent:'center',fontSize:9,fontWeight:900}}>✕</span>
+                              Missing
+                            </span>
+                          )}
+                        </td>
+                        <td style={{padding:'10px 12px',color:'#64748b',fontSize:11,lineHeight:1.4}}>
+                          {r.note}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+
+              {/* Extra columns in file */}
+              {colPreview.uploadedCols.length>0&&(()=>{
+                const reqUpper=colPreview.tableDef.required.map(r=>r.col.toUpperCase());
+                const extra=colPreview.uploadedCols.filter(c=>!reqUpper.includes(c.toUpperCase()));
+                return extra.length>0?(
+                  <div style={{padding:'14px 16px 6px'}}>
+                    <div style={{fontSize:10,fontWeight:700,color:'#94a3b8',textTransform:'uppercase',
+                      letterSpacing:0.8,marginBottom:8}}>
+                      Additional columns in file ({extra.length})
+                    </div>
+                    <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
+                      {extra.map(c=>(
+                        <span key={c} style={{fontFamily:'monospace',fontSize:11,fontWeight:600,
+                          padding:'2px 8px',borderRadius:10,background:'#F1F5F9',
+                          color:'#475569',border:'1px solid #CBD5E1'}}>
+                          {c}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ):null;
+              })()}
+            </div>
+
+            {/* Missing warning footer */}
+            {colPreview.uploadedCols.length>0&&
+              colPreview.tableDef.required.some(r=>
+                !colPreview.uploadedCols.map(c=>c.toUpperCase()).includes(r.col.toUpperCase())
+              )&&(
+              <div style={{padding:'10px 20px',background:'#FEF2F2',borderTop:'1px solid #FECACA',
+                fontSize:12,color:'#DC2626',fontWeight:600,flexShrink:0}}>
+                ⚠ Missing required columns — build may fail or produce incomplete results.
+              </div>
+            )}
+            <div style={{padding:'14px 20px',borderTop:'1px solid #E2E8F0',flexShrink:0}}>
+              <button onClick={()=>setColPreview(null)}
+                style={{width:'100%',padding:'10px',background:'#006B3C',color:'#fff',
+                  border:'none',borderRadius:6,fontSize:13,fontWeight:700,cursor:'pointer'}}
+                onMouseOver={e=>e.currentTarget.style.background='#004d2c'}
+                onMouseOut={e=>e.currentTarget.style.background='#006B3C'}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{maxWidth:820,width:'100%',display:'flex',flexDirection:'column',gap:20}}>
         <div style={{display:'flex',alignItems:'center',gap:12}}>
           <button onClick={onBack}
@@ -1663,18 +1894,53 @@ const O2CTableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, m
                   borderBottom:i<tables.length-1?'1px solid #E2E8F0':'none',transition:'background 0.2s'}}>
                   <input ref={ref} type="file" accept=".csv" style={{display:'none'}}
                     onChange={e=>{uploadTable(t.name,e.target.files[0]);e.target.value='';}}/>
-                  <button onClick={()=>!isUp&&ref.current&&ref.current.click()} disabled={isUp}
+                  <button onClick={()=>{ if(!isUp&&ref.current){ref.current.value='';ref.current.click();} }}
+                    disabled={isUp}
                     style={{display:'flex',alignItems:'center',justifyContent:'center',width:28,height:28,
                       borderRadius:6,border:`1.5px solid ${s.border}`,background:s.bg,color:s.color,
                       cursor:isUp?'not-allowed':'pointer',fontWeight:700,fontSize:13,flexShrink:0}}
-                    onMouseOver={e=>{if(!isUp&&tableStatus[t.name]!=='done')e.currentTarget.style.background='#D1FAE5';}}
+                    onMouseOver={e=>{if(!isUp)e.currentTarget.style.background='#D1FAE5';}}
                     onMouseOut={e=>{e.currentTarget.style.background=s.bg;}}>
                     {isUp?<span style={{animation:'spin 1s linear infinite',display:'inline-block'}}>↻</span>:s.icon}
                   </button>
                   <div style={{minWidth:52,fontFamily:'monospace',fontWeight:700,fontSize:13,color:'#006B3C',
                     background:'#EDFAF4',padding:'3px 8px',borderRadius:4,textAlign:'center',flexShrink:0}}>{t.name}</div>
                   <div style={{fontSize:13,color:'#475569',flex:1}}>{t.desc}</div>
-                  {tableMsg[t.name]&&<div style={{fontSize:11,color:tableStatus[t.name]==='error'?'#D13438':'#107C10',fontWeight:600,whiteSpace:'nowrap'}}>{tableMsg[t.name]}</div>}
+                  <div style={{display:'flex',alignItems:'center',gap:5,marginLeft:'auto',flexShrink:0}}>
+                    {tableMsg[t.name]&&(
+                      <div style={{fontSize:11,fontWeight:600,maxWidth:220,lineHeight:1.3,
+                        color:tableStatus[t.name]==='error'?'#DC2626':'#15803D',
+                        background:tableStatus[t.name]==='error'?'#FEF2F2':'transparent',
+                        padding:tableStatus[t.name]==='error'?'3px 6px':'0',
+                        borderRadius:4,border:tableStatus[t.name]==='error'?'1px solid #FECACA':'none'}}>
+                        {tableMsg[t.name]}
+                      </div>
+                    )}
+                    {tableStatus[t.name]==='done'&&(
+                      <div style={{display:'flex',gap:4,alignItems:'center'}}>
+                        <button
+                          onClick={()=>{const tDef=tables.find(x=>x.name===t.name);if(tDef)setColPreview({tableDef:tDef,uploadedCols:tableCols[t.name]||[]});}}
+                          title='View column check'
+                          style={{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:4,
+                            background:'#EDFAF4',color:'#065F46',border:'1px solid #6EE7B7',cursor:'pointer'}}
+                          onMouseOver={e=>e.currentTarget.style.background='#D1FAE5'}
+                          onMouseOut={e=>e.currentTarget.style.background='#EDFAF4'}>
+                          Columns
+                        </button>
+                        <button
+                          onClick={()=>{setTableStatus(p=>({...p,[t.name]:'idle'}));setTableMsg(p=>({...p,[t.name]:''}));}}
+                          title='Clear to re-upload'
+                          style={{display:'flex',alignItems:'center',justifyContent:'center',
+                            width:18,height:18,borderRadius:'50%',border:'1.5px solid #FCA5A5',
+                            background:'#FEE2E2',color:'#DC2626',cursor:'pointer',
+                            fontWeight:800,fontSize:10,padding:0,lineHeight:1,flexShrink:0}}
+                          onMouseOver={e=>e.currentTarget.style.background='#FECACA'}
+                          onMouseOut={e=>e.currentTarget.style.background='#FEE2E2'}>
+                          ✕
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -2749,7 +3015,7 @@ export default function O2CDashboard({ currentUser, onSignOut, onBackHome }){
               </div>
 
       <div style={{ textAlign: 'center', fontSize: '12px', color: '#605E5C', padding: '10px 0', borderTop: '1px solid #E1DFDD', flexShrink: 0, zIndex: 100 }}>
-        ©2026 <a href="https://ajalabs.ai" target="_blank" rel="noopener noreferrer" style={{ color: '#323130', textDecoration: 'none', fontWeight: 'bold' }}>ajaLabs.ai</a> All rights reserved - <a href="#" style={{ color: '#0078D4', textDecoration: 'none' }}>Data Privacy</a>
+        ©2023 <a href="https://ajalabs.ai" target="_blank" rel="noopener noreferrer" style={{ color: '#323130', textDecoration: 'none', fontWeight: 'bold' }}>ajaLabs.ai</a> All rights reserved - <a href="#" style={{ color: '#0078D4', textDecoration: 'none' }}>Data Privacy</a>
       </div>
 
     </div>
