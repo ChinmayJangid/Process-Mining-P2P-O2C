@@ -738,7 +738,7 @@ const CaseTable = React.memo(({ data, events, onSelect, selectedId }) => {
 ══════════════════════════════════════════ */
 
 const ActivityChart=React.memo(({data,crossFilter,onSelect})=>{
-  if(!Array.isArray(data)||!data.length) return <Empty/>;
+  if(!Array.isArray(data)||!data.length) return <EmptyState condition={true} message="Data Not Uploaded / Available" />;
   const af=crossFilter?.type==='activity'?crossFilter.value:null;
   const rows=data.slice(0,7); 
   return(
@@ -780,7 +780,7 @@ const ActivityChart=React.memo(({data,crossFilter,onSelect})=>{
 });
 
 const MonthlyChart=React.memo(({data,crossFilter,onSelect})=>{
-  if(!Array.isArray(data)||!data.length) return <Empty/>;
+  if(!Array.isArray(data)||!data.length) return <EmptyState condition={true} message="Data Not Uploaded / Available" />;
   return(
     <div style={{width:'100%', height:220}}>
       <ResponsiveContainer width="100%" height="100%">
@@ -817,7 +817,7 @@ const MonthlyChart=React.memo(({data,crossFilter,onSelect})=>{
 });
 
 const CompanyDonutChart=React.memo(({data,crossFilter,onSelect})=>{
-  if(!Array.isArray(data)||!data.length) return <Empty/>;
+  if(!Array.isArray(data)||!data.length) return <EmptyState condition={true} message="Data Not Uploaded / Available" />;
   const af=crossFilter?.type==='company'?crossFilter.value:null;
   const total=data.reduce((s,d)=>s+(d.count||0),0);
 
@@ -878,7 +878,7 @@ const CompanyDonutChart=React.memo(({data,crossFilter,onSelect})=>{
 });
 
 const StatusDonutChart=React.memo(({data,crossFilter,onSelect})=>{
-  if(!Array.isArray(data)||!data.length) return <Empty/>;
+  if(!Array.isArray(data)||!data.length) return <EmptyState condition={true} message="Data Not Uploaded / Available" />;
   const af=crossFilter?.type==='status'?crossFilter.value:null;
   const total=data.reduce((s,d)=>s+(d.count||0),0);
 
@@ -939,7 +939,7 @@ const StatusDonutChart=React.memo(({data,crossFilter,onSelect})=>{
 });
 
 const ScrollableHBarChart=React.memo(({data,dataKey,labelKey,crossFilter,crossKey,onSelect,color})=>{
-  if(!Array.isArray(data)||!data.length) return <Empty/>;
+  if(!Array.isArray(data)||!data.length) return <EmptyState condition={true} message="Data Not Uploaded / Available" />;
   const af=crossFilter?.type===crossKey?crossFilter.value:null;
   const rowH=30;
   const chartH=Math.max(220, data.length*rowH);
@@ -967,7 +967,7 @@ const ScrollableHBarChart=React.memo(({data,dataKey,labelKey,crossFilter,crossKe
 });
 
 const ScrollableVBarChart=React.memo(({data,crossFilter,onSelect})=>{
-  if(!Array.isArray(data)||!data.length) return <Empty/>;
+  if(!Array.isArray(data)||!data.length) return <EmptyState condition={true} message="Data Not Uploaded / Available" />;
   const af=crossFilter?.type==='bsart'?crossFilter.value:null;
   const colW=50;
   const chartW=Math.max('100%', data.length*colW);
@@ -994,7 +994,7 @@ const ScrollableVBarChart=React.memo(({data,crossFilter,onSelect})=>{
 });
 
 const LeadTimeChart=React.memo(({data, crossFilter, onSelect})=>{
-  if(!Array.isArray(data)||!data.length) return <Empty/>;
+  if(!Array.isArray(data)||!data.length) return <EmptyState condition={true} message="Data Not Uploaded / Available" />;
   const af = crossFilter?.type === 'lead_time' ? crossFilter.value : null;
 
   return(
@@ -1019,7 +1019,7 @@ const LeadTimeChart=React.memo(({data, crossFilter, onSelect})=>{
 });
 
 const ErnamChart=React.memo(({data, crossFilter, onSelect})=>{
-    if(!Array.isArray(data)||!data.length) return <Empty/>;
+    if(!Array.isArray(data)||!data.length) return <EmptyState condition={true} message="Data Not Uploaded / Available" />;
     
     const af = crossFilter?.type === 'ernam' ? crossFilter.value : null;
     const sorted = [...data].sort((a,b)=>b.count-a.count);
@@ -1587,7 +1587,7 @@ const P2PIntroScreen = ({ onGoTableBuild, onGoCsvUpload, currentUser }) => {
 /* ── Table Upload Screen (Build Event Log path) ────────────────────────── */
 const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFiles, fetchingFiles, handleLoadOldFile }) => {
   const tables = [
-    { name:'EKKO', desc:'Purchasing Document Header', required:[
+    { name:'EKKO', desc:'Purchasing Document Header', isMandatory: true, required:[
       {col:'EBELN',  note:'PO number — join key'},
       {col:'AEDAT',  note:'PO creation date → PO Creation'},
       {col:'BEDAT',  note:'PO document date → PO Date'},
@@ -1598,7 +1598,7 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
       {col:'ERNAM',  note:'PO creator — SOD checks & chart'},
       {col:'LOEKZ',  note:'Deletion flag — PO Reversal rule'},
     ]},
-    { name:'EKPO', desc:'Purchasing Document Item', required:[
+    { name:'EKPO', desc:'Purchasing Document Item', isMandatory: true, required:[
       {col:'EBELN',  note:'PO number — join key'},
       {col:'EBELP',  note:'PO item — part of UniqueID_PO'},
       {col:'MATNR',  note:'Material number'},
@@ -1639,11 +1639,14 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
   const [tableMsg,    setTableMsg]    = useState(Object.fromEntries(tables.map(t=>[t.name,''])));
   const [building,    setBuilding]    = useState(false);
   const [buildMsg,    setBuildMsg]    = useState('');
-  const [colPreview,  setColPreview]  = useState(null); // {tableDef, uploadedCols:[]}
+  const [colMapping,  setColMapping]  = useState(null); // {tableName, file, tableDef, uploadedCols:[], mapping:{}}
   const [tableCols,   setTableCols]   = useState({});
+  const [selectedFiles, setSelectedFiles] = useState({});
+  const [appliedMappings, setAppliedMappings] = useState({});
+
   const fileRefs = useRef(Object.fromEntries(tables.map(t=>[t.name,React.createRef()])));
 
-  const allDone      = tables.every(t=>tableStatus[t.name]==='done');
+  const allDone      = tables.filter(t=>t.isMandatory).every(t=>tableStatus[t.name]==='done');
   const anyUploading = tables.some(t=>tableStatus[t.name]==='uploading')||building;
 
   // ── Restore already-uploaded tables from server on mount ──────────────────
@@ -1667,10 +1670,33 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
       setTableMsg(p=>({...p,[tableName]:'Only .csv accepted.'}));
       return;
     }
+    setSelectedFiles(p=>({...p, [tableName]: file}));
+    performUpload(tableName, file, {});
+  };
+
+  const handleMapColumns = async (tableName) => {
+    const file = selectedFiles[tableName];
+    if (!file) return;
+    const formPreview=new FormData();
+    formPreview.append('file',file);
+    try{
+      const rPrev=await fetch(`${API}/p2p/transform/preview_columns`,{method:'POST',body:formPreview});
+      const dPrev=await rPrev.json();
+      if(!rPrev.ok) throw new Error(dPrev.detail||`Failed to read CSV columns`);
+      const tDef=tables.find(t=>t.name===tableName);
+      setColMapping({ tableName, file, tableDef: tDef, uploadedCols: dPrev.columns, mapping: {} });
+    }catch(e){
+      setTableStatus(p=>({...p,[tableName]:'error'}));
+      setTableMsg(p=>({...p,[tableName]:e.message}));
+    }
+  };
+
+  const performUpload = async(tableName, file, mapping)=>{
     setTableStatus(p=>({...p,[tableName]:'uploading'}));
     setTableMsg(p=>({...p,[tableName]:''}));
     const form=new FormData();
     form.append('file',file); form.append('table_name',tableName); form.append('username',currentUser||'Unknown');
+    form.append('column_mapping', JSON.stringify(mapping));
     try{
       const r=await fetch(`${API}/p2p/transform/upload_table`,{method:'POST',body:form});
       const d=await r.json();
@@ -1679,9 +1705,8 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
       setTableMsg(p=>({...p,[tableName]:`${Number(d.rows).toLocaleString()} rows`}));
       if(d.columns){
         setTableCols(p=>({...p,[tableName]:d.columns}));
-        const tDef=tables.find(t=>t.name===tableName);
-        if(tDef) setColPreview({tableDef:tDef, uploadedCols:d.columns});
       }
+      setColMapping(null);
     }catch(e){
       setTableStatus(p=>({...p,[tableName]:'error'}));
       setTableMsg(p=>({...p,[tableName]:e.message}));
@@ -1703,7 +1728,12 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
     }catch(e){
       clearInterval(ticker);
       onLoadingChange&&onLoadingChange(false,0,'');
-      setBuilding(false); setBuildMsg(`Error: ${e.message}`);
+      setBuilding(false);
+      if (e.message.includes('Column mapping is incorrect')) {
+        onBuilt();
+      } else {
+        setBuildMsg(`Error: ${e.message}`);
+      }
     }
   };
 
@@ -1719,148 +1749,81 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',padding:'28px 24px 48px',overflowY:'auto'}}>
 
-      {/* ══ Column Check Modal ══════════════════════════════════════════════ */}
-      {colPreview&&(
+
+
+      {/* ══ Column Mapping Modal ══════════════════════════════════════════════ */}
+      {colMapping&&(
         <div style={{position:'fixed',inset:0,zIndex:9999,background:'rgba(0,0,0,0.5)',
           display:'flex',alignItems:'center',justifyContent:'center',padding:16}}
-          onClick={()=>setColPreview(null)}>
+          onClick={()=>setColMapping(null)}>
           <div style={{background:'#fff',borderRadius:12,width:'100%',maxWidth:700,
             maxHeight:'88vh',display:'flex',flexDirection:'column',
             boxShadow:'0 24px 64px rgba(0,0,0,0.35)'}}
             onClick={e=>e.stopPropagation()}>
-
-            {/* Modal header */}
             <div style={{padding:'20px 24px 16px',borderBottom:'1px solid #E2E8F0',flexShrink:0}}>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
-                <div>
-                  <div style={{fontSize:10,fontWeight:700,color:'#0078D4',textTransform:'uppercase',
-                    letterSpacing:1,marginBottom:4}}>Column Check</div>
-                  <div style={{fontSize:17,fontWeight:700,color:'#1e293b'}}>
-                    {colPreview.tableDef.name} — {colPreview.tableDef.desc}
-                  </div>
-                  {colPreview.uploadedCols.length>0&&(
-                    <div style={{fontSize:12,color:'#64748b',marginTop:3}}>
-                      {colPreview.uploadedCols.length} columns in uploaded file ·{' '}
-                      {colPreview.tableDef.required.filter(r=>colPreview.uploadedCols.map(c=>c.toUpperCase()).includes(r.col.toUpperCase())).length}
-                      /{colPreview.tableDef.required.length} required present
-                    </div>
-                  )}
-                </div>
-                <button onClick={()=>setColPreview(null)}
-                  style={{width:30,height:30,borderRadius:'50%',border:'1px solid #E2E8F0',
-                    background:'#F8FAFC',color:'#64748b',cursor:'pointer',fontSize:15,
-                    display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,flexShrink:0}}>
-                  ✕
-                </button>
-              </div>
+              <div style={{fontSize:10,fontWeight:700,color:'#DC2626',textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>Column Mapping</div>
+              <div style={{fontSize:17,fontWeight:700,color:'#1e293b'}}>Map Columns for {colMapping.tableDef.name}</div>
+              <div style={{fontSize:12,color:'#64748b',marginTop:3}}> Select which columns from your file correspond to the required fields.</div>
             </div>
-
-            {/* Side-by-side table */}
+            
             <div style={{overflowY:'auto',flex:1,padding:'0 0 8px'}}>
               <table style={{width:'100%',borderCollapse:'collapse',fontSize:12}}>
                 <thead style={{position:'sticky',top:0,zIndex:2}}>
                   <tr style={{background:'#F8FAFC'}}>
-                    <th style={{padding:'10px 16px',textAlign:'left',fontWeight:700,color:'#64748b',
-                      fontSize:10,textTransform:'uppercase',letterSpacing:0.8,
-                      borderBottom:'2px solid #E2E8F0',width:'28%'}}>
-                      Required Column
-                    </th>
-                    <th style={{padding:'10px 12px',textAlign:'left',fontWeight:700,color:'#64748b',
-                      fontSize:10,textTransform:'uppercase',letterSpacing:0.8,
-                      borderBottom:'2px solid #E2E8F0',width:'14%'}}>
-                      In File?
-                    </th>
-                    <th style={{padding:'10px 12px',textAlign:'left',fontWeight:700,color:'#64748b',
-                      fontSize:10,textTransform:'uppercase',letterSpacing:0.8,
-                      borderBottom:'2px solid #E2E8F0'}}>
-                      Purpose
-                    </th>
+                    <th style={{padding:'10px 16px',textAlign:'left',fontWeight:700,color:'#64748b',fontSize:10,textTransform:'uppercase',letterSpacing:0.8,borderBottom:'2px solid #E2E8F0',width:'35%'}}>Required Column</th>
+                    <th style={{padding:'10px 12px',textAlign:'left',fontWeight:700,color:'#64748b',fontSize:10,textTransform:'uppercase',letterSpacing:0.8,borderBottom:'2px solid #E2E8F0',width:'35%'}}>Map to File Column</th>
+                    <th style={{padding:'10px 12px',textAlign:'left',fontWeight:700,color:'#64748b',fontSize:10,textTransform:'uppercase',letterSpacing:0.8,borderBottom:'2px solid #E2E8F0'}}>Purpose</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {colPreview.tableDef.required.map((r,i)=>{
-                    const found = colPreview.uploadedCols.length===0
-                      ? null
-                      : colPreview.uploadedCols.map(c=>c.toUpperCase()).includes(r.col.toUpperCase());
+                  {colMapping.tableDef.required.map((r,i)=>{
+                    const reqCol = r.col;
+                    const autoMatch = colMapping.uploadedCols.find(c=>c.toUpperCase()===reqCol.toUpperCase());
+                    const selected = colMapping.mapping[reqCol] !== undefined ? colMapping.mapping[reqCol] : (autoMatch || '');
                     return(
-                      <tr key={r.col} style={{
-                        background:found===null?'#fff':found?'#F0FBF4':'#FEF2F2',
-                        borderBottom:'1px solid #F1F5F9'}}>
-                        <td style={{padding:'10px 16px'}}>
-                          <span style={{fontFamily:'monospace',fontWeight:700,fontSize:13,
-                            color:found===null?'#334155':found?'#15803D':'#DC2626'}}>
-                            {r.col}
-                          </span>
-                        </td>
+                      <tr key={reqCol} style={{borderBottom:'1px solid #F1F5F9',background:'#fff'}}>
+                        <td style={{padding:'10px 16px',fontFamily:'monospace',fontWeight:700,color:'#334155',fontSize:13}}>{reqCol}</td>
                         <td style={{padding:'10px 12px'}}>
-                          {found===null?(
-                            <span style={{fontSize:11,color:'#94a3b8'}}>—</span>
-                          ):found?(
-                            <span style={{display:'inline-flex',alignItems:'center',gap:4,
-                              fontWeight:700,fontSize:11,color:'#15803D'}}>
-                              <span style={{width:16,height:16,borderRadius:'50%',background:'#16A34A',
-                                color:'#fff',display:'inline-flex',alignItems:'center',
-                                justifyContent:'center',fontSize:9,fontWeight:900}}>✓</span>
-                              Present
-                            </span>
-                          ):(
-                            <span style={{display:'inline-flex',alignItems:'center',gap:4,
-                              fontWeight:700,fontSize:11,color:'#DC2626'}}>
-                              <span style={{width:16,height:16,borderRadius:'50%',background:'#DC2626',
-                                color:'#fff',display:'inline-flex',alignItems:'center',
-                                justifyContent:'center',fontSize:9,fontWeight:900}}>✕</span>
-                              Missing
-                            </span>
-                          )}
+                          <select 
+                            value={selected} 
+                            onChange={e=>setColMapping(p=>({...p, mapping:{...p.mapping, [reqCol]: e.target.value}}))}
+                            style={{width:'100%',padding:'6px 8px',borderRadius:4,border:'1px solid #CBD5E1',background:'#fff',fontSize:12,color:'#334155'}}
+                          >
+                            <option value="">-- Leave Blank / Unmapped --</option>
+                            {colMapping.uploadedCols.map(c=>(
+                              <option key={c} value={c}>{c}</option>
+                            ))}
+                          </select>
                         </td>
-                        <td style={{padding:'10px 12px',color:'#64748b',fontSize:11,lineHeight:1.4}}>
-                          {r.note}
-                        </td>
+                        <td style={{padding:'10px 12px',color:'#64748b',fontSize:11,lineHeight:1.4}}>{r.note}</td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
-
-              {/* Extra columns in file (not required) */}
-              {colPreview.uploadedCols.length>0&&(()=>{
-                const reqUpper=colPreview.tableDef.required.map(r=>r.col.toUpperCase());
-                const extra=colPreview.uploadedCols.filter(c=>!reqUpper.includes(c.toUpperCase()));
-                return extra.length>0?(
-                  <div style={{padding:'14px 16px 6px'}}>
-                    <div style={{fontSize:10,fontWeight:700,color:'#94a3b8',textTransform:'uppercase',
-                      letterSpacing:0.8,marginBottom:8}}>
-                      Additional columns in file ({extra.length})
-                    </div>
-                    <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
-                      {extra.map(c=>(
-                        <span key={c} style={{fontFamily:'monospace',fontSize:11,fontWeight:600,
-                          padding:'2px 8px',borderRadius:10,background:'#F1F5F9',
-                          color:'#475569',border:'1px solid #CBD5E1'}}>
-                          {c}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ):null;
-              })()}
             </div>
 
-            {/* Footer */}
-            {colPreview.uploadedCols.length>0&&
-              colPreview.tableDef.required.some(r=>!colPreview.uploadedCols.map(c=>c.toUpperCase()).includes(r.col.toUpperCase()))&&(
-              <div style={{padding:'10px 20px',background:'#FEF2F2',borderTop:'1px solid #FECACA',
-                fontSize:12,color:'#DC2626',fontWeight:600,flexShrink:0}}>
-                ⚠ Missing required columns — build may fail or produce incomplete results.
-              </div>
-            )}
-            <div style={{padding:'14px 20px',borderTop:'1px solid #E2E8F0',flexShrink:0}}>
-              <button onClick={()=>setColPreview(null)}
-                style={{width:'100%',padding:'10px',background:'#0078D4',color:'#fff',
-                  border:'none',borderRadius:6,fontSize:13,fontWeight:700,cursor:'pointer'}}
-                onMouseOver={e=>e.currentTarget.style.background='#005A9E'}
-                onMouseOut={e=>e.currentTarget.style.background='#0078D4'}>
-                Close
+            <div style={{padding:'14px 20px',borderTop:'1px solid #E2E8F0',flexShrink:0,display:'flex',justifyContent:'flex-end',gap:12}}>
+              <button onClick={()=>setColMapping(null)}
+                style={{padding:'8px 16px',background:'#fff',color:'#64748b',border:'1px solid #CBD5E1',borderRadius:6,fontSize:13,fontWeight:700,cursor:'pointer'}}>
+                Cancel
+              </button>
+              <button 
+                onClick={async ()=>{
+                  const finalMapping = {};
+                  colMapping.tableDef.required.forEach(r => {
+                      const autoMatch = colMapping.uploadedCols.find(c=>c.toUpperCase()===r.col.toUpperCase());
+                      const sel = colMapping.mapping[r.col] !== undefined ? colMapping.mapping[r.col] : (autoMatch || '');
+                      if (sel) {
+                          finalMapping[sel] = r.col;
+                      }
+                  });
+                  await fetch(`${API}/p2p/transform/clear_table?table_name=${colMapping.tableDef.name}&username=${encodeURIComponent(currentUser||'Unknown')}`, { method: 'DELETE' }).catch(console.error);
+                  setAppliedMappings(p => ({...p, [colMapping.tableDef.name]: finalMapping}));
+                  performUpload(colMapping.tableDef.name, colMapping.file, finalMapping);
+                }}
+                style={{padding:'8px 16px',background:'#0078D4',color:'#fff',border:'none',borderRadius:6,fontSize:13,fontWeight:700,cursor:'pointer'}}>
+                Confirm Mapping & Upload
               </button>
             </div>
           </div>
@@ -1879,14 +1842,14 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
           </button>
           <div>
             <div style={{fontSize:11,fontWeight:700,color:'#006B3C',textTransform:'uppercase',letterSpacing:0.8}}>Build Event Log</div>
-            <div style={{fontSize:13,color:'#64748b'}}>Upload the 5 SAP tables below, then click Build</div>
+            <div style={{fontSize:13,color:'#64748b'}}>Upload SAP tables below, then click Build. Only EKKO and EKPO are mandatory.</div>
           </div>
         </div>
 
         {/* Table upload panel */}
         <div style={{background:'#fff',border:'1px solid #E2E8F0',borderRadius:10,padding:'20px 22px',boxShadow:'0 2px 6px rgba(0,0,0,0.04)'}}>
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}}>
-            <div style={{fontSize:11,fontWeight:700,color:'#64748b',textTransform:'uppercase',letterSpacing:0.8}}>Required SAP Tables</div>
+            <div style={{fontSize:11,fontWeight:700,color:'#64748b',textTransform:'uppercase',letterSpacing:0.8}}>SAP Tables</div>
             <div style={{fontSize:11,color:'#94a3b8'}}>Upload each as <strong style={{color:'#475569'}}>.csv</strong></div>
           </div>
           <div style={{display:'flex',flexDirection:'column',border:'1px solid #E2E8F0',borderRadius:8,overflow:'hidden'}}>
@@ -1914,7 +1877,16 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
                   </button>
                   <div style={{minWidth:52,fontFamily:'monospace',fontWeight:700,fontSize:13,color:'#0078D4',
                     background:'#EFF6FF',padding:'3px 8px',borderRadius:4,textAlign:'center',flexShrink:0}}>{t.name}</div>
-                  <div style={{fontSize:13,color:'#475569',flex:1}}>{t.desc}</div>
+                  <div style={{fontSize:13,color:'#475569',flex:1}}>
+                    {t.desc}
+                    {appliedMappings[t.name] && Object.keys(appliedMappings[t.name]).length > 0 && (
+                      <div style={{fontSize:11, color:'#006B3C', marginTop:4, display:'flex', flexWrap:'wrap', gap:6}}>
+                        {Object.entries(appliedMappings[t.name]).map(([k,v]) => (
+                          <span key={k} style={{background:'#E6F4EA', padding:'2px 6px', borderRadius:4}}><strong>{k}</strong> → {v}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   {/* Server-returned message (error or success) + clear button */}
                   <div style={{display:'flex',alignItems:'center',gap:5,marginLeft:'auto',flexShrink:0}}>
                     {tableMsg[t.name]&&(
@@ -1926,19 +1898,31 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
                         {tableMsg[t.name]}
                       </div>
                     )}
-                    {tableStatus[t.name]==='done'&&(
+                    {(tableStatus[t.name]==='done' || tableStatus[t.name]==='error')&&(
                       <div style={{display:'flex',gap:4,alignItems:'center'}}>
+                        {selectedFiles[t.name]&&(
+                          <button
+                            onClick={()=>handleMapColumns(t.name)}
+                            title='Map columns'
+                            style={{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:4,
+                              background:tableStatus[t.name]==='error'?'#FEF2F2':'#EFF6FF',
+                              color:tableStatus[t.name]==='error'?'#DC2626':'#1D4ED8',
+                              border:tableStatus[t.name]==='error'?'1px solid #FCA5A5':'1px solid #93C5FD',
+                              cursor:'pointer'}}
+                            onMouseOver={e=>e.currentTarget.style.background=tableStatus[t.name]==='error'?'#FECACA':'#DBEAFE'}
+                            onMouseOut={e=>e.currentTarget.style.background=tableStatus[t.name]==='error'?'#FEF2F2':'#EFF6FF'}>
+                            Map Columns
+                          </button>
+                        )}
                         <button
-                          onClick={()=>{const tDef=tables.find(x=>x.name===t.name);if(tDef)setColPreview({tableDef:tDef,uploadedCols:tableCols[t.name]||[]});}}
-                          title='View column check'
-                          style={{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:4,
-                            background:'#EFF6FF',color:'#1D4ED8',border:'1px solid #93C5FD',cursor:'pointer'}}
-                          onMouseOver={e=>e.currentTarget.style.background='#DBEAFE'}
-                          onMouseOut={e=>e.currentTarget.style.background='#EFF6FF'}>
-                          Columns
-                        </button>
-                        <button
-                          onClick={()=>{setTableStatus(p=>({...p,[t.name]:'idle'}));setTableMsg(p=>({...p,[t.name]:''}));}}
+                          onClick={()=>{
+                            fetch(`${API}/p2p/transform/clear_table?table_name=${t.name}&username=${encodeURIComponent(currentUser||'Unknown')}`, { method: 'DELETE' }).catch(console.error);
+                            setTableStatus(p=>({...p,[t.name]:'idle'}));
+                            setTableMsg(p=>({...p,[t.name]:''}));
+                            setSelectedFiles(p=>{const copy={...p};delete copy[t.name];return copy;});
+                            setAppliedMappings(p=>{const copy={...p};delete copy[t.name];return copy;});
+                            if(fileRefs.current[t.name]?.current) fileRefs.current[t.name].current.value='';
+                          }}
                           title='Clear to re-upload'
                           style={{display:'flex',alignItems:'center',justifyContent:'center',
                             width:18,height:18,borderRadius:'50%',border:'1.5px solid #FCA5A5',
@@ -1957,7 +1941,7 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
           </div>
           <div style={{marginTop:16,display:'flex',alignItems:'center',gap:12,justifyContent:'space-between',flexWrap:'wrap'}}>
             <div style={{fontSize:12,color:allDone?'#107C10':'#94a3b8',fontWeight:allDone?700:400}}>
-              {allDone?'✓ All 5 tables uploaded — ready to build':`${tables.filter(t=>tableStatus[t.name]==='done').length} / ${tables.length} tables uploaded`}
+              {allDone?'✓ Mandatory tables uploaded — ready to build':`${tables.filter(t=>tableStatus[t.name]==='done').length} / ${tables.length} tables uploaded`}
             </div>
             <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
               {buildMsg&&<div style={{fontSize:12,color:buildMsg.startsWith('Error')?'#D13438':'#107C10',fontWeight:600}}>{buildMsg}</div>}
@@ -2042,16 +2026,20 @@ const UploadBanner=React.memo(({onUploaded,serverOk,onLoadingChange,currentUser,
   const [dragging,setDragging]=useState(false);
   const [status,setStatus]=useState('idle');
   const [msg,setMsg]=useState('');
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [colMapping, setColMapping] = useState(null);
   const inputRef=useRef();
 
-  const doUpload=async(file)=>{
+  const doUpload=async(file, mapping={})=>{
     if(!file) return;
     if(!file.name.toLowerCase().endsWith('.csv')){setStatus('error');setMsg('Only .csv files accepted.');return;}
     setStatus('uploading');setMsg('');
+    setSelectedFile(file);
     onLoadingChange(true,10,'Processing Data...');
     const form=new FormData();
     form.append('file',file);
     form.append('username',currentUser);
+    form.append('column_mapping', JSON.stringify(mapping));
     let prog=10;
     const ticker=setInterval(()=>{prog=Math.min(prog+Math.random()*12,88);onLoadingChange(true,prog,'Analysing Data...');},400);
     try{
@@ -2062,7 +2050,12 @@ const UploadBanner=React.memo(({onUploaded,serverOk,onLoadingChange,currentUser,
       onLoadingChange(true,100,'Dashboard Created');
       setTimeout(()=>{setStatus('done');setMsg(`✓ ${Number(d.rows).toLocaleString()} rows · ${Number(d.unique_cases).toLocaleString()} unique cases`);onUploaded();},800);
     }catch(e){
-      clearInterval(ticker);onLoadingChange(false,0,'');setStatus('error');setMsg(`Error: ${e.message}`);
+      clearInterval(ticker);onLoadingChange(false,0,'');
+      if (e.message.includes('Column mapping is incorrect')) {
+        onUploaded();
+      } else {
+        setStatus('error');setMsg(`Error: ${e.message}`);
+      }
     }finally{
       if(inputRef.current) inputRef.current.value='';
     }
@@ -2119,8 +2112,101 @@ const UploadBanner=React.memo(({onUploaded,serverOk,onLoadingChange,currentUser,
       {col:'Invoice Creation User',     desc:'Invoice posting user',                      req:false},
     ];
     const csvUploads=(myFiles||[]).filter(f=>!f.source||f.source==='csv_upload');
+
+    const handleMapCsvColumns = async () => {
+      if (!selectedFile) return;
+      const formPreview=new FormData();
+      formPreview.append('file',selectedFile);
+      try{
+        const rPrev=await fetch(`${API}/p2p/transform/preview_columns`,{method:'POST',body:formPreview});
+        const dPrev=await rPrev.json();
+        if(!rPrev.ok) throw new Error(dPrev.detail||`Failed to read CSV columns`);
+        setColMapping({ file: selectedFile, tableDef: { name: 'Pre-built CSV', required: SCHEMA_COLS.map(c=>({ col: c.col, note: c.desc })) }, uploadedCols: dPrev.columns, mapping: {} });
+      }catch(e){
+        setStatus('error');
+        setMsg(e.message);
+      }
+    };
+
     return(
       <div style={{display:'flex',flexDirection:'column',gap:16,padding:'20px 14px'}}>
+        {/* ══ Column Mapping Modal (CSV) ══════════════════════════════════════════════ */}
+        {colMapping&&(
+          <div style={{position:'fixed',inset:0,zIndex:9999,background:'rgba(0,0,0,0.5)',
+            display:'flex',alignItems:'center',justifyContent:'center',padding:16}}
+            onClick={()=>setColMapping(null)}>
+            <div style={{background:'#fff',borderRadius:12,width:'100%',maxWidth:700,
+              maxHeight:'88vh',display:'flex',flexDirection:'column',
+              boxShadow:'0 24px 64px rgba(0,0,0,0.35)'}}
+              onClick={e=>e.stopPropagation()}>
+              <div style={{padding:'20px 24px 16px',borderBottom:'1px solid #E2E8F0',flexShrink:0}}>
+                <div style={{fontSize:10,fontWeight:700,color:'#DC2626',textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>Column Mapping</div>
+                <div style={{fontSize:17,fontWeight:700,color:'#1e293b'}}>Map Columns for {colMapping.tableDef.name}</div>
+                <div style={{fontSize:12,color:'#64748b',marginTop:3}}> Select which columns from your file correspond to the required/optional fields.</div>
+              </div>
+              
+              <div style={{overflowY:'auto',flex:1,padding:'0 0 8px'}}>
+                <table style={{width:'100%',borderCollapse:'collapse',fontSize:12}}>
+                  <thead style={{position:'sticky',top:0,zIndex:2}}>
+                    <tr style={{background:'#F8FAFC'}}>
+                      <th style={{padding:'10px 16px',textAlign:'left',fontWeight:700,color:'#64748b',fontSize:10,textTransform:'uppercase',letterSpacing:0.8,borderBottom:'2px solid #E2E8F0',width:'35%'}}>Column</th>
+                      <th style={{padding:'10px 12px',textAlign:'left',fontWeight:700,color:'#64748b',fontSize:10,textTransform:'uppercase',letterSpacing:0.8,borderBottom:'2px solid #E2E8F0',width:'35%'}}>Map to File Column</th>
+                      <th style={{padding:'10px 12px',textAlign:'left',fontWeight:700,color:'#64748b',fontSize:10,textTransform:'uppercase',letterSpacing:0.8,borderBottom:'2px solid #E2E8F0'}}>Purpose</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {colMapping.tableDef.required.map((r,i)=>{
+                      const reqCol = r.col;
+                      const autoMatch = colMapping.uploadedCols.find(c=>c.toUpperCase()===reqCol.toUpperCase());
+                      const selected = colMapping.mapping[reqCol] !== undefined ? colMapping.mapping[reqCol] : (autoMatch || '');
+                      return(
+                        <tr key={reqCol} style={{borderBottom:'1px solid #F1F5F9'}}>
+                          <td style={{padding:'10px 16px',fontFamily:'monospace',fontWeight:700,color:'#334155',fontSize:13}}>{reqCol}</td>
+                          <td style={{padding:'10px 12px'}}>
+                            <select 
+                              value={selected} 
+                              onChange={e=>setColMapping(p=>({...p, mapping:{...p.mapping, [reqCol]: e.target.value}}))}
+                              style={{width:'100%',padding:'6px 8px',borderRadius:4,border:'1px solid #CBD5E1',background:'#fff',fontSize:12,color:'#334155'}}
+                            >
+                              <option value="">-- Leave Blank / Unmapped --</option>
+                              {colMapping.uploadedCols.map(c=>(
+                                <option key={c} value={c}>{c}</option>
+                              ))}
+                            </select>
+                          </td>
+                          <td style={{padding:'10px 12px',color:'#64748b',fontSize:11,lineHeight:1.4}}>{r.note}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <div style={{padding:'14px 20px',borderTop:'1px solid #E2E8F0',flexShrink:0,display:'flex',justifyContent:'flex-end',gap:12}}>
+                <button onClick={()=>setColMapping(null)}
+                  style={{padding:'8px 16px',background:'#fff',color:'#64748b',border:'1px solid #CBD5E1',borderRadius:6,fontSize:13,fontWeight:700,cursor:'pointer'}}>
+                  Cancel
+                </button>
+                <button 
+                  onClick={()=>{
+                    const finalMapping = {};
+                    colMapping.tableDef.required.forEach(r => {
+                        const autoMatch = colMapping.uploadedCols.find(c=>c.toUpperCase()===r.col.toUpperCase());
+                        const sel = colMapping.mapping[r.col] !== undefined ? colMapping.mapping[r.col] : (autoMatch || '');
+                        if (sel && sel !== r.col) {
+                            finalMapping[sel] = r.col;
+                        }
+                    });
+                    setColMapping(null);
+                    doUpload(colMapping.file, finalMapping);
+                  }}
+                  style={{padding:'8px 16px',background:'#0078D4',color:'#fff',border:'none',borderRadius:6,fontSize:13,fontWeight:700,cursor:'pointer'}}>
+                  Confirm Mapping & Upload
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         {/* Back + status */}
         <div style={{display:'flex',alignItems:'center',gap:10}}>
           <button onClick={()=>setStep('info')}
@@ -2140,57 +2226,51 @@ const UploadBanner=React.memo(({onUploaded,serverOk,onLoadingChange,currentUser,
           </div>
         </div>
 
-        {/* Schema panel */}
-        <div style={{background:'#fff',border:'1px solid #E2E8F0',borderRadius:10,padding:'16px 18px',boxShadow:'0 2px 6px rgba(0,0,0,0.04)'}}>
-          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12,flexWrap:'wrap',gap:6}}>
-            <div style={{fontSize:11,fontWeight:700,color:'#64748b',textTransform:'uppercase',letterSpacing:0.8}}>
-              Required Columns
-            </div>
-            <div style={{fontSize:11,color:'#94a3b8'}}>
-              One row per <strong style={{color:'#475569'}}>UniqueID_PO</strong> · Dates in <strong style={{color:'#475569'}}>YYYY-MM-DD</strong>
-            </div>
-          </div>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4}}>
-            {SCHEMA_COLS.map(({col,desc,req})=>(
-              <div key={col} style={{display:'flex',alignItems:'flex-start',gap:7,padding:'5px 9px',borderRadius:5,
-                background:req?'#F0FBF4':'#F8FAFC',border:`1px solid ${req?'#B7E4C7':'#E2E8F0'}`}}>
-                <span style={{fontSize:9,fontWeight:800,padding:'2px 5px',borderRadius:8,marginTop:2,
-                  whiteSpace:'nowrap',flexShrink:0,background:req?'#006B3C':'#94a3b8',color:'#fff'}}>
-                  {req?'REQ':'OPT'}
-                </span>
-                <div>
-                  <div style={{fontSize:11,fontWeight:700,color:'#1e293b',fontFamily:'monospace'}}>{col}</div>
-                  <div style={{fontSize:10,color:'#64748b',lineHeight:1.3}}>{desc}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
 
         {/* Drop zone */}
         <div onDragOver={e=>{e.preventDefault();setDragging(true);}}
           onDragLeave={()=>setDragging(false)}
-          onDrop={e=>{e.preventDefault();setDragging(false);doUpload(e.dataTransfer.files[0]);}}
+          onDrop={e=>{e.preventDefault();setDragging(false);const f=e.dataTransfer.files[0]; if(f){setSelectedFile(f);setStatus('idle');setMsg('');}}}
           onClick={()=>{if(status!=='uploading'&&inputRef.current){inputRef.current.value='';inputRef.current.click();}}}
           style={{border:`2px dashed ${bc}`,borderRadius:8,padding:'14px 24px',background:bg,
             cursor:'pointer',textAlign:'center',transition:'all .2s',
-            display:'flex',alignItems:'center',justifyContent:'center',gap:14}}>
-          <input ref={inputRef} type="file" accept=".csv" style={{display:'none'}} onChange={e=>doUpload(e.target.files[0])}/>
-          <div style={{fontSize:22,fontWeight:'bold',color:status==='done'?'#107C10':status==='error'?'#D13438':'#0078D4'}}>
-            {status==='done'?'✓':status==='error'?'✕':'⬆'}
-          </div>
-          <div style={{textAlign:'left'}}>
-            <div style={{fontSize:13,fontWeight:700,color:'#323130'}}>
-              {status==='idle'?'Click or drag & drop a CSV file here':status==='done'?'File loaded!':'Upload failed'}
+            display:'flex',alignItems:'center',justifyContent:'center',gap:14,flexDirection:selectedFile?'column':'row'}}>
+          <input ref={inputRef} type="file" accept=".csv" style={{display:'none'}} onChange={e=>{const f=e.target.files[0]; if(f){setSelectedFile(f);setStatus('idle');setMsg('');}}}/>
+          
+          <div style={{display:'flex',alignItems:'center',gap:14}}>
+            <div style={{fontSize:22,fontWeight:'bold',color:status==='done'?'#107C10':status==='error'?'#D13438':'#0078D4'}}>
+              {status==='done'?'✓':status==='error'?'✕':'⬆'}
             </div>
-            <div style={{fontSize:11,color:C.slate,marginTop:2}}>{msg||'Wide-format or KNIME long-format CSV accepted'}</div>
+            <div style={{textAlign:'left'}}>
+              <div style={{fontSize:13,fontWeight:700,color:'#323130'}}>
+                {selectedFile?selectedFile.name:status==='idle'?'Click or drag & drop a CSV file here':status==='done'?'File loaded!':'Upload failed'}
+              </div>
+              <div style={{fontSize:11,color:C.slate,marginTop:2}}>{msg||'Wide-format or KNIME long-format CSV accepted'}</div>
+            </div>
           </div>
-          {status==='done'&&(
-            <button onClick={e=>{e.stopPropagation();setStatus('idle');setMsg('');}}
-              style={{fontSize:11,padding:'4px 10px',background:'#fff',marginLeft:8,
-                border:`1px solid ${C.border}`,borderRadius:4,cursor:'pointer',color:C.slate}}>
-              Replace
-            </button>
+
+          {selectedFile && status !== 'uploading' && (
+            <div style={{display: 'flex', gap: 12, marginTop: 4}}>
+              <button onClick={e=>{e.stopPropagation(); handleMapCsvColumns();}}
+                style={{fontSize:12,padding:'8px 16px',background:'#EFF6FF',color:'#1D4ED8',
+                  border:'1px solid #93C5FD',borderRadius:6,cursor:'pointer',fontWeight:700}}
+                onMouseOver={e=>e.currentTarget.style.background='#DBEAFE'}
+                onMouseOut={e=>e.currentTarget.style.background='#EFF6FF'}>
+                Map Columns
+              </button>
+              <button onClick={e=>{e.stopPropagation(); doUpload(selectedFile, {});}}
+                style={{fontSize:12,padding:'8px 16px',background:'#0078D4',color:'#fff',
+                  border:'none',borderRadius:6,cursor:'pointer',fontWeight:700}}
+                onMouseOver={e=>e.currentTarget.style.background='#005A9E'}
+                onMouseOut={e=>e.currentTarget.style.background='#0078D4'}>
+                Upload
+              </button>
+              <button onClick={e=>{e.stopPropagation();setStatus('idle');setMsg('');setSelectedFile(null);}}
+                style={{fontSize:12,padding:'8px 16px',background:'#fff',
+                  border:`1px solid ${C.border}`,borderRadius:6,cursor:'pointer',color:C.slate}}>
+                Clear
+              </button>
+            </div>
           )}
         </div>
 
@@ -2247,6 +2327,18 @@ const UploadBanner=React.memo(({onUploaded,serverOk,onLoadingChange,currentUser,
   }
 });
 
+
+const EmptyState = ({ condition, message, children, action }) => {
+  if (!condition) return children;
+  return (
+    <div style={{display:'flex', alignItems:'center', justifyContent:'center', height:'300px', 
+      background:'#F8FAFC', borderRadius:'6px', border:'1px dashed #CBD5E1', color:'#64748b', fontSize:'13px', padding:'20px', textAlign:'center', flexDirection:'column', gap:'12px'}}>
+      <div style={{fontSize:'28px', opacity:0.8}}>📉</div>
+      <div style={{fontWeight:600, maxWidth:'250px'}}>{message}</div>
+      {action}
+    </div>
+  );
+};
 
 /* ════════════════════════════════════════════
    MAIN APP
@@ -2474,7 +2566,7 @@ export default function P2PDashboard({ currentUser, onSignOut, onBackHome }){
     const obj=(u,s)=>fetch(u).then(r=>r.ok?r.json():null).then(d=>s(d&&typeof d==='object'&&!Array.isArray(d)?d:null)).catch(()=>s(null));
 
     const promises = [
-      obj(`${API}/p2p/kpis${cq}`,            setKpis),
+      fetch(`${API}/p2p/kpis${cq}`).then(r=>{if(!r.ok)return{total_cases:0};return r.json();}).then(d=>setKpis(d)).catch(()=>setKpis({total_cases:0})),
       arr(`${API}/p2p/charts/activity${cq}`, setActData),
       arr(`${API}/p2p/charts/monthly${cq}`,  setMonData),
       arr(`${API}/p2p/charts/company${cq}`,  setCompData),
@@ -2705,7 +2797,12 @@ export default function P2PDashboard({ currentUser, onSignOut, onBackHome }){
                handleLoadOldFile={handleLoadOldFile}/>
         )}
 
-        {dataLoaded && (<>
+        {dataLoaded && kpis && kpis.total_cases === 0 && (
+          <EmptyState condition={true} message="Column mapping is not correct." action={
+            <button onClick={handleResetData} style={{padding:'8px 16px',background:'#0078D4',color:'#fff',border:'none',borderRadius:6,fontWeight:700,cursor:'pointer'}}>Fix Mapping / Upload New File</button>
+          } />
+        )}
+        {dataLoaded && !(kpis && kpis.total_cases === 0) && (<>
           <div style={{background:C.card,borderRadius:8,padding:'10px 14px',
             border:`1px solid ${C.border}`,boxShadow:'0 2px 6px rgba(0,0,0,.04)'}}>
             
@@ -2764,7 +2861,8 @@ export default function P2PDashboard({ currentUser, onSignOut, onBackHome }){
           </div>
 
           {kpis&&(<>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:8}}>
+            <EmptyState condition={kpis.total_cases === 0} message="No valid cases found. The column mapping may be incorrect. Please check your mapping and rebuild the event log.">
+              <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:8}}>
               <KpiCard label="Cases"                 value={kpis.total_cases}          color="#6a3382" tooltip={kpiTooltips.total_cases}/>
               <KpiCard label="PO Created"            value={kpis.po_created}           color="#6a3382" tooltip={kpiTooltips.po_created}/>
               <KpiCard label="GR Postings"           value={kpis.gr_postings}          color="#6a3382" tooltip={kpiTooltips.gr_postings}/>
@@ -2781,6 +2879,7 @@ export default function P2PDashboard({ currentUser, onSignOut, onBackHome }){
               <ConfKpiCard label="GR Without Invoice"    value={kpis.gr_no_invoice}   color="#6a3382" sub="GR not yet invoiced"     tooltip={kpiTooltips.gr_no_invoice}/>
               <ConfKpiCard label="Invoice Without GR"    value={kpis.inv_no_gr}       color="#6a3382" sub="Invoice before GR"       tooltip={kpiTooltips.inv_no_gr}/>
             </div>
+            </EmptyState>
           </>)}
 
           {activeTab === 'process' && (
@@ -2927,19 +3026,27 @@ export default function P2PDashboard({ currentUser, onSignOut, onBackHome }){
                 <div style={{display:'grid', gridTemplateColumns:'repeat(2, 1fr)', gap:10}}>
                   
                   <ChartCard title="PO Reversals by ERNAM" subtitle="Users reversing the most POs" loading={dashboardLoading} highlighted={crossFilter?.type==='ernam'} onClear={clearCF}>
-                    <ScrollableHBarChart data={poRevErnam} dataKey="count" labelKey="ernam" color="#5aabee" crossFilter={crossFilter} crossKey="ernam" onSelect={handleSelect}/>
+                    <EmptyState condition={!dashboardLoading && poRevErnam.length === 0} message="No PO reversals found.">
+                      <ScrollableHBarChart data={poRevErnam} dataKey="count" labelKey="ernam" color="#5aabee" crossFilter={crossFilter} crossKey="ernam" onSelect={handleSelect}/>
+                    </EmptyState>
                   </ChartCard>
 
                   <ChartCard title="PO Reversals Timeline" subtitle="Trend of PO reversals over time" loading={dashboardLoading}>
-                    <MonthlyChart data={poRevTimeline} crossFilter={crossFilter} onSelect={handleSelect}/>
+                    <EmptyState condition={!dashboardLoading && poRevTimeline.length === 0} message="No PO reversals found.">
+                      <MonthlyChart data={poRevTimeline} crossFilter={crossFilter} onSelect={handleSelect}/>
+                    </EmptyState>
                   </ChartCard>
 
                   <ChartCard title="Late PR Reversals (By ERNAM)" subtitle="PRs reversed AFTER PO creation" loading={dashboardLoading} highlighted={crossFilter?.type==='ernam'} onClear={clearCF}>
-                    <ScrollableHBarChart data={prRevAfterPo} dataKey="count" labelKey="ernam" color="#CA5010" crossFilter={crossFilter} crossKey="ernam" onSelect={handleSelect}/>
+                    <EmptyState condition={!dashboardLoading && prRevAfterPo.length === 0} message="No late PR reversals found (or Requisition data is not uploaded).">
+                      <ScrollableHBarChart data={prRevAfterPo} dataKey="count" labelKey="ernam" color="#CA5010" crossFilter={crossFilter} crossKey="ernam" onSelect={handleSelect}/>
+                    </EmptyState>
                   </ChartCard>
 
                   <ChartCard title="PO created AFTER GR or Invoice (By ERNAM)" loading={dashboardLoading} highlighted={crossFilter?.type==='ernam'} onClear={clearCF}>
-                    <ScrollableHBarChart data={seqViolation} dataKey="count" labelKey="ernam" color="#1aca60" crossFilter={crossFilter} crossKey="ernam" onSelect={handleSelect}/>
+                    <EmptyState condition={!dashboardLoading && seqViolation.length === 0} message="No sequence violations found (or GR/Invoice data is not uploaded).">
+                      <ScrollableHBarChart data={seqViolation} dataKey="count" labelKey="ernam" color="#1aca60" crossFilter={crossFilter} crossKey="ernam" onSelect={handleSelect}/>
+                    </EmptyState>
                   </ChartCard>
 
                 </div>
@@ -2948,7 +3055,9 @@ export default function P2PDashboard({ currentUser, onSignOut, onBackHome }){
               {/* --- PO Reversals by Purchasing Group — full width vertical scrollable bar --- */}
               <div style={{marginTop: '2px'}}>
                 <ChartCard title="PO Reversals by Purchasing Group" subtitle="Purchasing groups with the most PO reversal activity — click a bar to filter" loading={dashboardLoading} highlighted={crossFilter?.type==='purch_group'} onClear={clearCF}>
-                  <RevByPurchGroupVBarChart data={revByPurchGroup} crossFilter={crossFilter} onSelect={handleSelect} />
+                  <EmptyState condition={!dashboardLoading && revByPurchGroup.length === 0} message="No PO reversals found.">
+                    <RevByPurchGroupVBarChart data={revByPurchGroup} crossFilter={crossFilter} onSelect={handleSelect} />
+                  </EmptyState>
                 </ChartCard>
               </div>
               
@@ -3016,13 +3125,17 @@ export default function P2PDashboard({ currentUser, onSignOut, onBackHome }){
               <ChartCard title="Purchasing Group Workload (EKGRP)" subtitle="Cases handled per purchasing group — click a bar to filter"
                 loading={dashboardLoading}
                 highlighted={crossFilter?.type==='purch_group'} onClear={clearCF}>
-                <PurchGroupWorkloadChart data={purchGroupWorkload} crossFilter={crossFilter} onSelect={handleSelect} />
+                <EmptyState condition={!dashboardLoading && purchGroupWorkload.length === 0} message="No workload data found.">
+                  <PurchGroupWorkloadChart data={purchGroupWorkload} crossFilter={crossFilter} onSelect={handleSelect} />
+                </EmptyState>
               </ChartCard>
 
               <ChartCard title="Avg Days PO → GR by Vendor"
                 loading={dashboardLoading}
                 highlighted={crossFilter?.type==='vendor'} onClear={clearCF}>
-                <VendorAvgDaysChart data={vendorLeadTime} crossFilter={crossFilter} onSelect={handleSelect} />
+                <EmptyState condition={!dashboardLoading && vendorLeadTime.length === 0} message="No GR data found to calculate lead time.">
+                  <VendorAvgDaysChart data={vendorLeadTime} crossFilter={crossFilter} onSelect={handleSelect} />
+                </EmptyState>
               </ChartCard>
             </div>
           )}
