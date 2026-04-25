@@ -331,12 +331,22 @@ def load_specific_file(req: LoadFileReq):
         raise HTTPException(500, f"Failed to load file: {e}")
 
 @router.post("/upload")
-async def upload_csv(file: UploadFile = File(...), username: str = Form("Unknown")):
+async def upload_csv(file: UploadFile = File(...), username: str = Form("Unknown"), column_mapping: str = Form("{}")):
     if not file.filename.lower().endswith(".csv"):
         raise HTTPException(400, "Only CSV files are supported")
     content = await file.read()
     try:
         df = pd.read_csv(io.BytesIO(content), low_memory=False)
+        
+        try:
+            import json
+            mapping = json.loads(column_mapping)
+            if mapping:
+                df = df.rename(columns=mapping)
+                print(f"Applied column mapping for prebuilt CSV: {mapping}")
+        except Exception as e:
+            print(f"Error applying column mapping: {e}")
+
         print(f"[O2C INFO] {username} uploaded {file.filename}: {len(df):,} rows")
     except Exception as e:
         raise HTTPException(400, f"Failed to read CSV: {e}")
