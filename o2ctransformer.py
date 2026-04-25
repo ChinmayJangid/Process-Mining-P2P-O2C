@@ -55,6 +55,7 @@ o2c_transformer_router = APIRouter(prefix="/o2c/transform", tags=["O2C-Transform
 
 O2C_RAW_TABLES: dict = {}
 EXPECTED_TABLES = ["VBAK", "VBAP", "VBFA", "LIKP", "LIPS", "VBRK", "VBRP", "BSAD", "KNA1"]
+REQUIRED_TABLES = ["VBAK", "VBAP"]
 
 # Minimum required columns for each SAP table — used to validate uploads
 REQUIRED_COLS = {
@@ -294,7 +295,7 @@ def _run_o2c_pipeline(tables: dict, username: str) -> pd.DataFrame:
     # ═══════════════════════════════════════════════════════════════════════
     # VBFA  — ColFilter#15 → StringManip#24/#25 → three branch splits
     # ═══════════════════════════════════════════════════════════════════════
-    vbfa = tables["VBFA"].copy()
+    vbfa = tables["VBFA"].copy() if "VBFA" in tables else pd.DataFrame(columns=["VBELV", "POSNV", "VBELN", "POSNN", "VBTYP_N", "ERDAT", "ERZET"])
     _log(f"VBFA raw: {len(vbfa):,}")
 
     vbfa = _keep_cols(vbfa, ["VBELV","POSNV","VBELN","POSNN","VBTYP_N","ERDAT"])
@@ -361,7 +362,7 @@ def _run_o2c_pipeline(tables: dict, username: str) -> pd.DataFrame:
     # LIKP  — ColFilter#16 → ColRenamer#26
     # Joiner#51: left VBELN (delivery header from VBFA) = right Delivery Document number
     # ═══════════════════════════════════════════════════════════════════════
-    likp = tables["LIKP"].copy()
+    likp = tables["LIKP"].copy() if "LIKP" in tables else pd.DataFrame(columns=["VBELN", "ERDAT", "WADAT_IST", "ERNAM", "WADAT"])
     _log(f"LIKP raw: {len(likp):,}")
 
     likp = _keep_cols(likp, ["VBELN","ERDAT","WADAT_IST","ERNAM","WADAT"])
@@ -389,7 +390,7 @@ def _run_o2c_pipeline(tables: dict, username: str) -> pd.DataFrame:
     # LIPS  — ColFilter#17 → ColRenamer#27 → StringManip#28
     # Joiner#52: Subsequent Document = Delivery Document (VBELN+POSNR)
     # ═══════════════════════════════════════════════════════════════════════
-    lips = tables["LIPS"].copy()
+    lips = tables["LIPS"].copy() if "LIPS" in tables else pd.DataFrame(columns=["VBELN", "POSNR", "MATNR", "LFIMG", "WERKS"])
     _log(f"LIPS raw: {len(lips):,}")
 
     lips = _keep_cols(lips, ["VBELN","POSNR","MATNR","LFIMG","WERKS"])
@@ -497,7 +498,7 @@ def _run_o2c_pipeline(tables: dict, username: str) -> pd.DataFrame:
     # VBRK  — ColFilter#19 → ColRenamer#29
     # Joiner#57: VBELN_inv (billing VBELN from VBFA-Invoice) = Billing Document Number
     # ═══════════════════════════════════════════════════════════════════════
-    vbrk = tables["VBRK"].copy()
+    vbrk = tables["VBRK"].copy() if "VBRK" in tables else pd.DataFrame(columns=["VBELN", "ERDAT", "ERNAM", "FKTYP", "FKART"])
     _log(f"VBRK raw: {len(vbrk):,}")
 
     vbrk = _keep_cols(vbrk, ["VBELN","ERDAT","ERNAM","FKTYP","FKART"])
@@ -525,7 +526,7 @@ def _run_o2c_pipeline(tables: dict, username: str) -> pd.DataFrame:
     # VBRP  — ColFilter#20 → ColRenamer#30 → StringManip#31
     # Joiner#59: Subsequent Document (Invoice) = Billing Document (VBELN+POSNR)
     # ═══════════════════════════════════════════════════════════════════════
-    vbrp = tables["VBRP"].copy()
+    vbrp = tables["VBRP"].copy() if "VBRP" in tables else pd.DataFrame(columns=["VBELN", "POSNR", "MATNR", "FKIMG", "NETWR"])
     _log(f"VBRP raw: {len(vbrp):,}")
 
     vbrp = _keep_cols(vbrp, ["VBELN","POSNR","MATNR","FKIMG","NETWR"])
@@ -561,7 +562,7 @@ def _run_o2c_pipeline(tables: dict, username: str) -> pd.DataFrame:
     # BSAD  — ColRenamer#32
     # Joiner#60: Billing Document Number (left) = Billing Document (BSAD.VBELN)
     # ═══════════════════════════════════════════════════════════════════════
-    bsad = tables["BSAD"].copy()
+    bsad = tables["BSAD"].copy() if "BSAD" in tables else pd.DataFrame(columns=["VBELN", "AUGDT", "DMBTR", "AUGBL", "BUKRS", "KUNNR"])
     _log(f"BSAD raw: {len(bsad):,}")
 
     bsad = bsad.rename(columns={
@@ -603,7 +604,7 @@ def _run_o2c_pipeline(tables: dict, username: str) -> pd.DataFrame:
     # ═══════════════════════════════════════════════════════════════════════
     # KNA1  — ValueLookup#74: KUNNR → NAME1
     # ═══════════════════════════════════════════════════════════════════════
-    kna1 = tables["KNA1"].copy()
+    kna1 = tables["KNA1"].copy() if "KNA1" in tables else pd.DataFrame(columns=["KUNNR", "NAME1"])
     if "KUNNR" in kna1.columns and "NAME1" in kna1.columns:
         kna1["KUNNR"] = _norm_num(kna1["KUNNR"])
         kna1_lookup = (kna1[["KUNNR","NAME1"]]
@@ -646,11 +647,27 @@ def _run_o2c_pipeline(tables: dict, username: str) -> pd.DataFrame:
 
 # ─── FastAPI Endpoints ────────────────────────────────────────────────────────
 
+@o2c_transformer_router.post("/preview_columns")
+async def preview_columns(file: UploadFile = File(...)):
+    raw = await file.read()
+    df = None
+    for enc in ("utf-8", "latin-1", "windows-1252"):
+        try:
+            df = pd.read_csv(io.BytesIO(raw), encoding=enc, low_memory=False)
+            break
+        except Exception:
+            continue
+    if df is None:
+        raise HTTPException(400, "Could not decode CSV")
+    return {"status": "ok", "columns": list(df.columns)}
+
+
 @o2c_transformer_router.post("/upload_table")
 async def upload_o2c_table(
     file: UploadFile = File(...),
     table_name: str = Form(...),
     username: str = Form("Unknown"),
+    column_mapping: str = Form("{}"),
 ):
     table_name = table_name.strip().upper()
 
@@ -679,19 +696,25 @@ async def upload_o2c_table(
     if df is None:
         raise HTTPException(400, "Could not decode CSV — try saving as UTF-8.")
 
+    # Apply Column Mapping if provided
+    try:
+        import json
+        mapping = json.loads(column_mapping)
+        if mapping:
+            df = df.rename(columns=mapping)
+            _log(f"Applied column mapping for {table_name}: {mapping}")
+    except Exception as e:
+        _log(f"Error applying column mapping: {e}")
+
     # Normalise column names: strip whitespace
-    df.columns = [c.strip() for c in df.columns]
+    df.columns = [str(c).strip() for c in df.columns]
 
     # ── 4. Validate required columns ─────────────────────────────────────────
     required = REQUIRED_COLS.get(table_name, set())
     uploaded_cols = {c.upper() for c in df.columns}
     missing = {c for c in required if c.upper() not in uploaded_cols}
     if missing:
-        raise HTTPException(400,
-            f"Wrong file for '{table_name}'. "
-            f"Missing required columns: {sorted(missing)}. "
-            f"Please upload the correct SAP '{table_name}' table."
-        )
+        _log(f"Warning: Uploaded '{table_name}' is missing required columns: {sorted(missing)}.")
 
     # ── 5. Store ──────────────────────────────────────────────────────────────
     if username not in O2C_RAW_TABLES:
@@ -707,22 +730,30 @@ def o2c_transform_status(username: str = Query("Unknown")):
     return {
         "uploaded": list(tables.keys()),
         "missing":  [t for t in EXPECTED_TABLES if t not in tables],
-        "ready":    all(t in tables for t in EXPECTED_TABLES),
+        "ready":    all(t in tables for t in REQUIRED_TABLES),
     }
+
+
+@o2c_transformer_router.delete("/clear_table")
+def clear_table(table_name: str, username: str = Query("Unknown")):
+    table_name = table_name.strip().upper()
+    if username in O2C_RAW_TABLES and table_name in O2C_RAW_TABLES[username]:
+        del O2C_RAW_TABLES[username][table_name]
+    return {"status": "ok", "message": f"{table_name} cleared"}
 
 
 @o2c_transformer_router.post("/build")
 def build_o2c_event_log(username: str = Query("Unknown")):
     tables  = O2C_RAW_TABLES.get(username, {})
-    missing = [t for t in EXPECTED_TABLES if t not in tables]
-    if missing:
-        raise HTTPException(400, f"Missing tables: {missing}")
+    missing_req = [t for t in REQUIRED_TABLES if t not in tables]
+    if missing_req:
+        raise HTTPException(400, f"Missing required tables: {missing_req}")
 
     try:
         result_df = _run_o2c_pipeline(tables, username)
     except Exception as e:
         _log(f"Pipeline failed for '{username}': {e}\n{traceback.format_exc()}")
-        raise HTTPException(500, f"O2C Transform pipeline error: {e}")
+        raise HTTPException(status_code=400, detail="Column mapping is incorrect. Failed to process data.")
 
     from o2c4 import USER_DFS, process_df, log_audit, COL_CASE
 
