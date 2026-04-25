@@ -126,6 +126,7 @@ warnings.filterwarnings("ignore")
 transformer_router = APIRouter(prefix="/p2p/transform", tags=["P2P Transformer"])
 RAW_TABLES: dict[str, dict[str, pd.DataFrame]] = {}
 EXPECTED_TABLES = {"EKKO", "EKPO", "EBAN", "EKBE", "LFA1"}
+REQUIRED_TABLES = {"EKKO", "EKPO"}
 
 # Minimum required columns for each SAP table — used to validate uploads
 REQUIRED_COLS = {
@@ -200,7 +201,18 @@ def transform_status(username: str = Query("Unknown")):
     tables = RAW_TABLES.get(username, {})
     loaded  = list(tables.keys())
     missing = [t for t in EXPECTED_TABLES if t not in tables]
-    return {"loaded": loaded, "missing": missing, "ready": len(missing) == 0}
+    missing_req = [t for t in REQUIRED_TABLES if t not in tables]
+    return {"loaded": loaded, "missing": missing, "ready": len(missing_req) == 0}
+
+
+@transformer_router.post("/preview_columns")
+async def preview_columns(file: UploadFile = File(...)):
+    raw = await file.read()
+    try:
+        df = _read_csv(raw, file.filename)
+        return {"status": "ok", "columns": list(df.columns)}
+    except Exception as e:
+        raise HTTPException(500, f"Failed to parse CSV: {e}")
 
 
 @transformer_router.post("/upload_table")
@@ -208,6 +220,7 @@ async def upload_raw_table(
     file: UploadFile = File(...),
     table_name: str = Form(...),
     username: str = Form("Unknown"),
+    column_mapping: str = Form("{}"),
 ):
     table_name = table_name.strip().upper()
 
@@ -234,19 +247,25 @@ async def upload_raw_table(
     except Exception as e:
         raise HTTPException(500, f"Failed to parse {file.filename}: {e}")
 
+    # Apply Column Mapping if provided
+    try:
+        import json
+        mapping = json.loads(column_mapping)
+        if mapping:
+            df = df.rename(columns=mapping)
+            _log(f"Applied column mapping for {table_name}: {mapping}")
+    except Exception as e:
+        _log(f"Error applying column mapping: {e}")
+
     # Normalise column names: strip whitespace
-    df.columns = [c.strip() for c in df.columns]
+    df.columns = [str(c).strip() for c in df.columns]
 
     # ── 4. Validate required columns ─────────────────────────────────────────
     required = REQUIRED_COLS.get(table_name, set())
     uploaded_cols = {c.upper() for c in df.columns}
     missing = {c for c in required if c.upper() not in uploaded_cols}
     if missing:
-        raise HTTPException(400,
-            f"Wrong file for '{table_name}'. "
-            f"Missing required columns: {sorted(missing)}. "
-            f"Please upload the correct SAP '{table_name}' table."
-        )
+        _log(f"Warning: Uploaded '{table_name}' is missing required columns: {sorted(missing)}.")
 
     # ── 5. Store ──────────────────────────────────────────────────────────────
     RAW_TABLES.setdefault(username, {})[table_name] = df
@@ -254,17 +273,25 @@ async def upload_raw_table(
     return {"status": "ok", "table": table_name, "rows": len(df), "columns": list(df.columns)}
 
 
+@transformer_router.delete("/clear_table")
+def clear_table(table_name: str, username: str = Query("Unknown")):
+    table_name = table_name.strip().upper()
+    if username in RAW_TABLES and table_name in RAW_TABLES[username]:
+        del RAW_TABLES[username][table_name]
+    return {"status": "ok", "message": f"{table_name} cleared"}
+
+
 @transformer_router.post("/build")
 def build_event_log(username: str = Query("Unknown")):
     tables = RAW_TABLES.get(username, {})
-    missing = [t for t in EXPECTED_TABLES if t not in tables]
-    if missing:
-        raise HTTPException(400, f"Missing tables: {missing}. Upload via /p2p/transform/upload_table first.")
+    missing_req = [t for t in REQUIRED_TABLES if t not in tables]
+    if missing_req:
+        raise HTTPException(400, f"Missing required tables: {missing_req}. Upload via /p2p/transform/upload_table first.")
     try:
         result_df = _run_pipeline(tables, username)
     except Exception as e:
         _log(f"Pipeline failed for '{username}': {e}\n{traceback.format_exc()}")
-        raise HTTPException(500, f"Transform pipeline error: {e}")
+        raise HTTPException(status_code=400, detail="Column mapping is incorrect. Failed to process data.")
 
     from p2p4 import (
         USER_DFS, process_df, log_audit,
@@ -378,10 +405,16 @@ def _run_pipeline(tables: dict[str, pd.DataFrame], username: str) -> pd.DataFram
     # ── Load raw tables ────────────────────────────────────────────────────────
     ekko = tables["EKKO"].copy()
     ekpo = tables["EKPO"].copy()
-    eban = tables["EBAN"].copy()
-    ekbe = tables["EKBE"].copy()
-    lfa1 = tables["LFA1"].copy()
-    _log(f"Input — EKKO:{len(ekko)} EKPO:{len(ekpo)} EBAN:{len(eban)} EKBE:{len(ekbe)} LFA1:{len(lfa1)}")
+    
+    eban = tables["EBAN"].copy() if "EBAN" in tables else None
+    ekbe = tables["EKBE"].copy() if "EKBE" in tables else None
+    lfa1 = tables["LFA1"].copy() if "LFA1" in tables else None
+    
+    counts = f"EKKO:{len(ekko)} EKPO:{len(ekpo)} " + \
+             f"EBAN:{len(eban) if eban is not None else 0} " + \
+             f"EKBE:{len(ekbe) if ekbe is not None else 0} " + \
+             f"LFA1:{len(lfa1) if lfa1 is not None else 0}"
+    _log(f"Input — {counts}")
 
     # ══════════════════════════════════════════════════════════════════════════
     # PO BRANCH:  EKKO (CSV#1) + EKPO (CSV#2)
@@ -478,55 +511,55 @@ def _run_pipeline(tables: dict[str, pd.DataFrame], username: str) -> pd.DataFram
     #   → Node #34 Column Renamer (BADAT→PR Creation, FRGDT→PR Release Date)
     # ══════════════════════════════════════════════════════════════════════════
 
-    # ── Node #12: Column Filter ───────────────────────────────────────────────
-    # 9 columns kept from EBAN:
-    col12 = [
-        "BANFN",            # PR number
-        "BNFPO",            # PR item
-        "LOEKZ",            # deletion flag
-        "ERNAM",            # PR creator (will clash with PO ERNAM → gets suffix "(EBAN)")
-        "ERDAT",            # PR creation date
-        "BADAT",            # PR requirement date → renamed "PR Creation"
-        "FRGDT",            # PR release date → renamed "PR Release Date"
-        "CREATIONDATE",     # will get suffix "(EBAN)"
-        "CREATIONTIME",     # will get suffix "(EBAN)"
-    ]
-    pr = _keep(eban, col12)
-    _log(f"#12 Column Filter EBAN: {len(pr)} rows, {len(pr.columns)} cols")
+    if eban is not None:
+        # ── Node #12: Column Filter ───────────────────────────────────────────────
+        # 9 columns kept from EBAN:
+        col12 = [
+            "BANFN",            # PR number
+            "BNFPO",            # PR item
+            "LOEKZ",            # deletion flag
+            "ERNAM",            # PR creator (will clash with PO ERNAM → gets suffix "(EBAN)")
+            "ERDAT",            # PR creation date
+            "BADAT",            # PR requirement date → renamed "PR Creation"
+            "FRGDT",            # PR release date → renamed "PR Release Date"
+            "CREATIONDATE",     # will get suffix "(EBAN)"
+            "CREATIONTIME",     # will get suffix "(EBAN)"
+        ]
+        pr = _keep(eban, col12)
+        _log(f"#12 Column Filter EBAN: {len(pr)} rows, {len(pr.columns)} cols")
 
-    # ── Node #13: Rule Engine — PR Reversal Date ──────────────────────────────
-    # Rule: $LOEKZ$ = "X" => $ERDAT$
-    # Comment in KNIME: "If the PR is flagged as deleted, grab the overwritten ERDAT date"
-    # append-column = true → new column "PR Reversal Date" appended
-    pr["PR Reversal Date"] = pr["ERDAT"].where(
-        _str(pr.get("LOEKZ", pd.Series(dtype=str, index=pr.index))) == "X"
-    )
-    _log(f"#13 PR Reversal Date: {pr['PR Reversal Date'].notna().sum()} non-null")
+        # ── Node #13: Rule Engine — PR Reversal Date ──────────────────────────────
+        # Rule: $LOEKZ$ = "X" => $ERDAT$
+        # Comment in KNIME: "If the PR is flagged as deleted, grab the overwritten ERDAT date"
+        # append-column = true → new column "PR Reversal Date" appended
+        pr["PR Reversal Date"] = pr["ERDAT"].where(
+            _str(pr.get("LOEKZ", pd.Series(dtype=str, index=pr.index))) == "X"
+        )
+        _log(f"#13 PR Reversal Date: {pr['PR Reversal Date'].notna().sum()} non-null")
 
-    # ── Node #19: String Manipulation — UniqueID_PR ───────────────────────────
-    # join(string($BANFN$), string($BNFPO$))
-    # Same zero-padding as PO branch so LEFT JOIN on UniqueID_PR matches correctly
-    pr["UniqueID_PR"] = _safe_join_key(pr["BANFN"], pr["BNFPO"],
-                                        pad1=10, pad2=5)
-    _log(f"#19 UniqueID_PR sample: {pr['UniqueID_PR'].dropna().head(3).tolist()}")
+        # ── Node #19: String Manipulation — UniqueID_PR ───────────────────────────
+        # join(string($BANFN$), string($BNFPO$))
+        # Same zero-padding as PO branch so LEFT JOIN on UniqueID_PR matches correctly
+        pr["UniqueID_PR"] = _safe_join_key(pr["BANFN"], pr["BNFPO"],
+                                            pad1=10, pad2=5)
+        _log(f"#19 UniqueID_PR sample: {pr['UniqueID_PR'].dropna().head(3).tolist()}")
 
-    # ── Node #34: Column Renamer ───────────────────────────────────────────────
-    # BADAT → "PR Creation",  FRGDT → "PR Release Date"
-    pr = pr.rename(columns={"BADAT": "PR Creation", "FRGDT": "PR Release Date"})
-    _log(f"#34 PR branch done: {len(pr)} rows, cols: {list(pr.columns)}")
+        # ── Node #34: Column Renamer ───────────────────────────────────────────────
+        # BADAT → "PR Creation",  FRGDT → "PR Release Date"
+        pr = pr.rename(columns={"BADAT": "PR Creation", "FRGDT": "PR Release Date"})
+        _log(f"#34 PR branch done: {len(pr)} rows, cols: {list(pr.columns)}")
 
-    # ══════════════════════════════════════════════════════════════════════════
-    # Node #20: PO LEFT JOIN PR on UniqueID_PR
-    #   Right-side cols included (from KNIME Joiner #20 rightColumnSelectionConfigV2):
-    #     BANFN, BNFPO, LOEKZ, ERNAM, ERDAT, BADAT (now "PR Creation"), FRGDT (now "PR Release Date"),
-    #     CREATIONDATE, CREATIONTIME, PR Reversal Date, UniqueID_PR
-    #   Clashing right-side cols get suffix " (EBAN)":
-    #     BANFN (EBAN), BNFPO (EBAN), LOEKZ (EBAN), ERNAM (EBAN),
-    #     CREATIONDATE (EBAN), CREATIONTIME (EBAN), UniqueID_PR (EBAN)
-    #   Non-clashing right cols come in as-is:
-    #     ERDAT, PR Creation, PR Release Date, PR Reversal Date
-    # ══════════════════════════════════════════════════════════════════════════
-    po_pr = po.merge(pr, on="UniqueID_PR", how="left", suffixes=("", " (EBAN)"))
+        # ══════════════════════════════════════════════════════════════════════════
+        # Node #20: PO LEFT JOIN PR on UniqueID_PR
+        # ══════════════════════════════════════════════════════════════════════════
+        po_pr = po.merge(pr, on="UniqueID_PR", how="left", suffixes=("", " (EBAN)"))
+    else:
+        # Create empty columns for missing EBAN table
+        po_pr = po.copy()
+        po_pr["PR Creation"] = pd.NaT
+        po_pr["PR Release Date"] = pd.NaT
+        po_pr["PR Reversal Date"] = pd.NaT
+        po_pr["ERNAM (EBAN)"] = None
     _log(f"#20 Joiner PO LEFT JOIN PR: {len(po_pr)} rows, {len(po_pr.columns)} cols")
     _log(f"#20 Columns: {list(po_pr.columns)}")
 
@@ -537,58 +570,50 @@ def _run_pipeline(tables: dict[str, pd.DataFrame], username: str) -> pd.DataFram
     #   → Node #79 Column Filter (12 cols)
     #   → Node #80 Col Expressions (4 new cols: GR Posting, GR Reversal,
     #                                GR Creation User, GR Reversal Creation User)
-    # ══════════════════════════════════════════════════════════════════════════
-    ekbe["EBELN"] = _str(ekbe["EBELN"])
-    if "EBELP" in ekbe.columns:
-        ekbe["EBELP"] = _str(ekbe["EBELP"])
+    if ekbe is not None:
+        ekbe["EBELN"] = _str(ekbe["EBELN"])
+        if "EBELP" in ekbe.columns:
+            ekbe["EBELP"] = _str(ekbe["EBELP"])
 
-    # ── Node #21: Row Filter — VGABE == "1" (Goods Receipt) ──────────────────
-    gr = ekbe[ekbe["VGABE"].astype(str).str.strip() == "1"].copy()
-    _log(f"#21 Row Filter GR (VGABE=1): {len(gr)} rows")
+        # ── Node #21: Row Filter — VGABE == "1" (Goods Receipt) ──────────────────
+        gr = ekbe[ekbe["VGABE"].astype(str).str.strip() == "1"].copy()
+        _log(f"#21 Row Filter GR (VGABE=1): {len(gr)} rows")
 
-    # ── Node #27: UniqueID_PO = join(EBELN, EBELP) ────────────────────────────
-    # Must use same zero-padding as PO branch so GR rows join correctly
-    gr["UniqueID_PO"] = _safe_join_key(gr["EBELN"], gr["EBELP"],
-                                        pad1=10, pad2=5)
+        # ── Node #27: UniqueID_PO = join(EBELN, EBELP) ────────────────────────────
+        gr["UniqueID_PO"] = _safe_join_key(gr["EBELN"], gr["EBELP"], pad1=10, pad2=5)
 
-    # ── Node #79: Column Filter — 12 cols ─────────────────────────────────────
-    col79 = [
-        "VGABE", "GJAHR", "BELNR", "BUDAT",
-        "MENGE", "BPMNG", "DMBTR", "SHKZG",
-        "XBLNR", "WERKS", "ERNAM", "UniqueID_PO",
-    ]
-    gr = _keep(gr, col79)
-    _log(f"#79 Column Filter GR: {len(gr.columns)} cols")
+        # ── Node #79: Column Filter — 12 cols ─────────────────────────────────────
+        col79 = [
+            "VGABE", "GJAHR", "BELNR", "BUDAT",
+            "MENGE", "BPMNG", "DMBTR", "SHKZG",
+            "XBLNR", "WERKS", "ERNAM", "UniqueID_PO",
+        ]
+        gr = _keep(gr, col79)
+        _log(f"#79 Column Filter GR: {len(gr.columns)} cols")
 
-    # ── Node #80: Column Expressions (legacy) — 4 new cols ────────────────────
-    # if (column("SHKZG") == "S") { column("BUDAT") } else { null }  → GR Posting
-    # if (column("SHKZG") == "H") { column("BUDAT") } else { null }  → GR Reversal
-    # if (column("SHKZG") == "S") { column("ERNAM") } else { null }  → GR Creation User
-    # if (column("SHKZG") == "H") { column("ERNAM") } else { null }  → GR Reversal Creation User
-    s_mask = _str(gr["SHKZG"]) == "S"
-    h_mask = _str(gr["SHKZG"]) == "H"
-    gr["GR Posting"]                  = gr["BUDAT"].where(s_mask)
-    gr["GR Reversal"]                 = gr["BUDAT"].where(h_mask)
-    gr["GR Creation User"]            = gr["ERNAM"].where(s_mask)
-    gr["GR Reversal Creation User"]   = gr["ERNAM"].where(h_mask)
-    _log(f"#80 GR Col Expressions: GR Posting={gr['GR Posting'].notna().sum()} "
-         f"GR Reversal={gr['GR Reversal'].notna().sum()} rows")
+        # ── Node #80: Column Expressions (legacy) — 4 new cols ────────────────────
+        s_mask = _str(gr["SHKZG"]) == "S"
+        h_mask = _str(gr["SHKZG"]) == "H"
+        gr["GR Posting"]                  = gr["BUDAT"].where(s_mask)
+        gr["GR Reversal"]                 = gr["BUDAT"].where(h_mask)
+        gr["GR Creation User"]            = gr["ERNAM"].where(s_mask)
+        gr["GR Reversal Creation User"]   = gr["ERNAM"].where(h_mask)
+        _log(f"#80 GR Col Expressions: GR Posting={gr['GR Posting'].notna().sum()} "
+             f"GR Reversal={gr['GR Reversal'].notna().sum()} rows")
 
-    # ── Collapse GR to wide (one row per UniqueID_PO) ─────────────────────────
-    # KNIME Joiner #81 expects "GR Reversal Date" (not "GR Reversal") from the right side,
-    # meaning the collapse must output the final column name already.
-    gr_wide = _collapse_ekbe_branch(
-        gr,
-        posting_col="GR Posting",
-        reversal_col="GR Reversal",
-        posting_user_col="GR Creation User",
-        reversal_user_col="GR Reversal Creation User",
-        out_posting="GR Posting",
-        out_reversal="GR Reversal Date",            # KNIME #81 right-side col name
-        out_posting_user="GR Creation User",
-        out_reversal_user="GR Reversal Creation User",
-    )
-    _log(f"GR wide: {len(gr_wide)} unique UniqueID_PO values")
+        # ── Collapse GR to wide (one row per UniqueID_PO) ─────────────────────────
+        gr_wide = _collapse_ekbe_branch(
+            gr,
+            posting_col="GR Posting",
+            reversal_col="GR Reversal",
+            posting_user_col="GR Creation User",
+            reversal_user_col="GR Reversal Creation User",
+            out_posting="GR Posting",
+            out_reversal="GR Reversal Date",
+            out_posting_user="GR Creation User",
+            out_reversal_user="GR Reversal Creation User",
+        )
+        _log(f"GR wide: {len(gr_wide)} unique UniqueID_PO values")
 
     # ══════════════════════════════════════════════════════════════════════════
     # INVOICE BRANCH:  EKBE (CSV#4) where VGABE == "2"
@@ -599,43 +624,54 @@ def _run_pipeline(tables: dict[str, pd.DataFrame], username: str) -> pd.DataFram
     #                                Invoice Creation User, Invoice Reversal Creation User)
     # ══════════════════════════════════════════════════════════════════════════
 
-    # ── Node #22: Row Filter — VGABE == "2" (Invoice) ─────────────────────────
-    inv = ekbe[ekbe["VGABE"].astype(str).str.strip() == "2"].copy()
-    _log(f"#22 Row Filter Invoice (VGABE=2): {len(inv)} rows")
+    if ekbe is not None:
+        # ── Node #22: Row Filter — VGABE == "2" (Invoice) ─────────────────────────
+        inv = ekbe[ekbe["VGABE"].astype(str).str.strip() == "2"].copy()
+        _log(f"#22 Row Filter Invoice (VGABE=2): {len(inv)} rows")
 
-    # ── Node #30: UniqueID_PO = join(EBELN, EBELP) ────────────────────────────
-    # Must use same zero-padding as PO branch so Invoice rows join correctly
-    inv["UniqueID_PO"] = _safe_join_key(inv["EBELN"], inv["EBELP"],
-                                         pad1=10, pad2=5)
+        # ── Node #30: UniqueID_PO = join(EBELN, EBELP) ────────────────────────────
+        # Must use same zero-padding as PO branch so Invoice rows join correctly
+        inv["UniqueID_PO"] = _safe_join_key(inv["EBELN"], inv["EBELP"],
+                                             pad1=10, pad2=5)
 
-    # ── Node #82: Column Filter — same 12 cols as #79 ─────────────────────────
-    inv = _keep(inv, col79)
-    _log(f"#82 Column Filter Invoice: {len(inv.columns)} cols")
+        # ── Node #82: Column Filter — same 12 cols as #79 ─────────────────────────
+        inv = _keep(inv, col79)
+        _log(f"#82 Column Filter Invoice: {len(inv.columns)} cols")
 
-    # ── Node #83: Column Expressions (legacy) — 4 new cols ────────────────────
-    s_inv = _str(inv["SHKZG"]) == "S"
-    h_inv = _str(inv["SHKZG"]) == "H"
-    inv["Invoice Posting"]                  = inv["BUDAT"].where(s_inv)
-    inv["Invoice Reversal"]                 = inv["BUDAT"].where(h_inv)
-    inv["Invoice Creation User"]            = inv["ERNAM"].where(s_inv)
-    inv["Invoice Reversal Creation User"]   = inv["ERNAM"].where(h_inv)
-    _log(f"#83 Invoice Col Expressions: Invoice Posting={inv['Invoice Posting'].notna().sum()} "
-         f"Invoice Reversal={inv['Invoice Reversal'].notna().sum()} rows")
+        # ── Node #83: Column Expressions (legacy) — 4 new cols ────────────────────
+        s_inv = _str(inv["SHKZG"]) == "S"
+        h_inv = _str(inv["SHKZG"]) == "H"
+        inv["Invoice Posting"]                  = inv["BUDAT"].where(s_inv)
+        inv["Invoice Reversal"]                 = inv["BUDAT"].where(h_inv)
+        inv["Invoice Creation User"]            = inv["ERNAM"].where(s_inv)
+        inv["Invoice Reversal Creation User"]   = inv["ERNAM"].where(h_inv)
+        _log(f"#83 Invoice Col Expressions: Invoice Posting={inv['Invoice Posting'].notna().sum()} "
+             f"Invoice Reversal={inv['Invoice Reversal'].notna().sum()} rows")
 
-    # ── Collapse Invoice to wide ───────────────────────────────────────────────
-    # KNIME Joiner #84 expects "Invoice Reversal Date" from the right side.
-    inv_wide = _collapse_ekbe_branch(
-        inv,
-        posting_col="Invoice Posting",
-        reversal_col="Invoice Reversal",
-        posting_user_col="Invoice Creation User",
-        reversal_user_col="Invoice Reversal Creation User",
-        out_posting="Invoice Posting",
-        out_reversal="Invoice Reversal Date",        # KNIME #84 right-side col name
-        out_posting_user="Invoice Creation User",
-        out_reversal_user="Invoice Reversal Creation User",
-    )
-    _log(f"Invoice wide: {len(inv_wide)} unique UniqueID_PO values")
+        # ── Collapse Invoice to wide ───────────────────────────────────────────────
+        # KNIME Joiner #84 expects "Invoice Reversal Date" from the right side.
+        inv_wide = _collapse_ekbe_branch(
+            inv,
+            posting_col="Invoice Posting",
+            reversal_col="Invoice Reversal",
+            posting_user_col="Invoice Creation User",
+            reversal_user_col="Invoice Reversal Creation User",
+            out_posting="Invoice Posting",
+            out_reversal="Invoice Reversal Date",        # KNIME #84 right-side col name
+            out_posting_user="Invoice Creation User",
+            out_reversal_user="Invoice Reversal Creation User",
+        )
+        _log(f"Invoice wide: {len(inv_wide)} unique UniqueID_PO values")
+    else:
+        # Create empty DataFrames for gr_wide and inv_wide
+        gr_wide = pd.DataFrame(columns=[
+            "UniqueID_PO", "GR Posting", "GR Reversal Date",
+            "GR Creation User", "GR Reversal Creation User",
+        ])
+        inv_wide = pd.DataFrame(columns=[
+            "UniqueID_PO", "Invoice Posting", "Invoice Reversal Date",
+            "Invoice Creation User", "Invoice Reversal Creation User",
+        ])
 
     # ══════════════════════════════════════════════════════════════════════════
     # Node #81: (po_pr) LEFT JOIN gr_wide on UniqueID_PO
@@ -711,7 +747,7 @@ def _run_pipeline(tables: dict[str, pd.DataFrame], username: str) -> pd.DataFram
         is_numeric = s.str.match(r'^\d+$')
         return s.where(~is_numeric, s.str.zfill(10))
 
-    if "LIFNR" in lfa1.columns and "NAME1" in lfa1.columns:
+    if lfa1 is not None and "LIFNR" in lfa1.columns and "NAME1" in lfa1.columns:
         lfa1_map = (
             lfa1[["LIFNR", "NAME1"]]
             .drop_duplicates(subset="LIFNR")
@@ -727,7 +763,8 @@ def _run_pipeline(tables: dict[str, pd.DataFrame], username: str) -> pd.DataFram
             _log("#85 WARNING — 0 NAME1 matches; LIFNR format may differ between EKKO and LFA1")
     else:
         wide["NAME1"] = None
-        _log("#85 Value Lookup skipped — LFA1 missing LIFNR or NAME1 column")
+        wide["LIFNR"] = _norm_lifnr(wide["LIFNR"]) # Keep LIFNR normalised even without LFA1
+        _log("#85 Value Lookup skipped — LFA1 missing (or missing LIFNR / NAME1 column)")
 
     # ══════════════════════════════════════════════════════════════════════════
     # Final wide collapse — one row per UniqueID_PO
