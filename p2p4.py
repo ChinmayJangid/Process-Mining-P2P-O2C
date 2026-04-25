@@ -561,7 +561,7 @@ def p2p_root():
     return {"status": "P2P Sub-module active", "rows": len(df), "data_loaded": not df.empty, "columns": list(df.columns) if not df.empty else []}
 
 @router.post("/upload")
-async def upload_csv(file: UploadFile = File(...), username: str = Form("Unknown")):
+async def upload_csv(file: UploadFile = File(...), username: str = Form("Unknown"), column_mapping: str = Form("{}")):
     if not file.filename.lower().endswith(".csv"):
         raise HTTPException(status_code=400, detail="Only CSV files are supported")
     content = await file.read()
@@ -575,6 +575,15 @@ async def upload_csv(file: UploadFile = File(...), username: str = Form("Unknown
                 continue
         else:
             raise ValueError("Could not decode CSV with any supported encoding.")
+
+        try:
+            import json
+            mapping = json.loads(column_mapping)
+            if mapping:
+                df = df.rename(columns=mapping)
+                print(f"Applied column mapping for prebuilt CSV: {mapping}")
+        except Exception as e:
+            print(f"Error applying column mapping: {e}")
 
         # ── Detect format and convert long → wide if needed ─────────────────
         input_format = "long" if _is_long_format(df) else "wide"
