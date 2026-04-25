@@ -195,6 +195,7 @@ const InteractiveProcessMap = ({ restrictToRight = false }) => {
 const LoginScreen = ({ onLogin }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
 
@@ -285,15 +286,35 @@ const LoginScreen = ({ onLogin }) => {
               className="glass-input"
             />
           </div>
-          <div className="input-group">
+          <div className="input-group" style={{ position: 'relative' }}>
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               placeholder="Password"
               required
               value={password}
               onChange={e => setPassword(e.target.value)}
               className="glass-input"
+              style={{ paddingRight: 40 }}
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              style={{
+                position: 'absolute',
+                right: 12,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'none',
+                border: 'none',
+                color: 'rgba(255,255,255,0.7)',
+                cursor: 'pointer',
+                fontSize: 14,
+                padding: 4
+              }}
+              title={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? "🙈" : "👁️"}
+            </button>
           </div>
           <button
             type="submit"
