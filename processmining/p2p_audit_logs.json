@@ -1,0 +1,3626 @@
+[
+    {
+        "timestamp": "2026-03-16 10:03:11",
+        "username": "chinmay",
+        "action": "UPLOAD",
+        "details": "Uploaded dataset: Sample - P2P@4.csv (2994 unique cases)"
+    },
+    {
+        "timestamp": "2026-03-16 10:03:12",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-16 10:03:21",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-16 10:03:30",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-16 10:03:35",
+        "username": "chinmay",
+        "action": "LOGOUT",
+        "details": "User signed out"
+    },
+    {
+        "timestamp": "2026-03-16 10:05:02",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded previously uploaded file: user_data\\chinmay\\20260316_100311_Sample - P2P4.csv.json"
+    },
+    {
+        "timestamp": "2026-03-16 10:05:02",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-16 10:05:30",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-16 10:58:19",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: company = 7001"
+    },
+    {
+        "timestamp": "2026-03-16 10:58:19",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: company = 7001"
+    },
+    {
+        "timestamp": "2026-03-16 10:58:27",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Cleared all active chart cross-filters"
+    },
+    {
+        "timestamp": "2026-03-16 10:58:39",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: company = 7001"
+    },
+    {
+        "timestamp": "2026-03-16 10:58:39",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: company = 7001"
+    },
+    {
+        "timestamp": "2026-03-16 10:58:44",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: company = null"
+    },
+    {
+        "timestamp": "2026-03-16 10:58:51",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-16 11:15:22",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Cleared all active chart cross-filters"
+    },
+    {
+        "timestamp": "2026-03-16 11:15:41",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-16 12:49:02",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded previously uploaded file: user_data\\chinmay\\20260316_100311_Sample - P2P4.csv.json"
+    },
+    {
+        "timestamp": "2026-03-16 12:49:02",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-16 14:15:54",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded previously uploaded file: user_data\\chinmay\\20260316_100311_Sample - P2P4.csv.json"
+    },
+    {
+        "timestamp": "2026-03-16 14:15:54",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-16 14:45:25",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded previously uploaded file: user_data\\chinmay\\20260316_100311_Sample - P2P4.csv.json"
+    },
+    {
+        "timestamp": "2026-03-16 14:45:25",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-16 15:20:17",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded previously uploaded file: user_data\\chinmay\\20260316_100311_Sample - P2P4.csv.json"
+    },
+    {
+        "timestamp": "2026-03-16 15:20:17",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-16 15:31:29",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded previously uploaded file: user_data\\chinmay\\20260316_100311_Sample - P2P4.csv.json"
+    },
+    {
+        "timestamp": "2026-03-16 15:31:29",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-16 16:37:16",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded previously uploaded file: user_data\\chinmay\\20260316_100311_Sample - P2P4.csv.json"
+    },
+    {
+        "timestamp": "2026-03-16 16:37:16",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-16 16:37:30",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-16 17:18:31",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded previously uploaded file: user_data\\chinmay\\20260316_100311_Sample - P2P4.csv.json"
+    },
+    {
+        "timestamp": "2026-03-16 17:18:31",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-16 17:39:34",
+        "username": "chinmay",
+        "action": "UPLOAD",
+        "details": "Uploaded dataset: Sample - P2P@4.csv (2994 unique cases)"
+    },
+    {
+        "timestamp": "2026-03-16 17:39:35",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-16 17:48:04",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded previously uploaded file: user_data\\chinmay\\20260316_173934_Sample - P2P4.csv.json"
+    },
+    {
+        "timestamp": "2026-03-16 17:48:04",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-17 09:41:23",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded previously uploaded file: user_data\\chinmay\\20260316_173934_Sample - P2P4.csv.json"
+    },
+    {
+        "timestamp": "2026-03-17 09:41:23",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-17 09:43:42",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-17 09:43:52",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-17 09:44:51",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-17 09:45:00",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-17 10:02:59",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-17 10:04:21",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-17 10:04:23",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-17 10:06:58",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded previously uploaded file: user_data\\chinmay\\20260316_173934_Sample - P2P4.csv.json"
+    },
+    {
+        "timestamp": "2026-03-17 10:06:58",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-17 10:07:01",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed dimensions"
+    },
+    {
+        "timestamp": "2026-03-17 10:09:48",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed process"
+    },
+    {
+        "timestamp": "2026-03-17 10:09:54",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed dimensions"
+    },
+    {
+        "timestamp": "2026-03-17 10:10:02",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed process"
+    },
+    {
+        "timestamp": "2026-03-17 10:10:07",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed dimensions"
+    },
+    {
+        "timestamp": "2026-03-17 10:56:01",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded previously uploaded file: user_data\\chinmay\\20260316_173934_Sample - P2P4.csv.json"
+    },
+    {
+        "timestamp": "2026-03-17 10:56:01",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-17 10:56:04",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-17 10:56:12",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-17 10:56:20",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-17 10:58:54",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded previously uploaded file: user_data\\chinmay\\20260316_173934_Sample - P2P4.csv.json"
+    },
+    {
+        "timestamp": "2026-03-17 10:58:54",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-17 10:59:08",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-17 10:59:17",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-17 12:28:29",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-17 12:28:36",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-18 11:07:04",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EKKO, file=EKKO.csv, rows=9620"
+    },
+    {
+        "timestamp": "2026-03-18 11:07:12",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EKPO, file=EKPO.csv, rows=33426"
+    },
+    {
+        "timestamp": "2026-03-18 11:07:19",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EBAN, file=EBAN.csv, rows=9891"
+    },
+    {
+        "timestamp": "2026-03-18 11:07:29",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EKBE, file=EKBE.csv, rows=249878"
+    },
+    {
+        "timestamp": "2026-03-18 11:08:03",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=LFA1, file=LFA1.csv, rows=747318"
+    },
+    {
+        "timestamp": "2026-03-18 11:08:10",
+        "username": "chinmay",
+        "action": "ETL_ERROR",
+        "details": "You are trying to merge on float64 and object columns for key 'LIFNR'. If you wish to proceed you should use pd.concat"
+    },
+    {
+        "timestamp": "2026-03-18 11:08:21",
+        "username": "chinmay",
+        "action": "ETL_ERROR",
+        "details": "You are trying to merge on float64 and object columns for key 'LIFNR'. If you wish to proceed you should use pd.concat"
+    },
+    {
+        "timestamp": "2026-03-18 11:12:50",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EKKO, file=EKKO.csv, rows=9620"
+    },
+    {
+        "timestamp": "2026-03-18 11:12:56",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EKPO, file=EKPO.csv, rows=33426"
+    },
+    {
+        "timestamp": "2026-03-18 11:13:01",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EBAN, file=EBAN.csv, rows=9891"
+    },
+    {
+        "timestamp": "2026-03-18 11:13:16",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EKBE, file=EKBE.csv, rows=249878"
+    },
+    {
+        "timestamp": "2026-03-18 11:13:42",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=LFA1, file=LFA1.csv, rows=747318"
+    },
+    {
+        "timestamp": "2026-03-18 11:18:57",
+        "username": "chinmay",
+        "action": "ETL_COMPLETE",
+        "details": "Processed 29770 rows, 29770 unique cases"
+    },
+    {
+        "timestamp": "2026-03-18 11:18:58",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-18 11:23:37",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EKKO, file=EKKO.csv, rows=9620"
+    },
+    {
+        "timestamp": "2026-03-18 11:23:42",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EKPO, file=EKPO.csv, rows=33426"
+    },
+    {
+        "timestamp": "2026-03-18 11:23:56",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EBAN, file=EBAN.csv, rows=9891"
+    },
+    {
+        "timestamp": "2026-03-18 11:24:05",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EKBE, file=EKBE.csv, rows=249878"
+    },
+    {
+        "timestamp": "2026-03-18 11:24:32",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=LFA1, file=LFA1.csv, rows=747318"
+    },
+    {
+        "timestamp": "2026-03-18 11:25:18",
+        "username": "chinmay",
+        "action": "ETL_COMPLETE",
+        "details": "Processed 29770 rows, 29770 unique cases"
+    },
+    {
+        "timestamp": "2026-03-18 11:25:19",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-18 11:29:51",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-18 11:29:53",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-18 11:30:14",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: user_data\\chinmay\\20260318_112517_processed.json"
+    },
+    {
+        "timestamp": "2026-03-18 11:30:14",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-18 11:33:50",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EKKO, file=EKKO.csv, rows=9620"
+    },
+    {
+        "timestamp": "2026-03-18 11:33:54",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EKPO, file=EKPO.csv, rows=33426"
+    },
+    {
+        "timestamp": "2026-03-18 11:34:00",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EBAN, file=EBAN.csv, rows=9891"
+    },
+    {
+        "timestamp": "2026-03-18 11:34:08",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EKBE, file=EKBE.csv, rows=249878"
+    },
+    {
+        "timestamp": "2026-03-18 11:34:33",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=LFA1, file=LFA1.csv, rows=747318"
+    },
+    {
+        "timestamp": "2026-03-18 11:36:01",
+        "username": "chinmay",
+        "action": "ETL_ERROR",
+        "details": "Unable to allocate 4.80 GiB for an array with shape (20, 32181896) and data type object"
+    },
+    {
+        "timestamp": "2026-03-18 11:37:31",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EKKO, file=EKKO.csv, rows=9620"
+    },
+    {
+        "timestamp": "2026-03-18 11:37:37",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EKPO, file=EKPO.csv, rows=33426"
+    },
+    {
+        "timestamp": "2026-03-18 11:37:43",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EBAN, file=EBAN.csv, rows=9891"
+    },
+    {
+        "timestamp": "2026-03-18 11:37:49",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EKBE, file=EKBE.csv, rows=249878"
+    },
+    {
+        "timestamp": "2026-03-18 11:38:11",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=LFA1, file=LFA1.csv, rows=747318"
+    },
+    {
+        "timestamp": "2026-03-18 11:38:58",
+        "username": "chinmay",
+        "action": "ETL_COMPLETE",
+        "details": "Processed 29770 rows, 29770 unique cases"
+    },
+    {
+        "timestamp": "2026-03-18 11:38:59",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-18 11:40:11",
+        "username": "chinmay",
+        "action": "DOWNLOAD_CSV",
+        "details": "Downloaded: 20260318_113858_output.csv"
+    },
+    {
+        "timestamp": "2026-03-18 11:41:45",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-18 11:46:26",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-18 11:46:34",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = Happy Path"
+    },
+    {
+        "timestamp": "2026-03-18 11:46:46",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = null"
+    },
+    {
+        "timestamp": "2026-03-18 11:46:46",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = null"
+    },
+    {
+        "timestamp": "2026-03-18 11:46:52",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = Deviations"
+    },
+    {
+        "timestamp": "2026-03-18 11:47:03",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = null"
+    },
+    {
+        "timestamp": "2026-03-18 11:47:03",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = null"
+    },
+    {
+        "timestamp": "2026-03-18 12:06:07",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-03-18 12:06:51",
+        "username": "chinmay",
+        "action": "UPLOAD",
+        "details": "Uploaded: P2P_4.csv (29770 unique cases)"
+    },
+    {
+        "timestamp": "2026-03-18 12:06:51",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-18 12:12:59",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Reset all slicers to ALL"
+    },
+    {
+        "timestamp": "2026-03-18 12:13:46",
+        "username": "chinmay",
+        "action": "UPLOAD",
+        "details": "Uploaded pre-built CSV: P2P_4.csv (29770 unique cases)"
+    },
+    {
+        "timestamp": "2026-03-18 12:13:47",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-18 12:16:28",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-03-18 12:16:36",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EKKO, file=EKKO.csv, rows=9620"
+    },
+    {
+        "timestamp": "2026-03-18 12:16:42",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EKPO, file=EKPO.csv, rows=33426"
+    },
+    {
+        "timestamp": "2026-03-18 12:16:48",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EBAN, file=EBAN.csv, rows=9891"
+    },
+    {
+        "timestamp": "2026-03-18 12:17:04",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EKBE, file=EKBE.csv, rows=249878"
+    },
+    {
+        "timestamp": "2026-03-18 12:17:32",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=LFA1, file=LFA1.csv, rows=747318"
+    },
+    {
+        "timestamp": "2026-03-18 12:18:35",
+        "username": "chinmay",
+        "action": "ETL_COMPLETE",
+        "details": "Processed 29770 rows, 29770 unique cases"
+    },
+    {
+        "timestamp": "2026-03-18 12:18:36",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-18 12:47:30",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Reset all slicers to ALL"
+    },
+    {
+        "timestamp": "2026-03-18 12:47:33",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-03-18 12:47:45",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: user_data\\chinmay\\20260318_121834_processed.json"
+    },
+    {
+        "timestamp": "2026-03-18 12:47:45",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-18 12:51:01",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-03-18 12:53:31",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: user_data\\chinmay\\20260318_121834_processed.json"
+    },
+    {
+        "timestamp": "2026-03-18 12:53:31",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-18 12:57:49",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Reset all slicers to ALL"
+    },
+    {
+        "timestamp": "2026-03-18 12:57:50",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Reset all slicers to ALL"
+    },
+    {
+        "timestamp": "2026-03-18 12:57:51",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-03-18 12:58:01",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: user_data\\chinmay\\20260318_121834_processed.json"
+    },
+    {
+        "timestamp": "2026-03-18 12:58:02",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-18 12:58:55",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: activity = PO Creation"
+    },
+    {
+        "timestamp": "2026-03-18 12:59:10",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: activity = null"
+    },
+    {
+        "timestamp": "2026-03-18 12:59:10",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: activity = null"
+    },
+    {
+        "timestamp": "2026-03-18 13:04:16",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-18 13:04:31",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-18 13:04:36",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-18 13:05:19",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-18 13:11:03",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: user_data\\chinmay\\20260318_121834_processed.json"
+    },
+    {
+        "timestamp": "2026-03-18 13:11:03",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-18 13:12:34",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: user_data\\chinmay\\20260318_121834_processed.json"
+    },
+    {
+        "timestamp": "2026-03-18 13:12:34",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-18 13:16:06",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: user_data\\chinmay\\20260318_121834_processed.json"
+    },
+    {
+        "timestamp": "2026-03-18 13:16:06",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-18 13:16:48",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-03-18 13:17:03",
+        "username": "chinmay",
+        "action": "UPLOAD",
+        "details": "Uploaded pre-built CSV: P2P_4.csv (29770 unique cases)"
+    },
+    {
+        "timestamp": "2026-03-18 13:17:03",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-18 16:56:08",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: user_data\\chinmay\\20260318_131657_P2P_4.csv.json"
+    },
+    {
+        "timestamp": "2026-03-18 16:56:08",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-18 17:34:59",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: user_data\\chinmay\\20260318_131657_P2P_4.csv.json"
+    },
+    {
+        "timestamp": "2026-03-18 17:34:59",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-18 17:35:10",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-03-18 17:35:28",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: user_data\\chinmay\\20260316_173934_Sample - P2P4.csv.json"
+    },
+    {
+        "timestamp": "2026-03-18 17:35:28",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-18 17:40:39",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-18 19:33:46",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: user_data\\chinmay\\20260318_131657_P2P_4.csv.json"
+    },
+    {
+        "timestamp": "2026-03-18 19:33:47",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-19 12:28:09",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: user_data\\chinmay\\20260318_131657_P2P_4.csv.json"
+    },
+    {
+        "timestamp": "2026-03-19 12:28:09",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-19 12:29:24",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EKKO, file=EKKO.csv, rows=9620"
+    },
+    {
+        "timestamp": "2026-03-19 12:29:32",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EKPO, file=EKPO.csv, rows=33426"
+    },
+    {
+        "timestamp": "2026-03-19 12:30:02",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EBAN, file=EBAN.csv, rows=9891"
+    },
+    {
+        "timestamp": "2026-03-19 12:30:12",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EKBE, file=EKBE.csv, rows=249878"
+    },
+    {
+        "timestamp": "2026-03-19 12:30:41",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=LFA1, file=LFA1.csv, rows=747318"
+    },
+    {
+        "timestamp": "2026-03-19 12:30:50",
+        "username": "chinmay",
+        "action": "ETL_COMPLETE",
+        "details": "Processed 68415 rows, 114 unique cases"
+    },
+    {
+        "timestamp": "2026-03-19 12:30:51",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-19 12:37:34",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-19 12:37:36",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-19 12:37:38",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-19 12:44:34",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EKKO, file=EKKO.csv, rows=9620"
+    },
+    {
+        "timestamp": "2026-03-19 12:44:43",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EKPO, file=EKPO.csv, rows=33426"
+    },
+    {
+        "timestamp": "2026-03-19 12:44:55",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EBAN, file=EBAN.csv, rows=9891"
+    },
+    {
+        "timestamp": "2026-03-19 12:45:03",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EKBE, file=EKBE.csv, rows=249878"
+    },
+    {
+        "timestamp": "2026-03-19 12:45:32",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=LFA1, file=LFA1.csv, rows=747318"
+    },
+    {
+        "timestamp": "2026-03-19 12:45:49",
+        "username": "chinmay",
+        "action": "ETL_COMPLETE",
+        "details": "Processed 68415 rows, 114 unique cases"
+    },
+    {
+        "timestamp": "2026-03-19 12:45:50",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-19 13:03:57",
+        "username": "chinmay",
+        "action": "ETL_COMPLETE",
+        "details": "Processed 68415 rows, 114 unique cases"
+    },
+    {
+        "timestamp": "2026-03-19 13:03:58",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-19 13:05:27",
+        "username": "chinmay",
+        "action": "ETL_COMPLETE",
+        "details": "Processed 68415 rows, 114 unique cases"
+    },
+    {
+        "timestamp": "2026-03-19 13:05:28",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-19 13:12:45",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EKKO, file=EKKO.csv, rows=9620"
+    },
+    {
+        "timestamp": "2026-03-19 13:12:52",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EKPO, file=EKPO.csv, rows=33426"
+    },
+    {
+        "timestamp": "2026-03-19 13:12:59",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EBAN, file=EBAN.csv, rows=9891"
+    },
+    {
+        "timestamp": "2026-03-19 13:13:07",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EKBE, file=EKBE.csv, rows=249878"
+    },
+    {
+        "timestamp": "2026-03-19 13:13:33",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=LFA1, file=LFA1.csv, rows=747318"
+    },
+    {
+        "timestamp": "2026-03-19 13:13:42",
+        "username": "chinmay",
+        "action": "ETL_COMPLETE",
+        "details": "Processed 68415 rows, 114 unique cases"
+    },
+    {
+        "timestamp": "2026-03-19 13:13:43",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-19 13:19:33",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: user_data\\chinmay\\20260319_131340_processed.json"
+    },
+    {
+        "timestamp": "2026-03-19 13:19:33",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-19 13:25:32",
+        "username": "chinmay",
+        "action": "DOWNLOAD_CSV",
+        "details": "Downloaded: 20260319_131340_output.csv"
+    },
+    {
+        "timestamp": "2026-03-19 14:05:59",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: user_data\\chinmay\\20260319_131340_processed.json"
+    },
+    {
+        "timestamp": "2026-03-19 14:05:59",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-19 14:34:09",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: user_data\\chinmay\\20260319_131340_processed.json"
+    },
+    {
+        "timestamp": "2026-03-19 14:34:09",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-19 14:34:48",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EKKO, rows=9620"
+    },
+    {
+        "timestamp": "2026-03-19 14:34:55",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EKPO, rows=33426"
+    },
+    {
+        "timestamp": "2026-03-19 14:35:07",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EBAN, rows=9891"
+    },
+    {
+        "timestamp": "2026-03-19 14:35:15",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=EKBE, rows=249878"
+    },
+    {
+        "timestamp": "2026-03-19 14:35:38",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "Table=LFA1, rows=747318"
+    },
+    {
+        "timestamp": "2026-03-19 14:36:48",
+        "username": "chinmay",
+        "action": "ETL_COMPLETE",
+        "details": "114 rows, 114 unique cases"
+    },
+    {
+        "timestamp": "2026-03-19 14:36:49",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-19 14:37:24",
+        "username": "chinmay",
+        "action": "DOWNLOAD_CSV",
+        "details": "20260319_143648_output.csv"
+    },
+    {
+        "timestamp": "2026-03-19 17:55:48",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "EKKO 9620 rows"
+    },
+    {
+        "timestamp": "2026-03-19 17:55:57",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "EKPO 33426 rows"
+    },
+    {
+        "timestamp": "2026-03-19 17:56:06",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "EBAN 9891 rows"
+    },
+    {
+        "timestamp": "2026-03-19 17:56:15",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "EKBE 249878 rows"
+    },
+    {
+        "timestamp": "2026-03-19 17:56:42",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "LFA1 747318 rows"
+    },
+    {
+        "timestamp": "2026-03-19 17:56:54",
+        "username": "chinmay",
+        "action": "ETL_COMPLETE",
+        "details": "68415 rows, 114 cases"
+    },
+    {
+        "timestamp": "2026-03-19 17:56:55",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-19 18:07:01",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "EKKO 9620 rows"
+    },
+    {
+        "timestamp": "2026-03-19 18:07:11",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "EKPO 33426 rows"
+    },
+    {
+        "timestamp": "2026-03-19 18:07:25",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "EBAN 9891 rows"
+    },
+    {
+        "timestamp": "2026-03-19 18:07:35",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "EKBE 249878 rows"
+    },
+    {
+        "timestamp": "2026-03-19 18:08:00",
+        "username": "chinmay",
+        "action": "UPLOAD_TABLE",
+        "details": "LFA1 747318 rows"
+    },
+    {
+        "timestamp": "2026-03-19 18:08:28",
+        "username": "chinmay",
+        "action": "ETL_COMPLETE",
+        "details": "125183 rows, 29770 cases"
+    },
+    {
+        "timestamp": "2026-03-19 18:08:29",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-19 18:09:11",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Clicked case row: 410002889320"
+    },
+    {
+        "timestamp": "2026-03-19 18:09:22",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Clicked case row: ALL"
+    },
+    {
+        "timestamp": "2026-03-19 18:20:00",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "user_data\\chinmay\\20260319_180823_processed.json"
+    },
+    {
+        "timestamp": "2026-03-19 18:20:00",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-19 18:31:13",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded previously uploaded file: user_data\\chinmay\\20260319_180823_processed.json"
+    },
+    {
+        "timestamp": "2026-03-19 18:31:13",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-19 18:31:27",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-03-19 18:31:43",
+        "username": "chinmay",
+        "action": "UPLOAD",
+        "details": "Uploaded dataset: Sample - P2P@4.csv (2994 unique cases)"
+    },
+    {
+        "timestamp": "2026-03-19 18:31:44",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-19 18:31:57",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-19 18:32:00",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-19 18:32:15",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-19 18:35:10",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded previously uploaded file: user_data\\chinmay\\20260319_183143_Sample - P2P4.csv.json"
+    },
+    {
+        "timestamp": "2026-03-19 18:35:10",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-19 18:35:15",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-19 19:17:17",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 210311 rows"
+    },
+    {
+        "timestamp": "2026-03-19 19:17:17",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-19 19:17:28",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-19 19:17:40",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-19 19:18:25",
+        "username": "chinmay",
+        "action": "UPLOAD",
+        "details": "Uploaded dataset: P2P_4.csv (29770 unique cases)"
+    },
+    {
+        "timestamp": "2026-03-19 19:18:26",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-19 19:35:28",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 825043 rows"
+    },
+    {
+        "timestamp": "2026-03-19 19:35:29",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-19 19:47:46",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded previously uploaded file: user_data\\chinmay\\20260319_191823_P2P_4.csv.json"
+    },
+    {
+        "timestamp": "2026-03-19 19:47:46",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-19 21:39:07",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-03-19 21:39:08",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-19 21:39:47",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-19 21:40:13",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-19 21:54:21",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Reset all slicers to ALL"
+    },
+    {
+        "timestamp": "2026-03-19 21:54:24",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-03-19 21:54:48",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded previously uploaded file: user_data\\chinmay\\20260319_191823_P2P_4.csv.json"
+    },
+    {
+        "timestamp": "2026-03-19 21:54:48",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-19 21:55:25",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-03-19 22:00:51",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-03-19 22:00:51",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-19 22:05:15",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = Happy Path"
+    },
+    {
+        "timestamp": "2026-03-19 22:05:32",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = null"
+    },
+    {
+        "timestamp": "2026-03-19 22:06:46",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Clicked case row: 410002889300020"
+    },
+    {
+        "timestamp": "2026-03-19 22:07:01",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Clicked case row: ALL"
+    },
+    {
+        "timestamp": "2026-03-19 22:07:31",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-19 22:07:45",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: month = 2024-01"
+    },
+    {
+        "timestamp": "2026-03-19 22:07:45",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: month = 2024-01"
+    },
+    {
+        "timestamp": "2026-03-19 22:07:55",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Cleared all active chart cross-filters"
+    },
+    {
+        "timestamp": "2026-03-19 22:08:01",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-19 22:08:34",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-19 22:09:35",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-19 22:10:37",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-19 22:10:47",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: company = 7001"
+    },
+    {
+        "timestamp": "2026-03-19 22:11:52",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-19 22:12:14",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Cleared all active chart cross-filters"
+    },
+    {
+        "timestamp": "2026-03-20 09:09:25",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded previously uploaded file: user_data\\chinmay\\20260319_191823_P2P_4.csv.json"
+    },
+    {
+        "timestamp": "2026-03-20 09:09:25",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 09:09:41",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-03-20 09:10:05",
+        "username": "chinmay",
+        "action": "UPLOAD",
+        "details": "Uploaded dataset: P2P_4.csv (29770 unique cases)"
+    },
+    {
+        "timestamp": "2026-03-20 09:10:06",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 09:12:40",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded previously uploaded file: user_data\\chinmay\\20260320_091000_P2P_4.csv.json"
+    },
+    {
+        "timestamp": "2026-03-20 09:29:45",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-03-20 09:29:46",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 09:31:36",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-03-20 09:32:02",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded previously uploaded file: user_data\\chinmay\\20260320_091000_P2P_4.csv.json"
+    },
+    {
+        "timestamp": "2026-03-20 09:32:02",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 09:51:23",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-03-20 09:51:24",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 09:51:41",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-03-20 09:52:03",
+        "username": "chinmay",
+        "action": "UPLOAD",
+        "details": "Uploaded P2P_4.csv (wide format, 29770 unique cases)"
+    },
+    {
+        "timestamp": "2026-03-20 09:52:04",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 10:18:51",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: user_data\\chinmay\\20260320_095158_P2P_4.csv.json"
+    },
+    {
+        "timestamp": "2026-03-20 10:18:52",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 10:19:05",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-03-20 10:19:30",
+        "username": "chinmay",
+        "action": "UPLOAD",
+        "details": "Uploaded P2P_4.csv (wide format, 29770 cases)"
+    },
+    {
+        "timestamp": "2026-03-20 10:19:31",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 10:38:58",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: user_data\\chinmay\\20260320_101920_P2P_4.csv.json"
+    },
+    {
+        "timestamp": "2026-03-20 10:38:58",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 10:40:23",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-20 10:40:31",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-20 10:49:41",
+        "username": "chinmay",
+        "action": "UPLOAD",
+        "details": "Uploaded P2P_4.csv (long format, 29770 unique cases)"
+    },
+    {
+        "timestamp": "2026-03-20 10:49:42",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 10:50:27",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-03-20 10:50:38",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: user_data\\chinmay\\20260320_095123_transform_build.json"
+    },
+    {
+        "timestamp": "2026-03-20 10:50:38",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 11:01:02",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Clicked case row: 410002889300020"
+    },
+    {
+        "timestamp": "2026-03-20 11:01:13",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Clicked case row: ALL"
+    },
+    {
+        "timestamp": "2026-03-20 11:01:19",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-20 11:03:15",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: user_data\\chinmay\\20260320_095123_transform_build.json"
+    },
+    {
+        "timestamp": "2026-03-20 11:03:15",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 11:04:24",
+        "username": "chinmay",
+        "action": "UPLOAD",
+        "details": "Uploaded P2P_4.csv (long format, 29770 unique cases)"
+    },
+    {
+        "timestamp": "2026-03-20 11:04:25",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 11:04:38",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-20 11:04:46",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-20 11:19:37",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: user_data\\chinmay\\20260320_095123_transform_build.json"
+    },
+    {
+        "timestamp": "2026-03-20 11:19:37",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 11:19:55",
+        "username": "chinmay",
+        "action": "DOWNLOAD",
+        "details": "Downloaded output CSV from dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 11:19:57",
+        "username": "chinmay",
+        "action": "DOWNLOAD",
+        "details": "Downloaded output CSV: P2P_Output_chinmay_20260320_111956.csv (29770 rows)"
+    },
+    {
+        "timestamp": "2026-03-20 11:23:43",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-20 11:23:49",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-20 11:24:17",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-20 13:00:39",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: user_data\\chinmay\\20260320_095123_transform_build.json"
+    },
+    {
+        "timestamp": "2026-03-20 13:00:39",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 13:00:51",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-20 13:00:57",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-20 13:29:21",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: user_data\\chinmay\\20260320_110423_P2P_4.csv.json"
+    },
+    {
+        "timestamp": "2026-03-20 13:29:21",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 13:29:56",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: user_data\\chinmay\\20260320_095123_transform_build.json"
+    },
+    {
+        "timestamp": "2026-03-20 13:29:56",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 16:09:31",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: user_data\\chinmay\\20260320_095123_transform_build.json"
+    },
+    {
+        "timestamp": "2026-03-20 16:09:31",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 16:54:49",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: user_data\\chinmay\\20260320_095123_transform_build.json"
+    },
+    {
+        "timestamp": "2026-03-20 16:54:49",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 16:55:13",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Clicked case row: 410002889300020"
+    },
+    {
+        "timestamp": "2026-03-20 16:55:31",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Reset all slicers to ALL"
+    },
+    {
+        "timestamp": "2026-03-20 16:58:02",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = Happy Path"
+    },
+    {
+        "timestamp": "2026-03-20 16:58:13",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Reset all slicers to ALL"
+    },
+    {
+        "timestamp": "2026-03-20 16:58:33",
+        "username": "chinmay",
+        "action": "LOGOUT",
+        "details": "User signed out"
+    },
+    {
+        "timestamp": "2026-03-20 18:11:45",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: user_data\\chinmay\\20260320_095123_transform_build.json"
+    },
+    {
+        "timestamp": "2026-03-20 18:11:45",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 18:17:54",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: user_data\\chinmay\\20260320_095123_transform_build.json"
+    },
+    {
+        "timestamp": "2026-03-20 18:17:54",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-21 21:52:59",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: user_data\\chinmay\\20260320_095123_transform_build.json"
+    },
+    {
+        "timestamp": "2026-03-21 21:52:59",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-21 21:53:55",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = Deviations"
+    },
+    {
+        "timestamp": "2026-03-21 21:54:51",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = null"
+    },
+    {
+        "timestamp": "2026-03-21 21:55:05",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = Happy Path"
+    },
+    {
+        "timestamp": "2026-03-21 21:55:05",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = Happy Path"
+    },
+    {
+        "timestamp": "2026-03-21 21:55:21",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = null"
+    },
+    {
+        "timestamp": "2026-03-21 21:55:21",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = null"
+    },
+    {
+        "timestamp": "2026-03-23 11:19:10",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-03-23 11:19:12",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-23 11:47:41",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: ernam = TOLLER_GZB1"
+    },
+    {
+        "timestamp": "2026-03-23 11:47:52",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: ernam = null"
+    },
+    {
+        "timestamp": "2026-03-23 11:47:52",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: ernam = null"
+    },
+    {
+        "timestamp": "2026-03-23 11:47:57",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = Happy Path"
+    },
+    {
+        "timestamp": "2026-03-23 11:48:03",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = null"
+    },
+    {
+        "timestamp": "2026-03-23 11:54:41",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-23 12:01:48",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: user_data\\chinmay\\20260323_111910_transform_build.json"
+    },
+    {
+        "timestamp": "2026-03-23 12:01:48",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-23 12:02:10",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-23 12:02:21",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-23 12:02:25",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = Deviations"
+    },
+    {
+        "timestamp": "2026-03-23 12:02:25",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = Deviations"
+    },
+    {
+        "timestamp": "2026-03-23 12:02:35",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = null"
+    },
+    {
+        "timestamp": "2026-03-23 12:02:35",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = null"
+    },
+    {
+        "timestamp": "2026-03-23 14:05:41",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-03-23 14:05:43",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-25 22:49:42",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: user_data\\chinmay\\20260323_140541_transform_build.json"
+    },
+    {
+        "timestamp": "2026-03-25 22:49:42",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-25 22:50:20",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-04-05 21:36:18",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: user_data\\chinmay\\20260323_140541_transform_build.json"
+    },
+    {
+        "timestamp": "2026-04-05 21:36:18",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-05 21:47:04",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-04-05 21:47:10",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-04-06 18:57:57",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: user_data\\chinmay\\20260323_140541_transform_build.json"
+    },
+    {
+        "timestamp": "2026-04-06 18:57:57",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-06 18:58:18",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-04-06 18:58:22",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-04-06 19:00:20",
+        "username": "chinmay",
+        "action": "LOGOUT",
+        "details": "User signed out"
+    },
+    {
+        "timestamp": "2026-04-06 19:27:12",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: user_data\\chinmay\\20260323_140541_transform_build.json"
+    },
+    {
+        "timestamp": "2026-04-06 19:27:12",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-06 19:27:26",
+        "username": "chinmay",
+        "action": "LOGOUT",
+        "details": "User signed out"
+    },
+    {
+        "timestamp": "2026-04-06 19:58:47",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: user_data\\chinmay\\20260323_140541_transform_build.json"
+    },
+    {
+        "timestamp": "2026-04-06 19:58:47",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-15 00:01:37",
+        "username": "admin",
+        "action": "LOGOUT",
+        "details": "User signed out"
+    },
+    {
+        "timestamp": "2026-04-15 20:02:55",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: user_data\\chinmay\\20260323_140541_transform_build.json"
+    },
+    {
+        "timestamp": "2026-04-15 20:02:55",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-15 20:03:09",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-04-15 20:03:15",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-04-18 10:21:43",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-04-18 10:21:45",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-18 10:22:08",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-04-18 10:22:20",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-04-18 10:22:30",
+        "username": "chinmay",
+        "action": "LOGOUT",
+        "details": "User signed out"
+    },
+    {
+        "timestamp": "2026-04-23 22:34:50",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-04-23 22:34:52",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-23 22:35:41",
+        "username": "chinmay",
+        "action": "UPLOAD",
+        "details": "Uploaded Sample P.2.P@4.csv (long format, 14739 unique cases)"
+    },
+    {
+        "timestamp": "2026-04-23 22:35:41",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-24 08:46:54",
+        "username": "chinmay",
+        "action": "UPLOAD",
+        "details": "Uploaded Sample - P2P@4.csv (long format, 2977 unique cases)"
+    },
+    {
+        "timestamp": "2026-04-24 08:46:55",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-24 08:47:03",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-04-24 08:47:11",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-04-24 08:48:56",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-04-24 08:48:58",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-24 10:01:17",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-04-24 10:01:19",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-24 10:04:26",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-04-24 10:04:28",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-24 10:15:27",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-04-24 10:15:30",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-24 10:23:29",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: purch_group = CPK"
+    },
+    {
+        "timestamp": "2026-04-24 10:23:36",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Cleared all active chart cross-filters"
+    },
+    {
+        "timestamp": "2026-04-24 10:29:32",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-04-24 10:29:35",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-24 10:31:07",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-04-24 10:31:46",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: ernam = 13005601"
+    },
+    {
+        "timestamp": "2026-04-24 10:31:46",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: ernam = 13005601"
+    },
+    {
+        "timestamp": "2026-04-24 10:31:52",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: ernam = null"
+    },
+    {
+        "timestamp": "2026-04-24 10:32:59",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Cleared all active chart cross-filters"
+    },
+    {
+        "timestamp": "2026-04-24 10:33:09",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-04-24 10:55:53",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 33426 rows"
+    },
+    {
+        "timestamp": "2026-04-24 10:55:56",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-24 10:57:57",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 33426 rows"
+    },
+    {
+        "timestamp": "2026-04-24 10:57:59",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-24 11:00:29",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-04-24 11:00:31",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-24 11:01:06",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = Happy Path"
+    },
+    {
+        "timestamp": "2026-04-24 11:01:13",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = null"
+    },
+    {
+        "timestamp": "2026-04-24 11:01:27",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: sod = GR Checker = Invoice Checker"
+    },
+    {
+        "timestamp": "2026-04-24 11:01:27",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: sod = GR Checker = Invoice Checker"
+    },
+    {
+        "timestamp": "2026-04-24 11:01:35",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: sod = null"
+    },
+    {
+        "timestamp": "2026-04-24 11:01:35",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: sod = null"
+    },
+    {
+        "timestamp": "2026-04-24 11:15:30",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-04-24 11:15:32",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-24 11:15:58",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = Deviations"
+    },
+    {
+        "timestamp": "2026-04-24 11:15:58",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = Deviations"
+    },
+    {
+        "timestamp": "2026-04-24 11:16:04",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: ernam = 13003942"
+    },
+    {
+        "timestamp": "2026-04-24 11:18:10",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Cleared all active chart cross-filters"
+    },
+    {
+        "timestamp": "2026-04-24 11:52:04",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-04-24 11:52:06",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-24 11:55:21",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Clicked case row: 410002889300020"
+    },
+    {
+        "timestamp": "2026-04-24 11:55:51",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Changed slicer case_id to ALL"
+    },
+    {
+        "timestamp": "2026-04-24 11:55:56",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-24 11:55:57",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-24 11:55:57",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-24 11:55:57",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-24 11:55:58",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-24 11:55:58",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-24 11:55:58",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-24 11:56:05",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Changed slicer case_id to ALL"
+    },
+    {
+        "timestamp": "2026-04-24 11:58:21",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 0 rows"
+    },
+    {
+        "timestamp": "2026-04-24 11:58:22",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-24 12:00:19",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-04-24 12:00:21",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-24 12:00:33",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: ernam = TOLLER_GZB1"
+    },
+    {
+        "timestamp": "2026-04-24 12:00:33",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: ernam = TOLLER_GZB1"
+    },
+    {
+        "timestamp": "2026-04-24 12:00:40",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: ernam = null"
+    },
+    {
+        "timestamp": "2026-04-24 15:21:36",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-04-24 15:21:38",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-24 15:24:05",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = Deviations"
+    },
+    {
+        "timestamp": "2026-04-24 15:24:40",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: ernam = TOLLER_GZB1"
+    },
+    {
+        "timestamp": "2026-04-24 15:24:40",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: ernam = TOLLER_GZB1"
+    },
+    {
+        "timestamp": "2026-04-24 15:24:45",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Cleared all active chart cross-filters"
+    },
+    {
+        "timestamp": "2026-04-24 15:25:04",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-04-24 18:18:33",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-04-24 18:18:36",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-24 21:20:00",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-04-24 21:20:01",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-24 21:21:28",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-04-24 21:21:29",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-24 21:22:45",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-04-24 21:22:46",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-24 21:37:40",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 0 rows"
+    },
+    {
+        "timestamp": "2026-04-24 21:37:41",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-24 21:46:45",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 0 rows"
+    },
+    {
+        "timestamp": "2026-04-24 21:46:46",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-24 21:48:27",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-04-24 21:48:28",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-24 21:54:21",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-04-24 21:54:22",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-25 09:25:39",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-04-25 09:25:40",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-25 14:15:54",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-25 14:15:55",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-04-25 14:18:36",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-25 14:18:37",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-04-25 14:19:23",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-04-25 14:19:24",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-26 19:25:42",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: user_data\\chinmay\\20260425_141923_transform_build.json"
+    },
+    {
+        "timestamp": "2026-04-26 19:25:42",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-26 19:25:51",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-04-26 19:25:58",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-04-27 09:18:30",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 09:19:05",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-04-27 09:41:37",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 09:41:39",
+        "username": "chinmay",
+        "action": "FIX_MAPPING",
+        "details": "Navigated to table mapping"
+    },
+    {
+        "timestamp": "2026-04-27 09:43:17",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 09:45:40",
+        "username": "chinmay",
+        "action": "FIX_MAPPING",
+        "details": "Navigated to table mapping"
+    },
+    {
+        "timestamp": "2026-04-27 09:48:30",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 09:48:33",
+        "username": "chinmay",
+        "action": "FIX_MAPPING",
+        "details": "Navigated to table mapping"
+    },
+    {
+        "timestamp": "2026-04-27 09:54:09",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-04-27 09:54:10",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 09:55:20",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-04-27 09:56:55",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 09:57:29",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 09:58:24",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-04-27 10:11:33",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-04-27 10:11:35",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 10:17:58",
+        "username": "chinmay",
+        "action": "LOGOUT",
+        "details": "User signed out"
+    },
+    {
+        "timestamp": "2026-04-27 10:18:39",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 10:21:27",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 10:21:28",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-04-27 11:47:03",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-04-27 11:47:05",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 11:58:53",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-04-27 11:58:55",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 11:59:53",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-04-27 12:00:03",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-04-27 14:43:14",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 14:43:21",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-04-27 14:43:25",
+        "username": "chinmay",
+        "action": "FIX_MAPPING",
+        "details": "Navigated to column mapping"
+    },
+    {
+        "timestamp": "2026-04-27 18:36:33",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: user_data\\chinmay\\20260424_084654_Sample - P2P4.csv.json"
+    },
+    {
+        "timestamp": "2026-04-27 18:36:33",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 18:37:01",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-04-27 18:44:35",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 18:45:54",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-04-27 18:45:56",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 18:47:30",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 18:47:37",
+        "username": "chinmay",
+        "action": "LOGOUT",
+        "details": "User signed out"
+    },
+    {
+        "timestamp": "2026-04-27 19:29:57",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 19:31:18",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 19:32:19",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 19:32:23",
+        "username": "chinmay",
+        "action": "FIX_MAPPING",
+        "details": "Navigated to column mapping"
+    },
+    {
+        "timestamp": "2026-04-27 19:43:04",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 19:43:11",
+        "username": "chinmay",
+        "action": "FIX_MAPPING",
+        "details": "Navigated to column mapping"
+    },
+    {
+        "timestamp": "2026-04-27 22:15:09",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 22:15:15",
+        "username": "chinmay",
+        "action": "FIX_MAPPING",
+        "details": "Navigated to column mapping"
+    },
+    {
+        "timestamp": "2026-04-27 22:16:37",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-04-27 22:16:39",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 22:17:16",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 22:17:40",
+        "username": "chinmay",
+        "action": "LOGOUT",
+        "details": "User signed out"
+    },
+    {
+        "timestamp": "2026-04-27 22:27:19",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-04-27 22:27:20",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 22:27:26",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-04-27 22:27:57",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 22:36:03",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-04-27 22:36:05",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 22:36:10",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-04-27 22:36:35",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 22:40:55",
+        "username": "chinmay",
+        "action": "LOGOUT",
+        "details": "User signed out"
+    },
+    {
+        "timestamp": "2026-04-27 22:42:03",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-04-27 22:42:04",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 22:57:04",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-04-27 22:57:05",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 22:57:10",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-04-27 22:57:34",
+        "username": "chinmay",
+        "action": "DOWNLOAD",
+        "details": "Downloaded output CSV: P2P_Output_chinmay_20260427_225733.csv (29770 rows)"
+    },
+    {
+        "timestamp": "2026-04-27 22:59:45",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 22:59:47",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-04-27 23:00:18",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-04-27 23:00:20",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 23:00:24",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-04-27 23:02:53",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-04-27 23:02:54",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 23:03:00",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-04-27 23:03:25",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 23:03:28",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-04-27 23:07:02",
+        "username": "chinmay",
+        "action": "ERROR",
+        "details": "Failed to upload Sample - P2P@4.csv: Length of values (2983) does not match length of index (2)"
+    },
+    {
+        "timestamp": "2026-04-27 23:07:05",
+        "username": "chinmay",
+        "action": "UPLOAD",
+        "details": "Uploaded Sample - P2P@4.csv (long format, 2977 unique cases)"
+    },
+    {
+        "timestamp": "2026-04-27 23:07:06",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 23:08:14",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 23:08:15",
+        "username": "chinmay",
+        "action": "FIX_MAPPING",
+        "details": "Navigated to column mapping"
+    },
+    {
+        "timestamp": "2026-04-27 23:08:42",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-04-27 23:08:44",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 23:08:47",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-04-27 23:09:13",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 23:09:15",
+        "username": "chinmay",
+        "action": "FIX_MAPPING",
+        "details": "Navigated to column mapping"
+    },
+    {
+        "timestamp": "2026-04-27 23:20:56",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 23:20:59",
+        "username": "chinmay",
+        "action": "FIX_MAPPING",
+        "details": "Navigated to column mapping"
+    },
+    {
+        "timestamp": "2026-04-27 23:23:23",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 23:23:33",
+        "username": "chinmay",
+        "action": "FIX_MAPPING",
+        "details": "Navigated to column mapping"
+    },
+    {
+        "timestamp": "2026-04-28 11:47:50",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: user_data\\chinmay\\20260427_230705_Sample - P2P4.csv.json"
+    },
+    {
+        "timestamp": "2026-04-28 11:47:50",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-05-07 09:56:53",
+        "username": "chinmay",
+        "action": "TRANSFORM",
+        "details": "Built event log: 29770 rows"
+    },
+    {
+        "timestamp": "2026-05-07 09:56:54",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-05-07 09:57:07",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-05-07 10:21:23",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-05-08 09:48:44",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: user_data\\chinmay\\20260507_095653_transform_build.json"
+    },
+    {
+        "timestamp": "2026-05-08 09:48:44",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-05-08 09:54:30",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: purch_group = N05"
+    },
+    {
+        "timestamp": "2026-05-08 09:54:54",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Cleared all active chart cross-filters"
+    },
+    {
+        "timestamp": "2026-05-08 09:55:09",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: activity = PO Creation"
+    },
+    {
+        "timestamp": "2026-05-08 09:55:14",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: activity = null"
+    },
+    {
+        "timestamp": "2026-05-08 09:55:19",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: activity = PO Reversal Date"
+    },
+    {
+        "timestamp": "2026-05-08 09:55:24",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: activity = GR Reversal Date"
+    },
+    {
+        "timestamp": "2026-05-08 09:55:28",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: activity = null"
+    },
+    {
+        "timestamp": "2026-05-08 09:55:33",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = Happy Path"
+    },
+    {
+        "timestamp": "2026-05-08 09:55:39",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = null"
+    },
+    {
+        "timestamp": "2026-05-08 10:20:11",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Cleared all active chart cross-filters"
+    },
+    {
+        "timestamp": "2026-05-08 11:51:27",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: user_data\\chinmay\\20260507_095653_transform_build.json"
+    },
+    {
+        "timestamp": "2026-05-08 11:51:27",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-05-08 12:13:19",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-05-08 12:13:25",
+        "username": "chinmay",
+        "action": "FIX_MAPPING",
+        "details": "Navigated to column mapping"
+    },
+    {
+        "timestamp": "2026-05-08 12:17:18",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: user_data\\chinmay\\20260507_095653_transform_build.json"
+    },
+    {
+        "timestamp": "2026-05-08 12:17:18",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-05-08 12:43:11",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: user_data\\chinmay\\20260507_095653_transform_build.json"
+    },
+    {
+        "timestamp": "2026-05-08 12:43:11",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    }
+]

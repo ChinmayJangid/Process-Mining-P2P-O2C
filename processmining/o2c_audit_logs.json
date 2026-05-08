@@ -1,0 +1,1418 @@
+[
+    {
+        "timestamp": "2026-03-16 10:04:01",
+        "username": "chinmay",
+        "action": "UPLOAD",
+        "details": "Uploaded Sample-O2C@4.csv: 3000 rows"
+    },
+    {
+        "timestamp": "2026-03-16 10:04:01",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-16 10:04:19",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-16 10:04:22",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-16 10:04:40",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-16 10:06:11",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-16 10:59:07",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-16 11:14:28",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-16 11:14:32",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-16 11:14:51",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: month = 2024-05"
+    },
+    {
+        "timestamp": "2026-03-16 11:15:02",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: month = null"
+    },
+    {
+        "timestamp": "2026-03-16 11:15:46",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Cleared all active chart cross-filters"
+    },
+    {
+        "timestamp": "2026-03-16 11:15:59",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-16 11:22:26",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Reset all slicers to ALL"
+    },
+    {
+        "timestamp": "2026-03-16 11:22:44",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: o2c_user_data/chinmay_20260316_100400.csv"
+    },
+    {
+        "timestamp": "2026-03-16 11:22:44",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-16 11:23:31",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = Happy Path"
+    },
+    {
+        "timestamp": "2026-03-16 11:23:46",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = null"
+    },
+    {
+        "timestamp": "2026-03-16 11:23:46",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = null"
+    },
+    {
+        "timestamp": "2026-03-16 12:13:36",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: o2c_user_data/chinmay_20260316_100400.csv"
+    },
+    {
+        "timestamp": "2026-03-16 12:13:36",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-16 12:38:09",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Reset all slicers to ALL"
+    },
+    {
+        "timestamp": "2026-03-16 12:58:04",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: o2c_user_data/chinmay_20260316_100400.csv"
+    },
+    {
+        "timestamp": "2026-03-16 12:58:04",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-16 14:28:53",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: o2c_user_data/chinmay_20260316_100400.csv"
+    },
+    {
+        "timestamp": "2026-03-16 14:28:53",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-16 14:34:32",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-16 14:34:35",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-16 14:34:41",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-16 14:34:48",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-16 14:34:58",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-16 14:35:05",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-16 14:35:27",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-16 14:45:37",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: o2c_user_data/chinmay_20260316_100400.csv"
+    },
+    {
+        "timestamp": "2026-03-16 14:45:37",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-16 14:45:43",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: o2c_user_data/chinmay_20260316_100400.csv"
+    },
+    {
+        "timestamp": "2026-03-16 14:45:43",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-16 14:52:00",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: o2c_user_data/chinmay_20260316_100400.csv"
+    },
+    {
+        "timestamp": "2026-03-16 14:52:00",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-16 14:52:09",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-16 15:31:40",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: o2c_user_data/chinmay_20260316_100400.csv"
+    },
+    {
+        "timestamp": "2026-03-16 15:31:40",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-16 15:31:55",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-16 17:46:06",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: o2c_user_data/chinmay_20260316_100400.csv"
+    },
+    {
+        "timestamp": "2026-03-16 17:46:06",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-16 17:46:13",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-16 17:46:26",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: customer = YOGI INTERNATIONAL TRADING CO. LLC"
+    },
+    {
+        "timestamp": "2026-03-16 17:46:36",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: customer = null"
+    },
+    {
+        "timestamp": "2026-03-16 17:46:53",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-16 17:47:04",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Cleared all active chart cross-filters"
+    },
+    {
+        "timestamp": "2026-03-17 10:56:51",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: o2c_user_data/chinmay_20260316_100400.csv"
+    },
+    {
+        "timestamp": "2026-03-17 10:56:51",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-17 10:56:59",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-17 10:57:10",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-17 10:57:18",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-17 10:57:28",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-17 10:57:45",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-18 17:55:46",
+        "username": "chinmay",
+        "action": "UPLOAD",
+        "details": "Uploaded Sample-O2C@4.csv: 3000 rows"
+    },
+    {
+        "timestamp": "2026-03-18 17:55:47",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-18 17:56:05",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-18 17:56:11",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-18 17:56:11",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-18 17:57:12",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-18 17:57:55",
+        "username": "chinmay",
+        "action": "LOGOUT",
+        "details": "User signed out"
+    },
+    {
+        "timestamp": "2026-03-18 17:58:34",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: o2c_user_data\\chinmay\\20260318_175546_Sample-O2C4.csv"
+    },
+    {
+        "timestamp": "2026-03-18 17:58:34",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-19 18:24:19",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: o2c_user_data\\chinmay\\20260318_175546_Sample-O2C4.csv"
+    },
+    {
+        "timestamp": "2026-03-19 18:24:19",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-19 18:24:40",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-19 18:24:54",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-20 12:23:23",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded file: o2c_user_data\\chinmay\\20260318_175546_Sample-O2C4.csv"
+    },
+    {
+        "timestamp": "2026-03-20 12:23:23",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 12:23:33",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-20 12:23:37",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-20 12:23:44",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-20 13:25:45",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: o2c_user_data\\chinmay\\20260318_175546_Sample-O2C4.csv"
+    },
+    {
+        "timestamp": "2026-03-20 13:25:45",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 16:48:52",
+        "username": "chinmay",
+        "action": "O2C_TRANSFORM",
+        "details": "Built O2C event log: 7,261 rows"
+    },
+    {
+        "timestamp": "2026-03-20 16:48:54",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 16:49:18",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-20 16:49:37",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-20 16:50:08",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Clicked case row: nan"
+    },
+    {
+        "timestamp": "2026-03-20 16:50:21",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Clicked case row: ALL"
+    },
+    {
+        "timestamp": "2026-03-20 16:50:33",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = Happy Path"
+    },
+    {
+        "timestamp": "2026-03-20 16:50:33",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = Happy Path"
+    },
+    {
+        "timestamp": "2026-03-20 16:50:40",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = null"
+    },
+    {
+        "timestamp": "2026-03-20 16:50:40",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = null"
+    },
+    {
+        "timestamp": "2026-03-20 16:52:11",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-20 16:52:21",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Changed slicer matkl to 100775"
+    },
+    {
+        "timestamp": "2026-03-20 16:53:17",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 16:53:19",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Reset all slicers to ALL"
+    },
+    {
+        "timestamp": "2026-03-20 16:53:26",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: customer = GARIMA STEEL"
+    },
+    {
+        "timestamp": "2026-03-20 16:53:26",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: customer = GARIMA STEEL"
+    },
+    {
+        "timestamp": "2026-03-20 16:53:35",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-03-20 16:53:48",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: o2c_user_data\\chinmay\\20260320_164852_o2c_build.json"
+    },
+    {
+        "timestamp": "2026-03-20 16:53:48",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 16:54:14",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-20 17:03:49",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: o2c_user_data\\chinmay\\20260320_164852_o2c_build.json"
+    },
+    {
+        "timestamp": "2026-03-20 17:03:49",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 17:04:08",
+        "username": "chinmay",
+        "action": "DOWNLOAD",
+        "details": "Downloaded O2C output CSV from dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 17:12:46",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-03-20 17:12:52",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: o2c_user_data\\chinmay\\20260318_175546_Sample-O2C4.csv"
+    },
+    {
+        "timestamp": "2026-03-20 17:12:52",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 17:17:16",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-03-20 17:17:24",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: o2c_user_data\\chinmay\\20260320_164852_o2c_build.json"
+    },
+    {
+        "timestamp": "2026-03-20 17:17:24",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 17:18:04",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Clicked case row: 870050936010.0"
+    },
+    {
+        "timestamp": "2026-03-20 17:18:34",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Clicked case row: ALL"
+    },
+    {
+        "timestamp": "2026-03-20 17:34:08",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: o2c_user_data\\chinmay\\20260320_164852_o2c_build.json"
+    },
+    {
+        "timestamp": "2026-03-20 17:34:09",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 17:39:55",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: o2c_user_data\\chinmay\\20260320_164852_o2c_build.json"
+    },
+    {
+        "timestamp": "2026-03-20 17:39:55",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 17:41:31",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: o2c_user_data\\chinmay\\20260320_164852_o2c_build.json"
+    },
+    {
+        "timestamp": "2026-03-20 17:41:31",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 17:41:53",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Reset all slicers to ALL"
+    },
+    {
+        "timestamp": "2026-03-20 17:42:03",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Reset all slicers to ALL"
+    },
+    {
+        "timestamp": "2026-03-20 17:42:04",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Reset all slicers to ALL"
+    },
+    {
+        "timestamp": "2026-03-20 17:42:06",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Reset all slicers to ALL"
+    },
+    {
+        "timestamp": "2026-03-20 17:42:06",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Reset all slicers to ALL"
+    },
+    {
+        "timestamp": "2026-03-20 17:42:15",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: o2c_user_data\\chinmay\\20260320_164852_o2c_build.json"
+    },
+    {
+        "timestamp": "2026-03-20 17:42:15",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 17:42:47",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: o2c_user_data\\chinmay\\20260320_164852_o2c_build.json"
+    },
+    {
+        "timestamp": "2026-03-20 17:42:47",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 17:45:13",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: o2c_user_data\\chinmay\\20260320_164852_o2c_build.json"
+    },
+    {
+        "timestamp": "2026-03-20 17:45:13",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-20 17:45:32",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Clicked case row: 870050602310.0"
+    },
+    {
+        "timestamp": "2026-03-20 17:46:18",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Clicked case row: ALL"
+    },
+    {
+        "timestamp": "2026-03-20 17:53:05",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-03-22 23:23:04",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: o2c_user_data\\chinmay\\20260320_164852_o2c_build.json"
+    },
+    {
+        "timestamp": "2026-03-22 23:23:04",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-22 23:23:21",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = Happy Path"
+    },
+    {
+        "timestamp": "2026-03-22 23:23:21",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = Happy Path"
+    },
+    {
+        "timestamp": "2026-03-22 23:23:47",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Applied cross-filter on chart: status = null"
+    },
+    {
+        "timestamp": "2026-03-22 23:24:12",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Clicked case row: nan"
+    },
+    {
+        "timestamp": "2026-03-22 23:24:24",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Clicked case row: ALL"
+    },
+    {
+        "timestamp": "2026-03-22 23:24:32",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-03-22 23:24:58",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-03-22 23:29:28",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: o2c_user_data\\chinmay\\20260320_164852_o2c_build.json"
+    },
+    {
+        "timestamp": "2026-03-22 23:29:28",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-03-22 23:40:10",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: o2c_user_data\\chinmay\\20260320_164852_o2c_build.json"
+    },
+    {
+        "timestamp": "2026-03-22 23:40:10",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-05 21:47:41",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: o2c_user_data\\chinmay\\20260320_164852_o2c_build.json"
+    },
+    {
+        "timestamp": "2026-04-05 21:47:41",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-05 21:47:51",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-04-05 21:48:01",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-04-15 00:03:31",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: o2c_user_data\\chinmay\\20260320_164852_o2c_build.json"
+    },
+    {
+        "timestamp": "2026-04-15 00:03:31",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-15 00:04:29",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Clicked case row: nan"
+    },
+    {
+        "timestamp": "2026-04-15 00:04:41",
+        "username": "chinmay",
+        "action": "FILTER",
+        "details": "Clicked case row: ALL"
+    },
+    {
+        "timestamp": "2026-04-15 00:05:09",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-04-15 00:05:17",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-04-15 19:58:49",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: o2c_user_data\\chinmay\\20260320_164852_o2c_build.json"
+    },
+    {
+        "timestamp": "2026-04-15 19:58:49",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-15 19:59:12",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-04-15 19:59:53",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-04-18 10:23:20",
+        "username": "chinmay",
+        "action": "O2C_TRANSFORM",
+        "details": "Built O2C event log: 1 rows"
+    },
+    {
+        "timestamp": "2026-04-18 10:23:20",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-18 10:23:38",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-04-18 10:23:43",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-04-24 22:06:08",
+        "username": "chinmay",
+        "action": "O2C_TRANSFORM",
+        "details": "Built O2C event log: 1 rows"
+    },
+    {
+        "timestamp": "2026-04-24 22:06:09",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-24 22:06:20",
+        "username": "chinmay",
+        "action": "LOGOUT",
+        "details": "User signed out"
+    },
+    {
+        "timestamp": "2026-04-26 19:29:06",
+        "username": "chinmay",
+        "action": "UPLOAD",
+        "details": "Uploaded Sample-O2C@4.csv: 3,000 rows, 3,000 cases"
+    },
+    {
+        "timestamp": "2026-04-26 19:29:06",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-26 19:29:48",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: o2c_user_data\\chinmay\\20260318_175546_Sample-O2C4.csv"
+    },
+    {
+        "timestamp": "2026-04-26 19:29:48",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 14:48:19",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 14:48:20",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-04-27 14:52:13",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 14:52:15",
+        "username": "chinmay",
+        "action": "FIX_MAPPING",
+        "details": "Navigating to table to fix mapping"
+    },
+    {
+        "timestamp": "2026-04-27 15:44:07",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 15:44:15",
+        "username": "chinmay",
+        "action": "FIX_MAPPING",
+        "details": "Navigating to table to fix mapping"
+    },
+    {
+        "timestamp": "2026-04-27 17:11:31",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: o2c_user_data\\chinmay\\20260318_175546_Sample-O2C4.csv"
+    },
+    {
+        "timestamp": "2026-04-27 17:11:31",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 17:12:02",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-04-27 17:12:04",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-04-27 18:23:40",
+        "username": "chinmay",
+        "action": "O2C_TRANSFORM",
+        "details": "Built O2C event log: 7,261 rows"
+    },
+    {
+        "timestamp": "2026-04-27 18:23:41",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 18:48:27",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 18:48:31",
+        "username": "chinmay",
+        "action": "LOGOUT",
+        "details": "User signed out"
+    },
+    {
+        "timestamp": "2026-04-27 19:33:06",
+        "username": "chinmay",
+        "action": "O2C_TRANSFORM",
+        "details": "Built O2C event log: 1 rows"
+    },
+    {
+        "timestamp": "2026-04-27 19:33:07",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 19:33:17",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-04-27 19:34:01",
+        "username": "chinmay",
+        "action": "O2C_TRANSFORM",
+        "details": "Built O2C event log: 1 rows"
+    },
+    {
+        "timestamp": "2026-04-27 19:34:02",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 20:27:51",
+        "username": "chinmay",
+        "action": "O2C_TRANSFORM",
+        "details": "Built O2C event log: 1 rows"
+    },
+    {
+        "timestamp": "2026-04-27 20:27:52",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 20:30:14",
+        "username": "chinmay",
+        "action": "O2C_TRANSFORM",
+        "details": "Built O2C event log: 1 rows"
+    },
+    {
+        "timestamp": "2026-04-27 20:30:15",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 20:58:04",
+        "username": "chinmay",
+        "action": "O2C_TRANSFORM",
+        "details": "Built O2C event log: 1 rows"
+    },
+    {
+        "timestamp": "2026-04-27 20:58:05",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 20:59:10",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 20:59:18",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-04-27 21:12:15",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 21:12:17",
+        "username": "chinmay",
+        "action": "FIX_MAPPING",
+        "details": "Navigated to column mapping"
+    },
+    {
+        "timestamp": "2026-04-27 21:12:45",
+        "username": "chinmay",
+        "action": "UPLOAD",
+        "details": "Uploaded Sample-O2C@4.csv: 3,000 rows, 2,912 cases"
+    },
+    {
+        "timestamp": "2026-04-27 21:12:46",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 21:41:23",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 21:41:25",
+        "username": "chinmay",
+        "action": "FIX_MAPPING",
+        "details": "Navigated to column mapping"
+    },
+    {
+        "timestamp": "2026-04-27 21:48:47",
+        "username": "chinmay",
+        "action": "O2C_TRANSFORM",
+        "details": "Built O2C event log: 1 rows"
+    },
+    {
+        "timestamp": "2026-04-27 21:48:48",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 21:49:51",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 21:49:58",
+        "username": "chinmay",
+        "action": "FIX_MAPPING",
+        "details": "Navigated to column mapping"
+    },
+    {
+        "timestamp": "2026-04-27 22:08:44",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 22:08:46",
+        "username": "chinmay",
+        "action": "FIX_MAPPING",
+        "details": "Navigated to column mapping"
+    },
+    {
+        "timestamp": "2026-04-27 22:08:55",
+        "username": "chinmay",
+        "action": "LOGOUT",
+        "details": "User signed out"
+    },
+    {
+        "timestamp": "2026-04-27 22:12:54",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 22:12:56",
+        "username": "chinmay",
+        "action": "FIX_MAPPING",
+        "details": "Navigated to column mapping"
+    },
+    {
+        "timestamp": "2026-04-27 22:13:50",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 22:13:52",
+        "username": "chinmay",
+        "action": "FIX_MAPPING",
+        "details": "Navigated to column mapping"
+    },
+    {
+        "timestamp": "2026-04-27 23:24:03",
+        "username": "chinmay",
+        "action": "O2C_TRANSFORM",
+        "details": "Built O2C event log: 1 rows"
+    },
+    {
+        "timestamp": "2026-04-27 23:24:03",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 23:24:08",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-04-27 23:24:51",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-04-27 23:24:57",
+        "username": "chinmay",
+        "action": "FIX_MAPPING",
+        "details": "Navigated to column mapping"
+    },
+    {
+        "timestamp": "2026-05-08 11:29:52",
+        "username": "chinmay",
+        "action": "O2C_TRANSFORM",
+        "details": "Built O2C event log: 7,261 rows"
+    },
+    {
+        "timestamp": "2026-05-08 11:29:53",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-05-08 11:31:05",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: o2c_user_data\\chinmay_20260427_211245.csv"
+    },
+    {
+        "timestamp": "2026-05-08 11:31:05",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-05-08 11:31:19",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-05-08 11:31:36",
+        "username": "chinmay",
+        "action": "RESET_DATA",
+        "details": "Started upload new file flow"
+    },
+    {
+        "timestamp": "2026-05-08 11:31:42",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-05-08 11:50:54",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Process Mining"
+    },
+    {
+        "timestamp": "2026-05-08 11:54:38",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: o2c_user_data\\chinmay\\20260508_112952_o2c_build.json"
+    },
+    {
+        "timestamp": "2026-05-08 11:54:38",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-05-08 12:24:22",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: o2c_user_data\\chinmay\\20260508_112952_o2c_build.json"
+    },
+    {
+        "timestamp": "2026-05-08 12:24:22",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-05-08 12:28:15",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: o2c_user_data\\chinmay\\20260508_112952_o2c_build.json"
+    },
+    {
+        "timestamp": "2026-05-08 12:28:15",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-05-08 12:28:48",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: o2c_user_data\\chinmay\\20260508_112952_o2c_build.json"
+    },
+    {
+        "timestamp": "2026-05-08 12:28:48",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-05-08 12:31:25",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: o2c_user_data\\chinmay\\20260508_112952_o2c_build.json"
+    },
+    {
+        "timestamp": "2026-05-08 12:31:25",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    },
+    {
+        "timestamp": "2026-05-08 12:41:33",
+        "username": "chinmay",
+        "action": "TAB",
+        "details": "Viewed Dimensions"
+    },
+    {
+        "timestamp": "2026-05-08 12:42:01",
+        "username": "chinmay",
+        "action": "LOAD_FILE",
+        "details": "Loaded: o2c_user_data\\chinmay\\20260508_112952_o2c_build.json"
+    },
+    {
+        "timestamp": "2026-05-08 12:42:01",
+        "username": "chinmay",
+        "action": "REFRESH",
+        "details": "Refreshed the dashboard"
+    }
+]
