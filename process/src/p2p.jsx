@@ -7,10 +7,12 @@ import ReactFlow, {
   EdgeLabelRenderer, BaseEdge, Handle,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
+import 'reactflow/dist/style.css';
 import {
   BarChart, Bar, ComposedChart, Line, PieChart, Pie,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, Legend
 } from 'recharts';
+import { motion, AnimatePresence } from 'framer-motion';
 import './App.css'; 
 
 const API = 'http://localhost:8000';
@@ -160,6 +162,27 @@ const ProcessNode=React.memo(({data})=>{
       position: 'relative',
       zIndex: 10,
     }}>
+      {/* Halo Pulse Effect */}
+      <motion.div
+        style={{
+          position: 'absolute',
+          inset: -4,
+          borderRadius: 12,
+          border: '4px solid #00B7C3',
+          zIndex: -1,
+          pointerEvents: 'none'
+        }}
+        initial={{ opacity: 0, scale: 0.95 }}
+        whileHover={{
+          opacity: [0, 0.6, 0],
+          scale: [1, 1.15, 1.35],
+          transition: {
+            duration: 1.5,
+            repeat: Infinity,
+            ease: "easeOut"
+          }
+        }}
+      />
       <div style={{
         fontSize: 50, 
         fontWeight: 700, 
@@ -272,6 +295,51 @@ const FreqEdge=React.memo(({id,sourceX,sourceY,targetX,targetY,sourcePosition,ta
     <>
       <BaseEdge id={id} path={edgePath} markerEnd={markerEnd}
         style={{...style, stroke: arcColor, strokeWidth: width, opacity:.85}}/>
+     
+      <path 
+        d={edgePath} 
+        fill="none" 
+        stroke="#00B7C3" 
+        strokeWidth={Math.max(4, width / 1.5)}
+        strokeDasharray="1 20"
+        strokeLinecap="round"
+        style={{
+          opacity: 0.6,
+          animation: `cometFlow ${Math.max(4, 10 - (freq / max) * 6)}s linear infinite`
+        }}
+      />
+
+      {/* Moving Arrow Stream Animation */}
+      {[0, 1, 2].map((i) => {
+        const duration = Math.max(4, 10 - (freq / max) * 6);
+        return (
+          <path 
+            key={i}
+            d="M -8,-6 L 8,0 L -8,6 Z" 
+            fill="#00B7C3" 
+            style={{ 
+              opacity: 0,
+            }}
+          >
+            <animateMotion 
+              dur={`${duration}s`} 
+              repeatCount="indefinite" 
+              path={edgePath} 
+              rotate="auto"
+              begin={`${i * (duration / 3)}s`}
+            />
+            <animate 
+              attributeName="opacity" 
+              values="0;1;1;0" 
+              keyTimes="0;0.1;0.9;1" 
+              dur={`${duration}s`} 
+              repeatCount="indefinite" 
+              begin={`${i * (duration / 3)}s`}
+            />
+          </path>
+        );
+      })}
+
       {freq>0&&(
         <EdgeLabelRenderer>
           <div style={{position:'absolute',
@@ -428,15 +496,28 @@ const VALID_KEYS=new Set(['company','bsart','matkl','vendor','plant','purch_grou
   'case_id','month','activity','year','quarter','lifnr', 'lead_time', 'ernam', 'status', 'sod']);
 const qs=(params)=>{
   const p=Object.entries(params).filter(([k,v])=>VALID_KEYS.has(k)&&v&&v!=='ALL');
-  return p.length?'?'+p.map(([k,v])=>`${k}=${encodeURIComponent(v)}`).join('&'):'';
-};
-
+  return p.length?'?'+p.map(([k,v])=>`${k}=${encodeURIComponent(v)}`).join('&'):'';}
 const CROSS_TO_PARAM={
   company:'company', bsart:'bsart', matkl:'matkl', vendor:'vendor', plant:'plant',
   activity:'activity', month:'month', year:'year', quarter:'quarter',
   case_id:'case_id', lifnr:'lifnr', purch_group:'purch_group', lead_time:'lead_time', ernam:'ernam',
   status:'status', sod:'sod'
 };
+
+const Skeleton=({width='100%',height='20px',borderRadius=4,style})=>(
+  <div className="skeleton-shimmer" style={{width,height,borderRadius,...style}}/>
+);
+
+const ChartSkeleton=()=>(
+  <div style={{display:'flex',flexDirection:'column',gap:12,padding:10}}>
+    <Skeleton width="60%" height="24px"/>
+    <Skeleton width="90%" height="150px"/>
+    <div style={{display:'flex',gap:10}}>
+      <Skeleton width="30%" height="16px"/>
+      <Skeleton width="30%" height="16px"/>
+    </div>
+  </div>
+);
 
 const Empty=()=>(
   <div style={{height:90,display:'flex',alignItems:'center',justifyContent:'center',
@@ -639,19 +720,24 @@ const ChartCard=React.memo(({title,subtitle,children,highlighted,onClear,style={
       {loading && (
         <div style={{
           position:'absolute',inset:0,zIndex:10,
-          background:'rgba(255,255,255,0.85)',
-          backdropFilter:'blur(2px)',
-          display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:8
+          background: C.card,
+          display:'flex',flexDirection:'column',gap:12, padding:10
         }}>
-          <div style={{
-            width:20,height:20,borderRadius:'50%',
-            border:`2px solid ${C.blue700}`, borderTopColor:'transparent',
-            animation:'spin 0.8s linear infinite'
-          }}/>
-          <div style={{fontSize:11,fontWeight:600,color:C.blue700}}>Analysing...</div>
+          <div className="skeleton-loader" style={{width:'40%', height:14}}/>
+          <div style={{flex:1, display:'flex', alignItems:'flex-end', gap:8, marginTop: 10}}>
+             {[...Array(6)].map((_, i) => (
+               <div key={i} className="skeleton-loader" style={{
+                 flex:1, 
+                 height:`${30 + Math.random() * 60}%`,
+                 animationDelay: `${i * 0.1}s`
+               }}/>
+             ))}
+          </div>
         </div>
       )}
-      {children}
+      <div style={{opacity: loading ? 0 : 1, transition:'opacity 0.3s', height:'100%'}}>
+        {children}
+      </div>
     </div>
   </div>
 ));
@@ -972,9 +1058,9 @@ const ScrollableVBarChart=React.memo(({data,crossFilter,onSelect})=>{
   const colW=50;
   const chartW=Math.max('100%', data.length*colW);
   return(
-    <div style={{width:'100%',height:220, overflowX:'auto', overflowY:'hidden'}}>
+    <div style={{width:'100%',height:259, overflowX:'auto', overflowY:'hidden'}}>
       <div style={{width:chartW, height:'100%'}}>
-        <ResponsiveContainer width="100%" height="120%">
+        <ResponsiveContainer width="100%" height="110%">
           <BarChart data={data} margin={{left:8,right:16,top:10,bottom:40}}>
             <CartesianGrid strokeDasharray="3 3" stroke="#EDEBE9" vertical={false}/>
             <XAxis dataKey="bsart" tick={{fontSize:11,fill:'#605E5C'}} angle={-40} textAnchor="end" interval={0}/>
@@ -1241,7 +1327,7 @@ const VendorAvgDaysChart = React.memo(({ data, crossFilter, onSelect }) => {
   const chartW = Math.max(500, sorted.length * colW);
 
   return (
-    <div style={{ width: '100%', height: 260, overflowX: 'auto', overflowY: 'hidden', minWidth: 0, maxWidth: '100%' }}>
+    <div style={{ width: '100%', height: 275, overflowX: 'auto', overflowY: 'hidden', minWidth: 0, maxWidth: '100%' }}>
       <div style={{ width: chartW, height: '100%', minWidth: chartW }}>
         <ResponsiveContainer width="100%" height="110%">
           <BarChart data={sorted} margin={{ left: 8, right: 16, top: 16, bottom: 52 }}>
@@ -1425,6 +1511,7 @@ const P2P_FAQS = [
 
 const P2PIntroScreen = ({ onGoTableBuild, onGoCsvUpload, currentUser }) => {
   const [introStep, setIntroStep] = useState('overview'); // 'overview' | 'choose'
+  const [hoveredSide, setHoveredSide] = useState(null);
 
   const steps = [
     'Purchase Requisition (PR) is raised by a department',
@@ -1439,9 +1526,77 @@ const P2PIntroScreen = ({ onGoTableBuild, onGoCsvUpload, currentUser }) => {
     'Invoice processing cycle time','Three-way match exception rate','Vendor on-time delivery %',
   ];
 
-  if (introStep === 'overview') return (
-    <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',padding:'36px 24px 48px',overflowY:'auto'}}>
-      <div style={{maxWidth:880,width:'100%',display:'flex',flexDirection:'column',gap:24}}>
+  const IconWrapper = ({ children, color }) => (
+    <div style={{
+      width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center',
+      color: color, flexShrink: 0
+    }}>
+      {children}
+    </div>
+  );
+
+  const icons = {
+    file: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/>
+      </svg>
+    ),
+    check: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
+    ),
+    cart: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+      </svg>
+    ),
+    truck: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+      </svg>
+    ),
+    receipt: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z"/><line x1="16" y1="8" x2="8" y2="8"/><line x1="16" y1="12" x2="8" y2="12"/><line x1="16" y1="16" x2="8" y2="16"/>
+      </svg>
+    ),
+    creditCard: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+      </svg>
+    )
+  };
+
+  if (introStep === 'overview') {
+    const shortSteps = [
+      { icon: <IconWrapper color="#0078D4">{icons.file}</IconWrapper>, text: 'Create Purchase Requisition' },
+      { icon: <IconWrapper color="#107C10">{icons.check}</IconWrapper>, text: 'Approve Purchase Requisition' },
+      { icon: <IconWrapper color="#0078D4">{icons.cart}</IconWrapper>, text: 'Create Purchase Order' },
+      { icon: <IconWrapper color="#0078D4">{icons.truck}</IconWrapper>, text: 'Record Goods Receipt' },
+      { icon: <IconWrapper color="#0078D4">{icons.receipt}</IconWrapper>, text: 'Record Invoice Receipt' },
+      { icon: <IconWrapper color="#107C10">{icons.creditCard}</IconWrapper>, text: 'Clear Invoice' }
+    ];
+    return (
+      <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',overflowY:'auto'}}>
+        
+        {/* Continuous Process Ribbon */}
+        <div className="process-ribbon-container">
+          <div className="process-ribbon-content">
+            {/* Render twice for seamless looping */}
+            {[...shortSteps, ...shortSteps, ...shortSteps, ...shortSteps].map((s, i) => (
+              <React.Fragment key={i}>
+                <div className="process-ribbon-item">
+                  {s.icon}
+                  <span style={{marginLeft: 4}}>{s.text}</span>
+                </div>
+                {i < shortSteps.length * 4 - 1 && <div className="process-ribbon-arrow">→</div>}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+
+        <div style={{maxWidth:880,width:'100%',display:'flex',flexDirection:'column',gap:24,padding:'36px 24px 48px'}}>
 
         {/* Header */}
         <div style={{borderBottom:'2px solid #E2E8F0',paddingBottom:20}}>
@@ -1499,6 +1654,7 @@ const P2PIntroScreen = ({ onGoTableBuild, onGoCsvUpload, currentUser }) => {
       </div>
     </div>
   );
+}
 
   /* ── Choose your path ── */
   return (
@@ -1523,61 +1679,87 @@ const P2PIntroScreen = ({ onGoTableBuild, onGoCsvUpload, currentUser }) => {
           <p style={{margin:0,fontSize:13,color:'#64748b'}}>Select the method that matches your data format</p>
         </div>
 
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20}}>
-          {/* Build Event Log card */}
-          <div style={{background:'#fff',border:'2px solid #E2E8F0',borderRadius:12,padding:'28px 24px',
-            display:'flex',flexDirection:'column',alignItems:'center',gap:14,textAlign:'center',
-            boxShadow:'0 2px 8px rgba(0,0,0,0.05)',transition:'all 0.2s',cursor:'pointer'}}
+        <div style={{display:'flex', width: '100%', height: 320, gap: 16}}>
+          {/* Build Event Log panel */}
+          <motion.div 
+            layout
+            style={{
+              flex: hoveredSide === 'build' ? 1.7 : (hoveredSide === 'csv' ? 0.6 : 1),
+              background:'#fff',border:'2px solid #E2E8F0',borderRadius:16,padding:'28px 24px',
+              display:'flex',flexDirection:'column',alignItems:'center',gap:14,textAlign:'center',
+              boxShadow:'0 4px 12px rgba(0,0,0,0.03)',cursor:'pointer',overflow:'hidden'
+            }}
             onClick={onGoTableBuild}
-            onMouseEnter={e=>{e.currentTarget.style.borderColor='#006B3C';e.currentTarget.style.boxShadow='0 4px 16px rgba(0,107,60,0.15)';}}
-            onMouseLeave={e=>{e.currentTarget.style.borderColor='#E2E8F0';e.currentTarget.style.boxShadow='0 2px 8px rgba(0,0,0,0.05)';}}>
-            <div style={{width:60,height:60,borderRadius:14,background:'#EDFAF4',
-              display:'flex',alignItems:'center',justifyContent:'center',fontSize:28}}>
+            onMouseEnter={() => setHoveredSide('build')}
+            onMouseLeave={() => setHoveredSide(null)}
+            animate={{ borderColor: hoveredSide === 'build' ? '#006B3C' : '#E2E8F0' }}
+          >
+            <motion.div layout style={{width:60,height:60,borderRadius:14,background:'#EDFAF4',
+              display:'flex',alignItems:'center',justifyContent:'center',fontSize:28,flexShrink:0}}>
               🔨
-            </div>
-            <div>
-              <div style={{fontSize:16,fontWeight:700,color:'#1e293b',marginBottom:8}}>Build Event Log</div>
-              <div style={{fontSize:13,color:'#64748b',lineHeight:1.65}}>
-                Upload raw SAP tables (EKKO, EKPO, EBAN, EKBE, LFA1) and let the system
-                automatically build the process event log.
-              </div>
-            </div>
-            <button
+            </motion.div>
+            <motion.div layout style={{flex:1}}>
+              <motion.div layout style={{fontSize:18,fontWeight:700,color:'#1e293b',marginBottom:8, whiteSpace: hoveredSide === 'csv' ? 'nowrap' : 'normal'}}>Build Event Log</motion.div>
+              <AnimatePresence>
+                {hoveredSide !== 'csv' && (
+                  <motion.div 
+                    initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
+                    style={{fontSize:13,color:'#64748b',lineHeight:1.65}}>
+                    Upload raw SAP tables (EKKO, EKPO, EBAN, EKBE, LFA1) and let the system
+                    automatically build the process event log.
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+            <motion.button layout
               onClick={e=>{e.stopPropagation();onGoTableBuild();}}
               style={{background:'#006B3C',color:'#fff',border:'none',padding:'11px 28px',
                 borderRadius:7,fontSize:13,fontWeight:700,cursor:'pointer',width:'100%',marginTop:'auto'}}
               onMouseOver={e=>e.currentTarget.style.background='#004d2c'}
               onMouseOut={e=>e.currentTarget.style.background='#006B3C'}>
-              Build Event Log
-            </button>
-          </div>
+              {hoveredSide === 'csv' ? 'Build' : 'Build Event Log'}
+            </motion.button>
+          </motion.div>
 
-          {/* Upload Pre-built CSV card */}
-          <div style={{background:'#fff',border:'2px solid #E2E8F0',borderRadius:12,padding:'28px 24px',
-            display:'flex',flexDirection:'column',alignItems:'center',gap:14,textAlign:'center',
-            boxShadow:'0 2px 8px rgba(0,0,0,0.05)',transition:'all 0.2s',cursor:'pointer'}}
+          {/* Upload Pre-built CSV panel */}
+          <motion.div 
+            layout
+            style={{
+              flex: hoveredSide === 'csv' ? 1.7 : (hoveredSide === 'build' ? 0.6 : 1),
+              background:'#fff',border:'2px solid #E2E8F0',borderRadius:16,padding:'28px 24px',
+              display:'flex',flexDirection:'column',alignItems:'center',gap:14,textAlign:'center',
+              boxShadow:'0 4px 12px rgba(0,0,0,0.03)',cursor:'pointer',overflow:'hidden'
+            }}
             onClick={onGoCsvUpload}
-            onMouseEnter={e=>{e.currentTarget.style.borderColor='#0078D4';e.currentTarget.style.boxShadow='0 4px 16px rgba(0,120,212,0.15)';}}
-            onMouseLeave={e=>{e.currentTarget.style.borderColor='#E2E8F0';e.currentTarget.style.boxShadow='0 2px 8px rgba(0,0,0,0.05)';}}>
-            <div style={{width:60,height:60,borderRadius:14,background:'#EFF6FF',
-              display:'flex',alignItems:'center',justifyContent:'center',fontSize:28}}>
+            onMouseEnter={() => setHoveredSide('csv')}
+            onMouseLeave={() => setHoveredSide(null)}
+            animate={{ borderColor: hoveredSide === 'csv' ? '#0078D4' : '#E2E8F0' }}
+          >
+            <motion.div layout style={{width:60,height:60,borderRadius:14,background:'#EFF6FF',
+              display:'flex',alignItems:'center',justifyContent:'center',fontSize:28,flexShrink:0}}>
               📂
-            </div>
-            <div>
-              <div style={{fontSize:16,fontWeight:700,color:'#1e293b',marginBottom:8}}>Upload Pre-built CSV</div>
-              <div style={{fontSize:13,color:'#64748b',lineHeight:1.65}}>
-                Already have a formatted event log? Upload your pre-built CSV file directly to launch the dashboard.
-              </div>
-            </div>
-            <button
+            </motion.div>
+            <motion.div layout style={{flex:1}}>
+              <motion.div layout style={{fontSize:18,fontWeight:700,color:'#1e293b',marginBottom:8, whiteSpace: hoveredSide === 'build' ? 'nowrap' : 'normal'}}>Pre-built CSV</motion.div>
+              <AnimatePresence>
+                {hoveredSide !== 'build' && (
+                  <motion.div 
+                    initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
+                    style={{fontSize:13,color:'#64748b',lineHeight:1.65}}>
+                    Already have a formatted event log? Upload your pre-built CSV file directly to launch the dashboard.
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+            <motion.button layout
               onClick={e=>{e.stopPropagation();onGoCsvUpload();}}
               style={{background:'#0078D4',color:'#fff',border:'none',padding:'11px 28px',
                 borderRadius:7,fontSize:13,fontWeight:700,cursor:'pointer',width:'100%',marginTop:'auto'}}
               onMouseOver={e=>e.currentTarget.style.background='#005A9E'}
               onMouseOut={e=>e.currentTarget.style.background='#0078D4'}>
-              Upload Pre-built CSV
-            </button>
-          </div>
+              {hoveredSide === 'build' ? 'Upload' : 'Upload Pre-built CSV'}
+            </motion.button>
+          </motion.div>
         </div>
       </div>
     </div>
@@ -1880,15 +2062,32 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
             <div style={{fontSize:11,fontWeight:700,color:'#64748b',textTransform:'uppercase',letterSpacing:0.8}}>SAP Tables</div>
             <div style={{fontSize:11,color:'#94a3b8'}}>Upload each as <strong style={{color:'#475569'}}>.csv</strong></div>
           </div>
-          <div style={{display:'flex',flexDirection:'column',border:'1px solid #E2E8F0',borderRadius:8,overflow:'hidden'}}>
+          <motion.div 
+            variants={{
+              visible: { transition: { staggerChildren: 0.05 } }
+            }}
+            initial="hidden"
+            animate="visible"
+            style={{display:'flex',flexDirection:'column',border:'1px solid #E2E8F0',borderRadius:8,overflow:'hidden'}}
+          >
             {tables.map((t,i)=>{
               const s=si(tableStatus[t.name]);
               const ref=fileRefs.current[t.name];
               const isUp=tableStatus[t.name]==='uploading';
               return(
-                <div key={t.name} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 14px',
-                  background:tableStatus[t.name]==='done'?'#F0FAF0':tableStatus[t.name]==='error'?'#FDE7E9':i%2===0?'#F8FAFC':'#fff',
-                  borderBottom:i<tables.length-1?'1px solid #E2E8F0':'none',transition:'background 0.2s'}}>
+                <motion.div 
+                  key={t.name}
+                  variants={{
+                    hidden: { opacity: 0, x: -10 },
+                    visible: { opacity: 1, x: 0 }
+                  }}
+                  animate={isUp ? {
+                    backgroundColor: ['#F8FAFC', '#EFF6FF', '#F8FAFC'],
+                    transition: { duration: 1.5, repeat: Infinity }
+                  } : {}}
+                  style={{display:'flex',alignItems:'center',gap:12,padding:'10px 14px',
+                    background:tableStatus[t.name]==='done'?'#F0FAF0':tableStatus[t.name]==='error'?'#FDE7E9':i%2===0?'#F8FAFC':'#fff',
+                    borderBottom:i<tables.length-1?'1px solid #E2E8F0':'none',transition:'background 0.2s'}}>
                   <input ref={ref} type="file" accept=".csv" style={{display:'none'}}
                     onChange={e=>{
                       const f=e.target.files[0]; e.target.value='';
@@ -1963,10 +2162,10 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
                       </div>
                     )}
                   </div>
-                </div>
+                </motion.div>
               );
             })}
-          </div>
+          </motion.div>
           <div style={{marginTop:16,display:'flex',alignItems:'center',gap:12,justifyContent:'space-between',flexWrap:'wrap'}}>
             <div style={{fontSize:12,color:allDone?'#107C10':'#94a3b8',fontWeight:allDone?700:400}}>
               {allDone?`✓ ${tables.filter(t=>tableStatus[t.name]==='done').length} table(s) uploaded — ready to build`:`${tables.filter(t=>tableStatus[t.name]==='done').length} / ${tables.length} tables uploaded (need at least EKKO or EKPO)`}
@@ -2934,285 +3133,347 @@ export default function P2PDashboard({ currentUser, onSignOut, onBackHome }){
             </div>
           </div>
 
-          {kpis&&(<>
-            <EmptyState condition={kpis.total_cases === 0} message="No valid cases found. The column mapping may be incorrect. Please check your mapping and rebuild the event log.">
-              <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:8}}>
-              <KpiCard label="Cases"                 value={kpis.total_cases}          color="#6a3382" tooltip={kpiTooltips.total_cases}/>
-              <KpiCard label="PO Created"            value={kpis.po_created}           color="#6a3382" tooltip={kpiTooltips.po_created}/>
-              <KpiCard label="GR Postings"           value={kpis.gr_postings}          color="#6a3382" tooltip={kpiTooltips.gr_postings}/>
-              <KpiCard label="Invoices Posted"       value={kpis.invoices_posted}      color="#6a3382" tooltip={kpiTooltips.invoices_posted}/>
-              <KpiCard label="Total Reversals"       value={kpis.reversals}            color="#6a3382" tooltip={kpiTooltips.reversals}/>
-              <KpiCard label="Vendors"               value={kpis.unique_vendors}       color="#6a3382" tooltip={kpiTooltips.unique_vendors}/>
-              <KpiCard label="Avg Completion (Days)" value={kpis.avg_completion_days}  color="#6a3382" tooltip="Average end-to-end process duration in days"/>
-            </div>
-            
-            <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:8}}>
-              <ConfKpiCard label="PO Without PR"         value={kpis.po_without_pr}   color="#6a3382" sub="PO raised without PR"   tooltip={kpiTooltips.po_without_pr}/>
-              <ConfKpiCard label="PR Rev. After PO Date" value={kpis.pr_rev_after_po} color="#6a3382" sub="Late PR reversals"       tooltip={kpiTooltips.pr_rev_after_po}/>
-              <ConfKpiCard label="PO Rev. After GR"      value={kpis.po_rev_after_gr} color="#6a3382" sub="Late PO reversals"       tooltip={kpiTooltips.po_rev_after_gr}/>
-              <ConfKpiCard label="GR Without Invoice"    value={kpis.gr_no_invoice}   color="#6a3382" sub="GR not yet invoiced"     tooltip={kpiTooltips.gr_no_invoice}/>
-              <ConfKpiCard label="Invoice Without GR"    value={kpis.inv_no_gr}       color="#6a3382" sub="Invoice before GR"       tooltip={kpiTooltips.inv_no_gr}/>
-            </div>
-            </EmptyState>
-          </>)}
-
-          {activeTab === 'process' && (
-            <div style={{display:'flex', flexDirection:'column', gap:10, flex:1, paddingBottom: '20px'}}>
-              <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:10}}>
-                <div style={{display:'flex', flexDirection:'column', gap:10}}>
-
-                  <div style={{background:C.card,borderRadius:8,border:`1px solid ${C.border}`,
-                    boxShadow:'0 2px 8px rgba(0,0,0,.05)',overflow:'hidden',
-                    display:'flex',flexDirection:'column', height:915}}>
-
-                  <div style={{padding:'12px 14px 8px',borderBottom:`1px solid ${C.border}`,
-                    background: C.jkBlue, 
-                    display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0}}>
+          <AnimatePresence mode="wait">
+            {kpis && (
+              <motion.div
+                key={activeTab + "-kpis"}
+                initial="hidden" animate="visible" exit="exit"
+                variants={{
+                  hidden: { opacity: 0 },
+                  visible: { opacity: 1, transition: { duration: 0.4 } },
+                  exit: { opacity: 0, transition: { duration: 0.4 } }
+                }}
+              >
+                <EmptyState condition={kpis.total_cases === 0} message="No valid cases found. The column mapping may be incorrect. Please check your mapping and rebuild the event log.">
+                  <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:8}}>
                     <div>
-                      <div style={{fontSize:13,fontWeight:700,color:'#fff'}}>Process Map</div>
-                      <div style={{fontSize:10,color:'rgba(255,255,255,0.7)'}}>Flow & Frequency Analysis</div>
+                      <KpiCard label="Cases"                 value={kpis.total_cases}          color="#6a3382" tooltip={kpiTooltips.total_cases}/>
                     </div>
-                    <div style={{display:'flex', gap:4, background:'rgba(255,255,255,0.2)', padding:2, borderRadius:4}}>
-                      <button 
-                        onClick={() => setLayoutDir('LR')}
-                        style={{
-                          fontSize:11, padding:'4px 8px', border:'none', cursor:'pointer', borderRadius:3,
-                          background: layoutDir==='LR' ? '#fff' : 'transparent',
-                          color: layoutDir==='LR' ? C.jkBlue : '#fff',
-                          fontWeight: layoutDir==='LR' ? 700 : 400
-                        }}>Horizontal</button>
-                      <button 
-                        onClick={() => setLayoutDir('TB')}
-                        style={{
-                          fontSize:11, padding:'4px 8px', border:'none', cursor:'pointer', borderRadius:3,
-                          background: layoutDir==='TB' ? '#fff' : 'transparent',
-                          color: layoutDir==='TB' ? C.jkBlue : '#fff',
-                          fontWeight: layoutDir==='TB' ? 700 : 400
-                        }}>Vertical</button>
+                    <div>
+                      <KpiCard label="PO Created"            value={kpis.po_created}           color="#6a3382" tooltip={kpiTooltips.po_created}/>
+                    </div>
+                    <div>
+                      <KpiCard label="GR Postings"           value={kpis.gr_postings}          color="#6a3382" tooltip={kpiTooltips.gr_postings}/>
+                    </div>
+                    <div>
+                      <KpiCard label="Invoices Posted"       value={kpis.invoices_posted}      color="#6a3382" tooltip={kpiTooltips.invoices_posted}/>
+                    </div>
+                    <div>
+                      <KpiCard label="Total Reversals"       value={kpis.reversals}            color="#6a3382" tooltip={kpiTooltips.reversals}/>
+                    </div>
+                    <div>
+                      <KpiCard label="Vendors"               value={kpis.unique_vendors}       color="#6a3382" tooltip={kpiTooltips.unique_vendors}/>
+                    </div>
+                    <div>
+                      <KpiCard label="Avg Completion (Days)" value={kpis.avg_completion_days}  color="#6a3382" tooltip="Average end-to-end process duration in days"/>
                     </div>
                   </div>
+                  
+                  <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:8, marginTop:8}}>
+                    <div>
+                      <ConfKpiCard label="PO Without PR"         value={kpis.po_without_pr}   color="#6a3382" sub="PO raised without PR"   tooltip={kpiTooltips.po_without_pr}/>
+                    </div>
+                    <div>
+                      <ConfKpiCard label="PR Rev. After PO Date" value={kpis.pr_rev_after_po} color="#6a3382" sub="Late PR reversals"       tooltip={kpiTooltips.pr_rev_after_po}/>
+                    </div>
+                    <div>
+                      <ConfKpiCard label="PO Rev. After GR"      value={kpis.po_rev_after_gr} color="#6a3382" sub="Late PO reversals"       tooltip={kpiTooltips.po_rev_after_gr}/>
+                    </div>
+                    <div>
+                      <ConfKpiCard label="GR Without Invoice"    value={kpis.gr_no_invoice}   color="#6a3382" sub="GR not yet invoiced"     tooltip={kpiTooltips.gr_no_invoice}/>
+                    </div>
+                    <div>
+                      <ConfKpiCard label="Invoice Without GR"    value={kpis.inv_no_gr}       color="#6a3382" sub="Invoice before GR"       tooltip={kpiTooltips.inv_no_gr}/>
+                    </div>
+                  </div>
+                </EmptyState>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-                  <div style={{flex:1, position:'relative'}}>
-                    {pmError&&(
-                      <div style={{position:'absolute',top:8,left:8,right:8,zIndex:10,
-                        fontSize:11,color:'#A4262C',background:'#FDE7E9',
-                        border:'1px solid #FBC5C9',borderRadius:4,padding:'6px 12px'}}>
-                        Error: {pmError}
+          <AnimatePresence mode="wait">
+            {activeTab === 'process' ? (
+              <motion.div 
+                key="process"
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                variants={{
+                  hidden: { opacity: 0 },
+                  visible: { opacity: 1, transition: { duration: 0.4 } },
+                  exit: { opacity: 0, transition: { duration: 0.4 } }
+                }}
+                style={{display:'flex', flexDirection:'column', gap:10, flex:1, paddingBottom: '20px'}}
+              >
+                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:10}}>
+                  <div style={{display:'flex', flexDirection:'column', gap:10}}>
+
+                    <div style={{background:C.card,borderRadius:8,border:`1px solid ${C.border}`,
+                      boxShadow:'0 2px 8px rgba(0,0,0,.05)',overflow:'hidden',
+                      display:'flex',flexDirection:'column', height:915}}>
+
+                    <div style={{padding:'12px 14px 8px',borderBottom:`1px solid ${C.border}`,
+                      background: C.jkBlue, 
+                      display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0}}>
+                      <div>
+                        <div style={{fontSize:13,fontWeight:700,color:'#fff'}}>Process Map</div>
+                        <div style={{fontSize:10,color:'rgba(255,255,255,0.7)'}}>Flow & Frequency Analysis</div>
                       </div>
-                    )}
+                      <div style={{display:'flex', gap:4, background:'rgba(255,255,255,0.2)', padding:2, borderRadius:4}}>
+                        <button 
+                          onClick={() => setLayoutDir('LR')}
+                          style={{
+                            fontSize:11, padding:'4px 8px', border:'none', cursor:'pointer', borderRadius:3,
+                            background: layoutDir==='LR' ? '#fff' : 'transparent',
+                            color: layoutDir==='LR' ? C.jkBlue : '#fff',
+                            fontWeight: layoutDir==='LR' ? 700 : 400
+                          }}>Horizontal</button>
+                        <button 
+                          onClick={() => setLayoutDir('TB')}
+                          style={{
+                            fontSize:11, padding:'4px 8px', border:'none', cursor:'pointer', borderRadius:3,
+                            background: layoutDir==='TB' ? '#fff' : 'transparent',
+                            color: layoutDir==='TB' ? C.jkBlue : '#fff',
+                            fontWeight: layoutDir==='TB' ? 700 : 400
+                          }}>Vertical</button>
+                      </div>
+                    </div>
 
-                    {pmLoading&&(
-                      <div style={{position:'absolute',inset:0,zIndex:20,
-                        background:'rgba(248,250,255,0.88)',backdropFilter:'blur(4px)',
-                        display:'flex',flexDirection:'column',
-                        alignItems:'center',justifyContent:'center',gap:14,borderRadius:6}}>
-                        <div style={{textAlign:'center'}}>
-                          <div style={{fontSize:13,fontWeight:700,color:'#323130',marginBottom:4}}>
-                            Building Process Map
-                          </div>
-                          <div style={{fontSize:11,color:C.slate}}>
-                            Analysing transitions and paths…
+                    <div style={{flex:1, position:'relative'}}>
+                      {pmError&&(
+                        <div style={{position:'absolute',top:8,left:8,right:8,zIndex:10,
+                          fontSize:11,color:'#A4262C',background:'#FDE7E9',
+                          border:'1px solid #FBC5C9',borderRadius:4,padding:'6px 12px'}}>
+                          Error: {pmError}
+                        </div>
+                      )}
+
+                      {pmLoading&&(
+                        <div style={{position:'absolute',inset:0,zIndex:20,
+                          background:'rgba(248,250,255,0.88)',backdropFilter:'blur(4px)',
+                          display:'flex',flexDirection:'column',
+                          alignItems:'center',justifyContent:'center',gap:14,borderRadius:6}}>
+                          <div style={{textAlign:'center'}}>
+                            <div style={{fontSize:13,fontWeight:700,color:'#323130',marginBottom:4}}>
+                              Building Process Map
+                            </div>
+                            <div style={{fontSize:11,color:C.slate}}>
+                              Analysing transitions and paths…
+                            </div>
                           </div>
                         </div>
+                      )}
+
+                      <div style={{position:'absolute',inset:0, background:'#FAFAFA'}}>
+                        <ReactFlow
+                          nodes={rfNodes} edges={rfEdges}
+                          onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
+                          nodeTypes={nodeTypes} edgeTypes={edgeTypes}
+                          fitView fitViewOptions={{padding:.18}}
+                          minZoom={0.1} maxZoom={4}
+                          proOptions={{hideAttribution:true}}
+                          onNodeMouseEnter={(e,n)=>setHoverInfo({x:e.clientX,y:e.clientY,
+                            title:n.data?.label||'',value:n.data?.frequency||0})}
+                          onNodeMouseLeave={()=>setHoverInfo(null)}
+                          onEdgeMouseEnter={(e,ed)=>setHoverInfo({x:e.clientX,y:e.clientY,
+                            title:`${ed.source} → ${ed.target}`,
+                            value:ed.data?.frequency||0,isEdge:true,avgDays:ed.data?.avg_days})}
+                          onEdgeMouseLeave={()=>setHoverInfo(null)}
+                          defaultEdgeOptions={{type:'freqEdge'}}>
+                          <Background color="#C8D3E8" gap={24} size={1.5} variant="dots"/>
+                          <Controls showInteractive={false}
+                            style={{background:'#fff',border:`1px solid ${C.border}`,borderRadius:6}}/>
+                          <MiniMap zoomable pannable
+                            nodeColor={C.mapNodeBg}
+                            maskColor="rgba(240,244,250,.85)"
+                            style={{border:`1px solid ${C.border}`,borderRadius:6}}/>
+                        </ReactFlow>
                       </div>
-                    )}
 
-                    <div style={{position:'absolute',inset:0, background:'#FAFAFA'}}>
-                      <ReactFlow
-                        nodes={rfNodes} edges={rfEdges}
-                        onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
-                        nodeTypes={nodeTypes} edgeTypes={edgeTypes}
-                        fitView fitViewOptions={{padding:.18}}
-                        minZoom={0.1} maxZoom={4}
-                        proOptions={{hideAttribution:true}}
-                        onNodeMouseEnter={(e,n)=>setHoverInfo({x:e.clientX,y:e.clientY,
-                          title:n.data?.label||'',value:n.data?.frequency||0})}
-                        onNodeMouseLeave={()=>setHoverInfo(null)}
-                        onEdgeMouseEnter={(e,ed)=>setHoverInfo({x:e.clientX,y:e.clientY,
-                          title:`${ed.source} → ${ed.target}`,
-                          value:ed.data?.frequency||0,isEdge:true,avgDays:ed.data?.avg_days})}
-                        onEdgeMouseLeave={()=>setHoverInfo(null)}
-                        defaultEdgeOptions={{type:'freqEdge'}}>
-                        <Background color="#C8D3E8" gap={24} size={1} variant="dots"/>
-                        <Controls showInteractive={false}
-                          style={{background:'#fff',border:`1px solid ${C.border}`,borderRadius:6}}/>
-                        <MiniMap zoomable pannable
-                          nodeColor={C.mapNodeBg}
-                          maskColor="rgba(240,244,250,.85)"
-                          style={{border:`1px solid ${C.border}`,borderRadius:6}}/>
-                      </ReactFlow>
-                    </div>
-
-                    {hoverInfo&&(
-                      <div style={{position:'fixed',left:hoverInfo.x+16,top:hoverInfo.y+16,
-                        zIndex:99999,pointerEvents:'none',
-                        background:'rgba(255,255,255,.98)',border:`1px solid ${C.border}`,
-                        borderRadius:6,padding:'10px 14px',
-                        boxShadow:'0 4px 12px rgba(0,0,0,.15)',fontSize:12,color:'#323130',minWidth:160}}>
-                        <div style={{fontWeight:700,color:'#0078D4',marginBottom:6}}>{hoverInfo.title}</div>
-                        <div style={{display:'flex',justifyContent:'space-between',gap:16}}>
-                          <span style={{color:C.slate}}>{hoverInfo.isEdge?'Transitions:':'Unique Cases:'}</span>
-                          <strong>{Number(hoverInfo.value).toLocaleString()}</strong>
-                        </div>
-                        {hoverInfo.avgDays!=null&&(
-                          <div style={{display:'flex',justifyContent:'space-between',gap:16,marginTop:4}}>
-                            <span style={{color:C.slate}}>Avg Duration:</span>
-                            <strong>{hoverInfo.avgDays}d</strong>
+                      {hoverInfo&&(
+                        <div style={{position:'fixed',left:hoverInfo.x+16,top:hoverInfo.y+16,
+                          zIndex:99999,pointerEvents:'none',
+                          background:'rgba(255,255,255,.98)',border:`1px solid ${C.border}`,
+                          borderRadius:6,padding:'10px 14px',
+                          boxShadow:'0 4px 12px rgba(0,0,0,.15)',fontSize:12,color:'#323130',minWidth:160}}>
+                          <div style={{fontWeight:700,color:'#0078D4',marginBottom:6}}>{hoverInfo.title}</div>
+                          <div style={{display:'flex',justifyContent:'space-between',gap:16}}>
+                            <span style={{color:C.slate}}>{hoverInfo.isEdge?'Transitions:':'Unique Cases:'}</span>
+                            <strong>{Number(hoverInfo.value).toLocaleString()}</strong>
                           </div>
-                        )}
-                      </div>
-                    )}
+                          {hoverInfo.avgDays!=null&&(
+                            <div style={{display:'flex',justifyContent:'space-between',gap:16,marginTop:4}}>
+                              <span style={{color:C.slate}}>Avg Duration:</span>
+                              <strong>{hoverInfo.avgDays}d</strong>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   </div>
 
-                  <ChartCard title="Segregation of Duties (SoD) Violations" subtitle="Same user performed conflicting activities — click a bar to filter all charts" loading={dashboardLoading} highlighted={crossFilter?.type==='sod'} onClear={clearCF}>
-                    <SodViolationsChart data={sodData} crossFilter={crossFilter} onSelect={handleSelect} />
-                  </ChartCard>
+                  <div style={{display:'flex', flexDirection:'column', gap:10, height: '100%'}}>
+                    
+                    <ChartCard title="Happy Path vs Deviations" loading={dashboardLoading} highlighted={crossFilter?.type==='status'} onClear={clearCF}>
+                      <StatusDonutChart data={happyPathData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false}/>
+                    </ChartCard>
 
+                    <ChartCard title="Activity Frequency"
+                      loading={dashboardLoading}
+                      highlighted={crossFilter?.type==='activity'} onClear={clearCF}>
+                      <ActivityChart data={actData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false}/>
+                    </ChartCard>
+
+                    <ChartCard title="Lead Time Distribution" 
+                      loading={dashboardLoading}
+                      highlighted={crossFilter?.type==='lead_time'} onClear={clearCF}>
+                      <LeadTimeChart data={ltData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false}/>
+                    </ChartCard>
+
+                  </div>
                 </div>
 
-                <div style={{display:'flex', flexDirection:'column', gap:10, height: '100%'}}>
-                  
-                  <ChartCard title="Happy Path vs Deviations" loading={dashboardLoading} highlighted={crossFilter?.type==='status'} onClear={clearCF}>
-                    <StatusDonutChart data={happyPathData} crossFilter={crossFilter} onSelect={handleSelect}/>
-                  </ChartCard>
+                <div style={{marginTop: '2px'}}>
+                  <div style={{display:'grid', gridTemplateColumns:'repeat(2, 1fr)', gap:10}}>
+                    
+                    <ChartCard title="PO Reversals by ERNAM" subtitle="Users reversing the most POs" loading={dashboardLoading} highlighted={crossFilter?.type==='ernam'} onClear={clearCF}>
+                      <EmptyState condition={!dashboardLoading && poRevErnam.length === 0} message="No PO reversals found.">
+                        <ScrollableHBarChart data={poRevErnam} dataKey="count" labelKey="ernam" color="#5aabee" crossFilter={crossFilter} crossKey="ernam" isAnimationActive={false} onSelect={handleSelect}/>
+                      </EmptyState>
+                    </ChartCard>
 
-                  <ChartCard title="Activity Frequency"
+                    <ChartCard title="PO Reversals Timeline" subtitle="Trend of PO reversals over time" loading={dashboardLoading} highlighted={crossFilter?.type==='month'} onClear={clearCF}>
+                      <EmptyState condition={!dashboardLoading && poRevTimeline.length === 0} message="No PO reversals found.">
+                        <MonthlyChart data={poRevTimeline} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false}/>
+                      </EmptyState>
+                    </ChartCard>
+
+                    <ChartCard title="Late PR Reversals (By ERNAM)" subtitle="PRs reversed AFTER PO creation" loading={dashboardLoading} highlighted={crossFilter?.type==='ernam'} onClear={clearCF}>
+                      <EmptyState condition={!dashboardLoading && prRevAfterPo.length === 0} message="No late PR reversals found (or Requisition data is not uploaded).">
+                        <ScrollableHBarChart data={prRevAfterPo} dataKey="count" labelKey="ernam" color="#CA5010" crossFilter={crossFilter} crossKey="ernam" isAnimationActive={false} onSelect={handleSelect}/>
+                      </EmptyState>
+                    </ChartCard>
+
+                    <ChartCard title="PO created AFTER GR or Invoice (By ERNAM)" loading={dashboardLoading} highlighted={crossFilter?.type==='ernam'} onClear={clearCF}>
+                      <EmptyState condition={!dashboardLoading && seqViolation.length === 0} message="No sequence violations found (or GR/Invoice data is not uploaded).">
+                        <ScrollableHBarChart data={seqViolation} dataKey="count" labelKey="ernam" color="#1aca60" crossFilter={crossFilter} crossKey="ernam" isAnimationActive={false} onSelect={handleSelect}/>
+                      </EmptyState>
+                    </ChartCard>
+
+                  </div>
+                </div>
+
+                <div style={{marginTop: '2px'}}>
+                  <ChartCard title="PO Reversals by Purchasing Group" subtitle="Purchasing groups with the most PO reversal activity — click a bar to filter" loading={dashboardLoading} highlighted={crossFilter?.type==='purch_group'} onClear={clearCF}>
+                    <EmptyState condition={!dashboardLoading && revByPurchGroup.length === 0} message="No PO reversals found.">
+                      <RevByPurchGroupVBarChart data={revByPurchGroup} crossFilter={crossFilter} onSelect={handleSelect} />
+                    </EmptyState>
+                  </ChartCard>
+                </div>
+                
+                <div style={{display:'grid', gridTemplateColumns:'1fr', gap:10, marginTop: '10px'}}>
+                    <ChartCard title="Case Details" subtitle="Click a Case ID to view its chronological event log" loading={dashboardLoading}>
+                      <CaseTable 
+                        data={caseTableData} 
+                        events={caseEvents}
+                        selectedId={selected.case_id}
+                        onSelect={(id) => {
+                          const newId = selected.case_id === id ? 'ALL' : id;
+                          setSelected(prev => ({...prev, case_id: newId}));
+                          setCrossFilter(null);
+                          logAction('FILTER', `Clicked case row: ${newId}`);
+                        }} 
+                      />
+                    </ChartCard>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div 
+                key="dimensions"
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                variants={{
+                  hidden: { opacity: 0 },
+                  visible: { opacity: 1, transition: { duration: 0.6 } },
+                  exit: { opacity: 0, transition: { duration: 0.6 } }
+                }}
+                style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) minmax(0,1fr)',gap:10,
+                gridAutoRows:'minmax(280px, auto)', alignItems:'stretch', paddingBottom:'24px'}}
+              >
+                <div style={{display:'flex', flexDirection:'column', minWidth: 0, minHeight: 0, height: '100%'}}>
+                  <ChartCard title="Monthly Trend (Unique Cases)" subtitle="Unique active cases per month"
                     loading={dashboardLoading}
-                    highlighted={crossFilter?.type==='activity'} onClear={clearCF}>
-                    <ActivityChart data={actData} crossFilter={crossFilter} onSelect={handleSelect}/>
+                    highlighted={crossFilter?.type==='month'} onClear={clearCF}>
+                    <MonthlyChart data={monData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false}/>
                   </ChartCard>
+                </div>
 
-                  <ChartCard title="Lead Time Distribution" 
+                <div style={{display:'flex', flexDirection:'column', minWidth: 0, minHeight: 0, height: '100%'}}>
+                  <ChartCard title="User Activity (ERNAM)" subtitle="Who performed activities (Unique Cases)" 
                     loading={dashboardLoading}
-                    highlighted={crossFilter?.type==='lead_time'} onClear={clearCF}>
-                    <LeadTimeChart data={ltData} crossFilter={crossFilter} onSelect={handleSelect}/>
-                  </ChartCard>
-
-                  <ChartCard title="Average days between each process step" loading={dashboardLoading}>
-                    <BottleneckChart data={bottleneckData} />
+                    highlighted={crossFilter?.type==='ernam'} onClear={clearCF}>
+                    <ErnamChart data={ernamData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false}/>
                   </ChartCard>
                 </div>
-              </div>
-
-              {/* --- ANOMALIES & DEVIATIONS — 2-col grid --- */}
-              <div style={{marginTop: '2px'}}>
-                <div style={{display:'grid', gridTemplateColumns:'repeat(2, 1fr)', gap:10}}>
-                  
-                  <ChartCard title="PO Reversals by ERNAM" subtitle="Users reversing the most POs" loading={dashboardLoading} highlighted={crossFilter?.type==='ernam'} onClear={clearCF}>
-                    <EmptyState condition={!dashboardLoading && poRevErnam.length === 0} message="No PO reversals found.">
-                      <ScrollableHBarChart data={poRevErnam} dataKey="count" labelKey="ernam" color="#5aabee" crossFilter={crossFilter} crossKey="ernam" onSelect={handleSelect}/>
-                    </EmptyState>
+                
+                <div style={{display:'flex', flexDirection:'column', minWidth: 0, minHeight: 0, height: '100%'}}>
+                  <ChartCard title="Company Distribution" subtitle="Cases per company code"
+                    loading={dashboardLoading}
+                    highlighted={crossFilter?.type==='company'} onClear={clearCF}>
+                    <CompanyDonutChart data={compData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false}/>
                   </ChartCard>
-
-                  <ChartCard title="PO Reversals Timeline" subtitle="Trend of PO reversals over time" loading={dashboardLoading}>
-                    <EmptyState condition={!dashboardLoading && poRevTimeline.length === 0} message="No PO reversals found.">
-                      <MonthlyChart data={poRevTimeline} crossFilter={crossFilter} onSelect={handleSelect}/>
-                    </EmptyState>
-                  </ChartCard>
-
-                  <ChartCard title="Late PR Reversals (By ERNAM)" subtitle="PRs reversed AFTER PO creation" loading={dashboardLoading} highlighted={crossFilter?.type==='ernam'} onClear={clearCF}>
-                    <EmptyState condition={!dashboardLoading && prRevAfterPo.length === 0} message="No late PR reversals found (or Requisition data is not uploaded).">
-                      <ScrollableHBarChart data={prRevAfterPo} dataKey="count" labelKey="ernam" color="#CA5010" crossFilter={crossFilter} crossKey="ernam" onSelect={handleSelect}/>
-                    </EmptyState>
-                  </ChartCard>
-
-                  <ChartCard title="PO created AFTER GR or Invoice (By ERNAM)" loading={dashboardLoading} highlighted={crossFilter?.type==='ernam'} onClear={clearCF}>
-                    <EmptyState condition={!dashboardLoading && seqViolation.length === 0} message="No sequence violations found (or GR/Invoice data is not uploaded).">
-                      <ScrollableHBarChart data={seqViolation} dataKey="count" labelKey="ernam" color="#1aca60" crossFilter={crossFilter} crossKey="ernam" onSelect={handleSelect}/>
-                    </EmptyState>
-                  </ChartCard>
-
                 </div>
-              </div>
 
-              {/* --- PO Reversals by Purchasing Group — full width vertical scrollable bar --- */}
-              <div style={{marginTop: '2px'}}>
-                <ChartCard title="PO Reversals by Purchasing Group" subtitle="Purchasing groups with the most PO reversal activity — click a bar to filter" loading={dashboardLoading} highlighted={crossFilter?.type==='purch_group'} onClear={clearCF}>
-                  <EmptyState condition={!dashboardLoading && revByPurchGroup.length === 0} message="No PO reversals found.">
-                    <RevByPurchGroupVBarChart data={revByPurchGroup} crossFilter={crossFilter} onSelect={handleSelect} />
-                  </EmptyState>
-                </ChartCard>
-              </div>
-              
-              <div style={{display:'grid', gridTemplateColumns:'1fr', gap:10, marginTop: '10px'}}>
-                  <ChartCard title="Case Details" subtitle="Click a Case ID to view its chronological event log" loading={dashboardLoading}>
-                    <CaseTable 
-                      data={caseTableData} 
-                      events={caseEvents}
-                      selectedId={selected.case_id}
-                      onSelect={(id) => {
-                        const newId = selected.case_id === id ? 'ALL' : id;
-                        setSelected(prev => ({...prev, case_id: newId}));
-                        setCrossFilter(null);
-                        logAction('FILTER', `Clicked case row: ${newId}`);
-                      }} 
-                    />
+                <div style={{display:'flex', flexDirection:'column', minWidth: 0, minHeight: 0, height: '100%'}}>
+                  <ChartCard title="PO Type (BSART)" subtitle="Distribution by document type"
+                    loading={dashboardLoading}
+                    highlighted={crossFilter?.type==='bsart'} onClear={clearCF}>
+                    <ScrollableVBarChart data={bsData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false}/>
                   </ChartCard>
-              </div>
+                </div>
 
-            </div>
-          )}
+                <div style={{display:'flex', flexDirection:'column', minWidth: 0, minHeight: 0, height: '100%'}}>
+                  <ChartCard title="Material Group" subtitle="Purchasing activity by material category"
+                    loading={dashboardLoading}
+                    highlighted={crossFilter?.type==='matkl'} onClear={clearCF}>
+                    <ScrollableHBarChart data={mkData} dataKey="count" labelKey="matkl"
+                      color="#038387" crossFilter={crossFilter} crossKey="matkl" onSelect={handleSelect} isAnimationActive={false}/>
+                  </ChartCard>
+                </div>
 
-          {activeTab === 'dimensions' && (
-            <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) minmax(0,1fr)',gap:10,
-              gridAutoRows:'minmax(280px, auto)', alignItems:'stretch', paddingBottom:'24px'}}>
-              
-              <ChartCard title="Monthly Trend (Unique Cases)" subtitle="Unique active cases per month"
-                loading={dashboardLoading}
-                highlighted={crossFilter?.type==='month'} onClear={clearCF}>
-                <MonthlyChart data={monData} crossFilter={crossFilter} onSelect={handleSelect}/>
-              </ChartCard>
+                <div style={{display:'flex', flexDirection:'column', minWidth: 0, minHeight: 0, height: '100%'}}>
+                  <ChartCard title="Vendors by Cases" subtitle="Top suppliers by volume"
+                    loading={dashboardLoading}
+                    highlighted={crossFilter?.type==='vendor'} onClear={clearCF}>
+                    <ScrollableHBarChart data={vendData} dataKey="count" labelKey="vendor"
+                      color="#5C2D91" crossFilter={crossFilter} crossKey="vendor" onSelect={handleSelect} isAnimationActive={false}/>
+                  </ChartCard>
+                </div>
 
-              <ChartCard title="User Activity (ERNAM)" subtitle="Who performed activities (Unique Cases)" 
-                loading={dashboardLoading}
-                highlighted={crossFilter?.type==='ernam'} onClear={clearCF}>
-                <ErnamChart data={ernamData} crossFilter={crossFilter} onSelect={handleSelect}/>
-              </ChartCard>
-              
-              <ChartCard title="Company Distribution" subtitle="Cases per company code"
-                loading={dashboardLoading}
-                highlighted={crossFilter?.type==='company'} onClear={clearCF}>
-                <CompanyDonutChart data={compData} crossFilter={crossFilter} onSelect={handleSelect}/>
-              </ChartCard>
+                <div style={{display:'flex', flexDirection:'column', minWidth: 0, minHeight: 0, height: '100%'}}>
+                  <ChartCard title="Purchasing Group Workload (EKGRP)" subtitle="Cases handled per purchasing group — click a bar to filter"
+                    loading={dashboardLoading}
+                    highlighted={crossFilter?.type==='purch_group'} onClear={clearCF}>
+                    <EmptyState condition={!dashboardLoading && purchGroupWorkload.length === 0} message="No workload data found.">
+                      <PurchGroupWorkloadChart data={purchGroupWorkload} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false}/>
+                    </EmptyState>
+                  </ChartCard>
+                </div>
 
-              <ChartCard title="PO Type (BSART)" subtitle="Distribution by document type"
-                loading={dashboardLoading}
-                highlighted={crossFilter?.type==='bsart'} onClear={clearCF}>
-                <ScrollableVBarChart data={bsData} crossFilter={crossFilter} onSelect={handleSelect}/>
-              </ChartCard>
-
-              <ChartCard title="Material Group" subtitle="Purchasing activity by material category"
-                loading={dashboardLoading}
-                highlighted={crossFilter?.type==='matkl'} onClear={clearCF}>
-                <ScrollableHBarChart data={mkData} dataKey="count" labelKey="matkl"
-                  color="#038387" crossFilter={crossFilter} crossKey="matkl" onSelect={handleSelect}/>
-              </ChartCard>
-
-              <ChartCard title="Vendors by Cases" subtitle="Top suppliers by volume"
-                loading={dashboardLoading}
-                highlighted={crossFilter?.type==='vendor'} onClear={clearCF}>
-                <ScrollableHBarChart data={vendData} dataKey="count" labelKey="vendor"
-                  color="#5C2D91" crossFilter={crossFilter} crossKey="vendor" onSelect={handleSelect}/>
-              </ChartCard>
-
-              <ChartCard title="Purchasing Group Workload (EKGRP)" subtitle="Cases handled per purchasing group — click a bar to filter"
-                loading={dashboardLoading}
-                highlighted={crossFilter?.type==='purch_group'} onClear={clearCF}>
-                <EmptyState condition={!dashboardLoading && purchGroupWorkload.length === 0} message="No workload data found.">
-                  <PurchGroupWorkloadChart data={purchGroupWorkload} crossFilter={crossFilter} onSelect={handleSelect} />
-                </EmptyState>
-              </ChartCard>
-
-              <ChartCard title="Avg Days PO → GR by Vendor"
-                loading={dashboardLoading}
-                highlighted={crossFilter?.type==='vendor'} onClear={clearCF}>
-                <EmptyState condition={!dashboardLoading && vendorLeadTime.length === 0} message="No GR data found to calculate lead time.">
-                  <VendorAvgDaysChart data={vendorLeadTime} crossFilter={crossFilter} onSelect={handleSelect} />
-                </EmptyState>
-              </ChartCard>
-            </div>
-          )}
+                <div style={{display:'flex', flexDirection:'column'}}>
+                  <ChartCard title="Avg Days PO → GR by Vendor"
+                    loading={dashboardLoading}
+                    highlighted={crossFilter?.type==='vendor'} onClear={clearCF}>
+                    <EmptyState condition={!dashboardLoading && vendorLeadTime.length === 0} message="No GR data found to calculate lead time.">
+                      <VendorAvgDaysChart data={vendorLeadTime} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false}/>
+                    </EmptyState>
+                  </ChartCard>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
         </>)}
 
