@@ -11,6 +11,7 @@ import {
   BarChart, Bar, ComposedChart, Line, PieChart, Pie,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, Legend
 } from 'recharts';
+import { motion, AnimatePresence } from 'framer-motion';
 import './App.css';
 
 const API = 'http://localhost:8000';
@@ -114,6 +115,52 @@ const FreqEdge=React.memo(({id,sourceX,sourceY,targetX,targetY,sourcePosition,ta
     <>
       <BaseEdge id={id} path={edgePath} markerEnd={markerEnd}
         style={{...style,stroke:arcColor,strokeWidth:width,opacity:0.85}}/>
+      
+      {/* Premium Energy Beam / Snake Glow */}
+      <path 
+        d={edgePath} 
+        fill="none" 
+        stroke="#00B7C3" 
+        strokeWidth={Math.max(4, width / 1.5)}
+        strokeDasharray="1 20"
+        strokeLinecap="round"
+        style={{
+          opacity: 0.6,
+          animation: `cometFlow ${Math.max(4, 10 - (freq / maxF) * 6)}s linear infinite`
+        }}
+      />
+
+      {/* Moving Arrow Stream Animation */}
+      {[0, 1, 2].map((i) => {
+        const duration = Math.max(4, 10 - (freq / maxF) * 6);
+        return (
+          <path 
+            key={i}
+            d="M -8,-6 L 8,0 L -8,6 Z" 
+            fill="#00B7C3" 
+            style={{ 
+              opacity: 0,
+            }}
+          >
+            <animateMotion 
+              dur={`${duration}s`} 
+              repeatCount="indefinite" 
+              path={edgePath} 
+              rotate="auto"
+              begin={`${i * (duration / 3)}s`}
+            />
+            <animate 
+              attributeName="opacity" 
+              values="0;1;1;0" 
+              keyTimes="0;0.1;0.9;1" 
+              dur={`${duration}s`} 
+              repeatCount="indefinite" 
+              begin={`${i * (duration / 3)}s`}
+            />
+          </path>
+        );
+      })}
+
       {freq>0&&(
         <EdgeLabelRenderer>
           <div style={{position:'absolute',transform:`translate(-50%,-50%) translate(${labelX}px,${labelY}px)`,
@@ -148,6 +195,27 @@ const ProcessNode=React.memo(({data})=>{
       position: 'relative',
       cursor: 'pointer'
     }}>
+      {/* Halo Pulse Effect */}
+      <motion.div
+        style={{
+          position: 'absolute',
+          inset: -4,
+          borderRadius: 12,
+          border: '4px solid #00B7C3',
+          zIndex: -1,
+          pointerEvents: 'none'
+        }}
+        initial={{ opacity: 0, scale: 0.95 }}
+        whileHover={{
+          opacity: [0, 0.6, 0],
+          scale: [1, 1.15, 1.35],
+          transition: {
+            duration: 1.5,
+            repeat: Infinity,
+            ease: "easeOut"
+          }
+        }}
+      />
       <Handle type="target" id="top-t"    position={Position.Top}    style={{opacity:0}}/>
       <Handle type="source" id="top-s"    position={Position.Top}    style={{opacity:0}}/>
       <Handle type="target" id="bottom-t" position={Position.Bottom} style={{opacity:0}}/>
@@ -376,7 +444,21 @@ const OrderTimeline=({orderId,username})=>{
   );
 };
 
-/* ─── FILTER SELECT ─── */
+const Skeleton=({width='100%',height='20px',borderRadius=4,style})=>(
+  <div className="skeleton-shimmer" style={{width,height,borderRadius,...style}}/>
+);
+
+const ChartSkeleton=()=>(
+  <div style={{display:'flex',flexDirection:'column',gap:12,padding:10}}>
+    <Skeleton width="60%" height="24px"/>
+    <Skeleton width="90%" height="150px"/>
+    <div style={{display:'flex',gap:10}}>
+      <Skeleton width="30%" height="16px"/>
+      <Skeleton width="30%" height="16px"/>
+    </div>
+  </div>
+);
+
 const FilterSelect=({label,value,options,onChange})=>(
   <div style={{display:'flex',flexDirection:'column',gap:3,flex:1,minWidth:'140px'}}>
     <label style={{fontSize:10,fontWeight:700,color:'#323130',textTransform:'uppercase',letterSpacing:.4}}>{label}</label>
@@ -399,13 +481,27 @@ const ChartCard=React.memo(({title,subtitle,children,highlighted,onClear,style={
       )}
     </div>
     <div className={!loading ? "fade-in" : ""} style={{flex:1,minHeight:0,position:'relative'}}>
-      {loading&&(
-        <div style={{position:'absolute',inset:0,zIndex:10,background:'rgba(255,255,255,0.85)',backdropFilter:'blur(2px)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:8}}>
-          <div style={{width:20,height:20,borderRadius:'50%',border:`2px solid ${C.blue700}`,borderTopColor:'transparent',animation:'spin 0.8s linear infinite'}}/>
-          <div style={{fontSize:11,fontWeight:600,color:C.blue700}}>Analysing...</div>
+      {loading && (
+        <div style={{
+          position:'absolute',inset:0,zIndex:10,
+          background: C.card,
+          display:'flex',flexDirection:'column',gap:12, padding:10
+        }}>
+          <div className="skeleton-loader" style={{width:'40%', height:14}}/>
+          <div style={{flex:1, display:'flex', alignItems:'flex-end', gap:8, marginTop: 10}}>
+             {[...Array(6)].map((_, i) => (
+               <div key={i} className="skeleton-loader" style={{
+                 flex:1, 
+                 height:`${30 + Math.random() * 60}%`,
+                 animationDelay: `${i * 0.1}s`
+               }}/>
+             ))}
+          </div>
         </div>
       )}
-      {children}
+      <div style={{opacity: loading ? 0 : 1, transition:'opacity 0.3s', height:'100%'}}>
+        {children}
+      </div>
     </div>
   </div>
 ));
@@ -621,6 +717,7 @@ const P2I_FAQS=[
 /* ─── P2I INTRO SCREEN ─── */
 const P2IIntroScreen=({onGoTableBuild,onGoCsvUpload,currentUser})=>{
   const [introStep,setIntroStep]=useState('overview');
+  const [hoveredSide, setHoveredSide] = useState(null);
 
   const steps=[
     'Production Order created and released in SAP (AFKO/AFPO)',
@@ -639,9 +736,77 @@ const P2IIntroScreen=({onGoTableBuild,onGoCsvUpload,currentUser})=>{
     'TECO completion rate and WIP ageing',
   ];
 
-  if(introStep==='overview') return(
-    <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',padding:'36px 24px 48px',overflowY:'auto'}}>
-      <div style={{maxWidth:880,width:'100%',display:'flex',flexDirection:'column',gap:24}}>
+  const IconWrapper = ({ children, color }) => (
+    <div style={{
+      width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center',
+      color: color, flexShrink: 0
+    }}>
+      {children}
+    </div>
+  );
+
+  const icons = {
+    factory: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M2 20V9l4-2 4 2 4-2 4 2 4-2v11a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2Z"/><path d="M17 18h1"/><path d="M12 18h1"/><path d="M7 18h1"/>
+      </svg>
+    ),
+    rocket: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-5c1.62-2.2 5-3 5-3"/><path d="M12 15v5s3.03-.55 5-2c2.2-1.62 3-5 3-5"/>
+      </svg>
+    ),
+    hammer: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m15 12-8.5 8.5c-.83.83-2.17.83-3 0 0 0 0 0 0 0a2.12 2.12 0 0 1 0-3L12 9"/><path d="M17.64 15 22 10.64"/><path d="m20.91 11.7-1.25-1.25c-.6-.6-.93-1.4-.93-2.23V5a3 3 0 0 0-3-3h-1.1c-.82 0-1.64.33-2.24.93L7.15 8.15l1.01 1.01a1 1 0 0 0 1.41 0l.49-.49a.5.5 0 0 1 .71 0l4.47 4.47a.5.5 0 0 1 0 .71l-.49.49a1 1 0 0 0 0 1.41l1.01 1.01L20.91 11.7z"/>
+      </svg>
+    ),
+    settings: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.72v.18a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>
+      </svg>
+    ),
+    download: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+    ),
+    trophy: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>
+      </svg>
+    )
+  };
+
+  if(introStep==='overview') {
+    const shortSteps = [
+      { icon: <IconWrapper color="#038387">{icons.factory}</IconWrapper>, text: 'Create Production Order' },
+      { icon: <IconWrapper color="#038387">{icons.rocket}</IconWrapper>, text: 'Release Production Order' },
+      { icon: <IconWrapper color="#038387">{icons.hammer}</IconWrapper>, text: 'Reserve Materials' },
+      { icon: <IconWrapper color="#038387">{icons.settings}</IconWrapper>, text: 'Confirm Operations' },
+      { icon: <IconWrapper color="#038387">{icons.download}</IconWrapper>, text: 'Record Goods Receipt' },
+      { icon: <IconWrapper color="#107C10">{icons.trophy}</IconWrapper>, text: 'Technical Completion (TECO)' }
+    ];
+    return(
+      <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',overflowY:'auto'}}>
+        
+        {/* Continuous Process Ribbon */}
+        <div className="process-ribbon-container">
+          <div className="process-ribbon-content">
+            {/* Render multiple times for seamless looping */}
+            {[...shortSteps, ...shortSteps, ...shortSteps, ...shortSteps].map((s, i) => (
+              <React.Fragment key={i}>
+                <div className="process-ribbon-item">
+                  {s.icon}
+                  <span style={{marginLeft: 4}}>{s.text}</span>
+                </div>
+                {i < shortSteps.length * 4 - 1 && <div className="process-ribbon-arrow">→</div>}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+
+        <div style={{maxWidth:880,width:'100%',display:'flex',flexDirection:'column',gap:24,padding:'36px 24px 48px'}}>
         <div style={{borderBottom:'2px solid #E2E8F0',paddingBottom:20}}>
           <div style={{fontSize:11,fontWeight:700,color:'#038387',textTransform:'uppercase',letterSpacing:1,marginBottom:6}}>Process Overview</div>
           <h1 style={{margin:'0 0 8px',fontSize:24,fontWeight:700,color:'#1e293b'}}>Plan-to-Inventory (P2I)</h1>
@@ -686,6 +851,7 @@ const P2IIntroScreen=({onGoTableBuild,onGoCsvUpload,currentUser})=>{
       </div>
     </div>
   );
+}
 
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',padding:'36px 24px 48px',overflowY:'auto'}}>
@@ -699,36 +865,86 @@ const P2IIntroScreen=({onGoTableBuild,onGoCsvUpload,currentUser})=>{
           <p style={{margin:0,fontSize:13,color:'#64748b'}}>Select the method that matches your data format</p>
         </div>
 
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20}}>
-          <div style={{background:'#fff',border:'2px solid #E2E8F0',borderRadius:12,padding:'28px 24px',display:'flex',flexDirection:'column',alignItems:'center',gap:14,textAlign:'center',boxShadow:'0 2px 8px rgba(0,0,0,0.05)',transition:'all 0.2s',cursor:'pointer'}}
+        <div style={{display:'flex', width: '100%', height: 320, gap: 16}}>
+          {/* Build Event Log panel */}
+          <motion.div 
+            layout
+            style={{
+              flex: hoveredSide === 'build' ? 1.7 : (hoveredSide === 'csv' ? 0.6 : 1),
+              background:'#fff',border:'2px solid #E2E8F0',borderRadius:16,padding:'28px 24px',
+              display:'flex',flexDirection:'column',alignItems:'center',gap:14,textAlign:'center',
+              boxShadow:'0 4px 12px rgba(0,0,0,0.03)',cursor:'pointer',overflow:'hidden'
+            }}
             onClick={onGoTableBuild}
-            onMouseEnter={e=>{e.currentTarget.style.borderColor='#038387';e.currentTarget.style.boxShadow='0 4px 16px rgba(3,131,135,0.15)';}}
-            onMouseLeave={e=>{e.currentTarget.style.borderColor='#E2E8F0';e.currentTarget.style.boxShadow='0 2px 8px rgba(0,0,0,0.05)';}}>
-            <div style={{width:60,height:60,borderRadius:14,background:'#F0FDFA',display:'flex',alignItems:'center',justifyContent:'center',fontSize:28}}>🔨</div>
-            <div>
-              <div style={{fontSize:16,fontWeight:700,color:'#1e293b',marginBottom:8}}>Build Event Log</div>
-              <div style={{fontSize:13,color:'#64748b',lineHeight:1.65}}>Upload raw SAP tables (AFKO, AFPO, RESB, MKPF, MSEG, AFRU, MARA) and optional Bridge tables (EBAN, EKKO, EKPO, EKBE) to build the full production timeline.</div>
-            </div>
-            <button onClick={e=>{e.stopPropagation();onGoTableBuild();}} style={{background:'#038387',color:'#fff',border:'none',padding:'11px 28px',borderRadius:7,fontSize:13,fontWeight:700,cursor:'pointer',width:'100%',marginTop:'auto'}}
-              onMouseOver={e=>e.currentTarget.style.background='#026769'} onMouseOut={e=>e.currentTarget.style.background='#038387'}>
-              Build Event Log
-            </button>
-          </div>
+            onMouseEnter={() => setHoveredSide('build')}
+            onMouseLeave={() => setHoveredSide(null)}
+            animate={{ borderColor: hoveredSide === 'build' ? '#038387' : '#E2E8F0' }}
+          >
+            <motion.div layout style={{width:60,height:60,borderRadius:14,background:'#F0FDFA',
+              display:'flex',alignItems:'center',justifyContent:'center',fontSize:28,flexShrink:0}}>
+              🔨
+            </motion.div>
+            <motion.div layout style={{flex:1}}>
+              <motion.div layout style={{fontSize:18,fontWeight:700,color:'#1e293b',marginBottom:8, whiteSpace: hoveredSide === 'csv' ? 'nowrap' : 'normal'}}>Build Event Log</motion.div>
+              <AnimatePresence>
+                {hoveredSide !== 'csv' && (
+                  <motion.div 
+                    initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
+                    style={{fontSize:13,color:'#64748b',lineHeight:1.65}}>
+                    Upload raw SAP tables (AFKO, AFPO, RESB, MKPF, MSEG, AFRU, MARA) and optional Bridge tables to build the full production timeline.
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+            <motion.button layout
+              onClick={e=>{e.stopPropagation();onGoTableBuild();}}
+              style={{background:'#038387',color:'#fff',border:'none',padding:'11px 28px',
+                borderRadius:7,fontSize:13,fontWeight:700,cursor:'pointer',width:'100%',marginTop:'auto'}}
+              onMouseOver={e=>e.currentTarget.style.background='#026769'}
+              onMouseOut={e=>e.currentTarget.style.background='#038387'}>
+              {hoveredSide === 'csv' ? 'Build' : 'Build Event Log'}
+            </motion.button>
+          </motion.div>
 
-          <div style={{background:'#fff',border:'2px solid #E2E8F0',borderRadius:12,padding:'28px 24px',display:'flex',flexDirection:'column',alignItems:'center',gap:14,textAlign:'center',boxShadow:'0 2px 8px rgba(0,0,0,0.05)',transition:'all 0.2s',cursor:'pointer'}}
+          {/* Upload Pre-built CSV panel */}
+          <motion.div 
+            layout
+            style={{
+              flex: hoveredSide === 'csv' ? 1.7 : (hoveredSide === 'build' ? 0.6 : 1),
+              background:'#fff',border:'2px solid #E2E8F0',borderRadius:16,padding:'28px 24px',
+              display:'flex',flexDirection:'column',alignItems:'center',gap:14,textAlign:'center',
+              boxShadow:'0 4px 12px rgba(0,0,0,0.03)',cursor:'pointer',overflow:'hidden'
+            }}
             onClick={onGoCsvUpload}
-            onMouseEnter={e=>{e.currentTarget.style.borderColor='#0078D4';e.currentTarget.style.boxShadow='0 4px 16px rgba(0,120,212,0.15)';}}
-            onMouseLeave={e=>{e.currentTarget.style.borderColor='#E2E8F0';e.currentTarget.style.boxShadow='0 2px 8px rgba(0,0,0,0.05)';}}>
-            <div style={{width:60,height:60,borderRadius:14,background:'#EFF6FF',display:'flex',alignItems:'center',justifyContent:'center',fontSize:28}}>📂</div>
-            <div>
-              <div style={{fontSize:16,fontWeight:700,color:'#1e293b',marginBottom:8}}>Upload Pre-built CSV</div>
-              <div style={{fontSize:13,color:'#64748b',lineHeight:1.65}}>Already have a formatted event log? Upload your pre-built CSV file directly to launch the dashboard.</div>
-            </div>
-            <button onClick={e=>{e.stopPropagation();onGoCsvUpload();}} style={{background:'#0078D4',color:'#fff',border:'none',padding:'11px 28px',borderRadius:7,fontSize:13,fontWeight:700,cursor:'pointer',width:'100%',marginTop:'auto'}}
-              onMouseOver={e=>e.currentTarget.style.background='#005A9E'} onMouseOut={e=>e.currentTarget.style.background='#0078D4'}>
-              Upload Pre-built CSV
-            </button>
-          </div>
+            onMouseEnter={() => setHoveredSide('csv')}
+            onMouseLeave={() => setHoveredSide(null)}
+            animate={{ borderColor: hoveredSide === 'csv' ? '#0078D4' : '#E2E8F0' }}
+          >
+            <motion.div layout style={{width:60,height:60,borderRadius:14,background:'#EFF6FF',
+              display:'flex',alignItems:'center',justifyContent:'center',fontSize:28,flexShrink:0}}>
+              📂
+            </motion.div>
+            <motion.div layout style={{flex:1}}>
+              <motion.div layout style={{fontSize:18,fontWeight:700,color:'#1e293b',marginBottom:8, whiteSpace: hoveredSide === 'build' ? 'nowrap' : 'normal'}}>Pre-built CSV</motion.div>
+              <AnimatePresence>
+                {hoveredSide !== 'build' && (
+                  <motion.div 
+                    initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
+                    style={{fontSize:13,color:'#64748b',lineHeight:1.65}}>
+                    Already have a formatted event log? Upload your pre-built CSV file directly to launch the dashboard.
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+            <motion.button layout
+              onClick={e=>{e.stopPropagation();onGoCsvUpload();}}
+              style={{background:'#0078D4',color:'#fff',border:'none',padding:'11px 28px',
+                borderRadius:7,fontSize:13,fontWeight:700,cursor:'pointer',width:'100%',marginTop:'auto'}}
+              onMouseOver={e=>e.currentTarget.style.background='#005A9E'}
+              onMouseOut={e=>e.currentTarget.style.background='#0078D4'}>
+              {hoveredSide === 'build' ? 'Upload' : 'Upload Pre-built CSV'}
+            </motion.button>
+          </motion.div>
         </div>
       </div>
     </div>
@@ -980,13 +1196,30 @@ const TableUploadScreen=({onBuilt,onBack,onLoadingChange,currentUser,myFiles,fet
             <div style={{fontSize:11,fontWeight:700,color:'#64748b',textTransform:'uppercase',letterSpacing:0.8}}>SAP Tables</div>
             <div style={{fontSize:11,color:'#94a3b8'}}>Upload each as <strong style={{color:'#475569'}}>.csv</strong></div>
           </div>
-          <div style={{display:'flex',flexDirection:'column',border:'1px solid #E2E8F0',borderRadius:8,overflow:'hidden'}}>
+          <motion.div 
+            variants={{
+              visible: { transition: { staggerChildren: 0.05 } }
+            }}
+            initial="hidden"
+            animate="visible"
+            style={{display:'flex',flexDirection:'column',border:'1px solid #E2E8F0',borderRadius:8,overflow:'hidden'}}
+          >
             {tables.map((t,i)=>{
               const s=si(tableStatus[t.name]);
               const ref=fileRefs.current[t.name];
               const isUp=tableStatus[t.name]==='uploading';
               return(
-                <div key={t.name} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 14px',background:tableStatus[t.name]==='done'?'#F0FAF0':tableStatus[t.name]==='error'?'#FDE7E9':i%2===0?'#F8FAFC':'#fff',borderBottom:i<tables.length-1?'1px solid #E2E8F0':'none',transition:'background 0.2s'}}>
+                <motion.div 
+                  key={t.name}
+                  variants={{
+                    hidden: { opacity: 0, x: -10 },
+                    visible: { opacity: 1, x: 0 }
+                  }}
+                  animate={isUp ? {
+                    backgroundColor: ['#F8FAFC', '#F0FDFA', '#F8FAFC'],
+                    transition: { duration: 1.5, repeat: Infinity }
+                  } : {}}
+                  style={{display:'flex',alignItems:'center',gap:12,padding:'10px 14px',background:tableStatus[t.name]==='done'?'#F0FAF0':tableStatus[t.name]==='error'?'#FDE7E9':i%2===0?'#F8FAFC':'#fff',borderBottom:i<tables.length-1?'1px solid #E2E8F0':'none',transition:'background 0.2s'}}>
                   <input ref={ref} type="file" accept=".csv" style={{display:'none'}} onChange={e=>{const f=e.target.files[0];e.target.value='';if(f) uploadTable(t.name,f);}}/>
                   <button onClick={()=>{if(!isUp&&ref.current){ref.current.value='';ref.current.click();}}} disabled={isUp}
                     style={{display:'flex',alignItems:'center',justifyContent:'center',width:28,height:28,borderRadius:6,border:`1.5px solid ${s.border}`,background:s.bg,color:s.color,cursor:isUp?'not-allowed':'pointer',fontWeight:700,fontSize:13,flexShrink:0}}>
@@ -1031,10 +1264,10 @@ const TableUploadScreen=({onBuilt,onBack,onLoadingChange,currentUser,myFiles,fet
                       </div>
                     )}
                   </div>
-                </div>
+                </motion.div>
               );
             })}
-          </div>
+          </motion.div>
           <div style={{marginTop:16,display:'flex',alignItems:'center',gap:12,justifyContent:'space-between',flexWrap:'wrap'}}>
             <div style={{fontSize:12,color:allDone?'#107C10':'#94a3b8',fontWeight:allDone?700:400}}>
               {allDone?`✓ ${tables.filter(t=>tableStatus[t.name]==='done').length} table(s) uploaded — ready to build`:`${tables.filter(t=>tableStatus[t.name]==='done').length} / ${tables.length} tables uploaded (need at least AFKO or AFPO)`}
@@ -1528,75 +1761,112 @@ export default function P2IDashboard({currentUser,onSignOut,onBackHome}){
             </div>
           </div>
 
+          <AnimatePresence mode="wait">
           {kpis && (
+              <motion.div
+                key={activeTab + "-kpis"}
+                initial="hidden" animate="visible" exit="exit"
+                variants={{
+                  hidden: { opacity: 0 },
+                  visible: { opacity: 1, transition: { duration: 0.1 } },
+                  exit: { opacity: 0, transition: { duration: 0.1 } }
+                }}
+              >
             <div style={{display:'flex', flexDirection:'column', gap:8}}>
               <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:8}}>
-                <KpiCard label="Production Orders" value={kpis.total_cases} tooltip="Total unique production orders"/>
-                <KpiCard label="Avg Lead Time" value={kpis.avg_lead_time} suffix="d" tooltip="Avg days from Order Creation to FG Goods Receipt"/>
-                <KpiCard label="Scrap Rate" value={kpis.scrap_rate} suffix="%" tooltip="% of orders with recorded scrap"/>
-                <KpiCard label="Rework Rate" value={kpis.rework_rate} suffix="%" tooltip="% of orders requiring rework"/>
-                <KpiCard label="TECO Orders" value={kpis.teco_cases} tooltip="Technically Completed orders"/>
-                <KpiCard label="WIP Orders" value={kpis.total_cases-(kpis.teco_cases||0)} tooltip="Orders not yet technically complete"/>
-                <KpiCard label="Over-Produced" value={kpis.over_prod_cases} tooltip="Orders where yield exceeded planned quantity"/>
+                <div><KpiCard label="Production Orders" value={kpis.total_cases} tooltip="Total unique production orders"/></div>
+                <div><KpiCard label="Avg Lead Time" value={kpis.avg_lead_time} suffix="d" tooltip="Avg days from Order Creation to FG Goods Receipt"/></div>
+                <div><KpiCard label="Scrap Rate" value={kpis.scrap_rate} suffix="%" tooltip="% of orders with recorded scrap"/></div>
+                <div><KpiCard label="Rework Rate" value={kpis.rework_rate} suffix="%" tooltip="% of orders requiring rework"/></div>
+                <div><KpiCard label="TECO Orders" value={kpis.teco_cases} tooltip="Technically Completed orders"/></div>
+                <div><KpiCard label="WIP Orders" value={kpis.total_cases-(kpis.teco_cases||0)} tooltip="Orders not yet technically complete"/></div>
+                <div><KpiCard label="Over-Produced" value={kpis.over_prod_cases} tooltip="Orders where yield exceeded planned quantity"/></div>
               </div>
               <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:8}}>
-                <ConfKpiCard label="Over-Production Cases" value={kpis?.over_prod_cases} sub="Yield exceeded planned order quantity"/>
-                <ConfKpiCard label="Material Delay Cases" value={kpis?.material_delay_cases} sub="GI posted after component reservation date"/>
+                <div><ConfKpiCard label="Over-Production Cases" value={kpis?.over_prod_cases} sub="Yield exceeded planned order quantity"/></div>
+                <div><ConfKpiCard label="Material Delay Cases" value={kpis?.material_delay_cases} sub="GI posted after component reservation date"/></div>
               </div>
             </div>
+              </motion.div>
           )}
+          </AnimatePresence>
 
           {/* Process Mining Tab */}
-          {activeTab==='process'&&(
-            <div className="fade-in" style={{display:'grid', gridTemplateColumns:'1.5fr 1fr', gap:10, paddingBottom:20}}>
-              <div style={{display:'flex', flexDirection:'column', gap:10}}>
-                <div style={{background:C.card,borderRadius:8,border:`1px solid ${C.border}`,boxShadow:'0 2px 8px rgba(0,0,0,.05)',overflow:'hidden',display:'flex',flexDirection:'column',height:700}}>
-                  <div style={{padding:'12px 14px 8px',borderBottom:`1px solid ${C.border}`,background:C.jkBlue,display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0}}>
-                    <div>
-                      <div style={{fontSize:13,fontWeight:700,color:'#fff'}}>Process Discovery Map</div>
-                      <div style={{fontSize:10,color:'rgba(255,255,255,0.7)'}}>Unique Case Flow & Sequence Analysis</div>
+          <AnimatePresence mode="wait">
+            {activeTab === 'process' ? (
+              <motion.div 
+                key="process"
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                variants={{
+                  hidden: { opacity: 0 },
+                  visible: { opacity: 1, transition: { duration: 0.1 } },
+                  exit: { opacity: 0, transition: { duration: 0.1 } }
+                }}
+                style={{display:'grid', gridTemplateColumns:'1.5fr 1fr', gap:10, paddingBottom:20}}
+              >
+                <div style={{display:'flex', flexDirection:'column', gap:10}}>
+                  <div style={{background:C.card,borderRadius:8,border:`1px solid ${C.border}`,boxShadow:'0 2px 8px rgba(0,0,0,.05)',overflow:'hidden',display:'flex',flexDirection:'column',height:700}}>
+                    <div style={{padding:'12px 14px 8px',borderBottom:`1px solid ${C.border}`,background:C.jkBlue,display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0}}>
+                      <div>
+                        <div style={{fontSize:13,fontWeight:700,color:'#fff'}}>Process Discovery Map</div>
+                        <div style={{fontSize:10,color:'rgba(255,255,255,0.7)'}}>Unique Case Flow & Sequence Analysis</div>
+                      </div>
+                      <div style={{display:'flex',gap:4,background:'rgba(255,255,255,0.2)',padding:2,borderRadius:4}}>
+                        <button onClick={()=>setLayoutDir('LR')} style={{fontSize:11,padding:'4px 8px',border:'none',cursor:'pointer',borderRadius:3,background:layoutDir==='LR'?'#fff':'transparent',color:layoutDir==='LR'?C.jkBlue:'#fff',fontWeight:layoutDir==='LR'?700:400}}>Horizontal</button>
+                        <button onClick={()=>setLayoutDir('TB')} style={{fontSize:11,padding:'4px 8px',border:'none',cursor:'pointer',borderRadius:3,background:layoutDir==='TB'?'#fff':'transparent',color:layoutDir==='TB'?C.jkBlue:'#fff',fontWeight:layoutDir==='TB'?700:400}}>Vertical</button>
+                      </div>
                     </div>
-                    <div style={{display:'flex',gap:4,background:'rgba(255,255,255,0.2)',padding:2,borderRadius:4}}>
-                      <button onClick={()=>setLayoutDir('LR')} style={{fontSize:11,padding:'4px 8px',border:'none',cursor:'pointer',borderRadius:3,background:layoutDir==='LR'?'#fff':'transparent',color:layoutDir==='LR'?C.jkBlue:'#fff',fontWeight:layoutDir==='LR'?700:400}}>Horizontal</button>
-                      <button onClick={()=>setLayoutDir('TB')} style={{fontSize:11,padding:'4px 8px',border:'none',cursor:'pointer',borderRadius:3,background:layoutDir==='TB'?'#fff':'transparent',color:layoutDir==='TB'?C.jkBlue:'#fff',fontWeight:layoutDir==='TB'?700:400}}>Vertical</button>
+                    <div style={{flex:1,position:'relative'}}>
+                      <ReactFlow nodes={rfNodes} edges={rfEdges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} nodeTypes={nodeTypes} edgeTypes={edgeTypes} fitView minZoom={0.1}>
+                        <Controls showInteractive={false}/>
+                        <MiniMap zoomable pannable nodeColor={C.mapNodeBg} maskColor="rgba(240,244,250,.85)"/>
+                        <Background color="#C8D3E8" gap={24} size={1.5} variant="dots"/>
+                      </ReactFlow>
                     </div>
                   </div>
-                  <div style={{flex:1,position:'relative'}}>
-                    <ReactFlow nodes={rfNodes} edges={rfEdges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} nodeTypes={nodeTypes} edgeTypes={edgeTypes} fitView minZoom={0.1}>
-                      <Background color="#C8D3E8" gap={24} size={1} variant="dots"/>
-                      <Controls showInteractive={false}/>
-                      <MiniMap zoomable pannable nodeColor={C.mapNodeBg} maskColor="rgba(240,244,250,.85)"/>
-                    </ReactFlow>
+                  <ChartCard title="Monthly Production Trend" subtitle="Unique orders processed per month — Click to filter" loading={dashboardLoading} highlighted={crossFilter?.type==='month'} onClear={clearCF}>
+                    <MonthlyTrendChart data={monthlyData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false}/>
+                  </ChartCard>
+                </div>
+                <div style={{display:'flex', flexDirection:'column', gap:10}}>
+                  <ChartCard title="Orders by Plant" subtitle="Manufacturing sites — Click to filter" loading={dashboardLoading} highlighted={crossFilter?.type==='plant'} onClear={clearCF}>
+                    <PlantBarChart data={plantData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false}/>
+                  </ChartCard>
+                  <ChartCard title="Order Event Timeline" subtitle="Audit trail for selected order" loading={dashboardLoading}>
+                    <OrderTimeline orderId={selected.order_id} username={currentUser}/>
+                  </ChartCard>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div 
+                key="eda"
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                variants={{
+                  hidden: { opacity: 0 },
+                   visible: { opacity: 1, transition: { duration: 0.4 } },
+                   exit: { opacity: 0, transition: { duration: 0.4 } }
+                 }}
+                style={{display:'flex',flexDirection:'column',gap:10,paddingBottom:20}}
+              >
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+                  <div style={{display:'flex', flexDirection:'column', minWidth: 0, minHeight: 0, height: '100%'}}>
+                    <ChartCard title="Deviations Breakdown" subtitle="Frequency of deviation types — Click to filter" loading={dashboardLoading} highlighted={crossFilter?.type==='deviation'} onClear={clearCF}>
+                      <DeviationsChart data={devData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false}/>
+                    </ChartCard>
+                  </div>
+                  <div style={{display:'flex', flexDirection:'column', minWidth: 0, minHeight: 0, height: '100%'}}>
+                    <ChartCard title="Lead Time Distribution" subtitle="Avg days per material category — Click to filter" loading={dashboardLoading} highlighted={crossFilter?.type==='mtart'} onClear={clearCF}>
+                      <LeadTimeMtartChart data={ltData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false}/>
+                    </ChartCard>
                   </div>
                 </div>
-                <ChartCard title="Monthly Production Trend" subtitle="Unique orders processed per month — Click to filter" loading={dashboardLoading} highlighted={crossFilter?.type==='month'} onClear={clearCF}>
-                  <MonthlyTrendChart data={monthlyData} crossFilter={crossFilter} onSelect={handleSelect}/>
-                </ChartCard>
-              </div>
-              <div style={{display:'flex', flexDirection:'column', gap:10}}>
-                <ChartCard title="Orders by Plant" subtitle="Manufacturing sites — Click to filter" loading={dashboardLoading} highlighted={crossFilter?.type==='plant'} onClear={clearCF}>
-                  <PlantBarChart data={plantData} crossFilter={crossFilter} onSelect={handleSelect}/>
-                </ChartCard>
-                <ChartCard title="Order Event Timeline" subtitle="Audit trail for selected order" loading={dashboardLoading}>
-                  <OrderTimeline orderId={selected.order_id} username={currentUser}/>
-                </ChartCard>
-              </div>
-            </div>
-          )}
-
-          {/* EDA Tab */}
-          {activeTab==='eda'&&(
-            <div className="fade-in" style={{display:'flex',flexDirection:'column',gap:10,paddingBottom:20}}>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-                <ChartCard title="Deviations Breakdown" subtitle="Frequency of deviation types — Click to filter" loading={dashboardLoading} highlighted={crossFilter?.type==='deviation'} onClear={clearCF}>
-                  <DeviationsChart data={devData} crossFilter={crossFilter} onSelect={handleSelect}/>
-                </ChartCard>
-                <ChartCard title="Lead Time Distribution" subtitle="Avg days per material category — Click to filter" loading={dashboardLoading} highlighted={crossFilter?.type==='mtart'} onClear={clearCF}>
-                  <LeadTimeMtartChart data={ltData} crossFilter={crossFilter} onSelect={handleSelect}/>
-                </ChartCard>
-              </div>
-            </div>
-          )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </>)}
       </div>
 
