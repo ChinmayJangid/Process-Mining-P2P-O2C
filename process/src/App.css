@@ -27,3 +27,104 @@
   background: rgba(255, 255, 255, 0.2);
   color: #ffffff;
 }
+
+@keyframes skeleton-pulse {
+  0% { opacity: 0.8; }
+  50% { opacity: 0.4; }
+  100% { opacity: 0.8; }
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-loader {
+  animation: skeleton-pulse 2s ease-in-out infinite;
+  background: #f3f4f6;
+  border-radius: 4px;
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite linear;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.process-ribbon-container {
+  width: 100%;
+  overflow: hidden;
+  background: #F8FAFC;
+  border-bottom: 1px solid #E2E8F0;
+  padding: 12px 0;
+  display: flex;
+  white-space: nowrap;
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* Add a fade effect on the left and right edges */
+.process-ribbon-container::before,
+.process-ribbon-container::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 100px;
+  z-index: 2;
+  pointer-events: none;
+}
+.process-ribbon-container::before {
+  left: 0;
+  background: linear-gradient(to right, #F8FAFC, transparent);
+}
+.process-ribbon-container::after {
+  right: 0;
+  background: linear-gradient(to left, #F8FAFC, transparent);
+}
+
+.process-ribbon-content {
+  display: flex;
+  gap: 32px;
+  animation: marquee 30s linear infinite;
+  padding-left: 32px;
+  /* Pause on hover for better UX */
+}
+
+.process-ribbon-container:hover .process-ribbon-content {
+  animation-play-state: paused;
+}
+
+.process-ribbon-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  background: #ffffff;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  transition: all 0.2s ease;
+}
+
+.process-ribbon-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  border-color: #CBD5E1;
+}
+
+.process-ribbon-arrow {
+  color: #94a3b8;
+  font-weight: 700;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+}
