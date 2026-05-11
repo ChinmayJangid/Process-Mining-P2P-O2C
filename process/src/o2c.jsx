@@ -7,10 +7,12 @@ import ReactFlow, {
   EdgeLabelRenderer, BaseEdge, Handle,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
+import 'reactflow/dist/style.css';
 import {
   BarChart, Bar, ComposedChart, Line, PieChart, Pie,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, Legend
 } from 'recharts';
+import { motion, AnimatePresence } from 'framer-motion';
 import './App.css'; 
 
 const API = 'http://localhost:8000';
@@ -160,6 +162,27 @@ const ProcessNode = React.memo(({ data }) => {
       position: 'relative',
       zIndex: 10,
     }}>
+      {/* Halo Pulse Effect */}
+      <motion.div
+        style={{
+          position: 'absolute',
+          inset: -4,
+          borderRadius: 100,
+          border: '4px solid #00B7C3',
+          zIndex: -1,
+          pointerEvents: 'none'
+        }}
+        initial={{ opacity: 0, scale: 0.95 }}
+        whileHover={{
+          opacity: [0, 0.6, 0],
+          scale: [1, 1.15, 1.35],
+          transition: {
+            duration: 1.5,
+            repeat: Infinity,
+            ease: "easeOut"
+          }
+        }}
+      />
       <div style={{
         width: 160,
         height: 155,
@@ -296,40 +319,67 @@ const FreqEdge=React.memo(({id,sourceX,sourceY,targetX,targetY,sourcePosition,ta
     <>
       <BaseEdge id={id} path={edgePath} 
         markerEnd={markerEnd}
+        style={{...style, stroke: arcColor, strokeWidth, strokeDasharray: dashArray, opacity:.85}}/>
+      
+      {/* Premium Energy Beam / Snake Glow */}
+      <path 
+        d={edgePath} 
+        fill="none" 
+        stroke="#00B7C3" 
+        strokeWidth={Math.max(4, strokeWidth / 1.5)}
+        strokeDasharray="1 20"
+        strokeLinecap="round"
         style={{
-          ...style, 
-          stroke: arcColor, 
-          strokeWidth: strokeWidth, 
-          strokeDasharray: dashArray,
-          opacity: isMainPath ? 0.9 : 0.6 
+          opacity: 0.6,
+          animation: `cometFlow ${Math.max(4, 10 - ratio * 6)}s linear infinite`
         }}
       />
-      {freq > 0 && (
+
+      {/* Moving Arrow Stream Animation */}
+      {[0, 1, 2].map((i) => {
+        const duration = Math.max(4, 10 - ratio * 6);
+        return (
+          <path 
+            key={i}
+            d="M -8,-6 L 8,0 L -8,6 Z" 
+            fill="#00B7C3" 
+            style={{ 
+              opacity: 0,
+            }}
+          >
+            <animateMotion 
+              dur={`${duration}s`} 
+              repeatCount="indefinite" 
+              path={edgePath} 
+              rotate="auto"
+              begin={`${i * (duration / 3)}s`}
+            />
+            <animate 
+              attributeName="opacity" 
+              values="0;1;1;0" 
+              keyTimes="0;0.1;0.9;1" 
+              dur={`${duration}s`} 
+              repeatCount="indefinite" 
+              begin={`${i * (duration / 3)}s`}
+            />
+          </path>
+        );
+      })}
+
+      {freq>0&&(
         <EdgeLabelRenderer>
-          <div style={{
-            position:'absolute',
+          <div style={{position:'absolute',
             transform:`translate(-50%,-50%) translate(${labelX}px,${labelY}px)`,
             pointerEvents:'all',zIndex:100,
-            display:'flex',flexDirection:'column',alignItems:'center',gap:2
-          }}>
-            <div style={{
-              fontSize: 36,
-              fontWeight: 400,
-              color: isMainPath ? '#006B3C' : '#8A8886', 
-              background:'rgba(255,255,255,0.85)',
-              padding:'2px 8px',
-              borderRadius:12
-            }}>
+            display:'flex',flexDirection:'column',alignItems:'center',gap:2}}>
+            <div style={{fontSize:25,fontWeight:700,color:'#323130',background:'rgba(255,255,255,0.95)',
+              border:'1px solid #E1DFDD', padding:'1px 6px',borderRadius:4,
+              boxShadow:'0 2px 4px rgba(0,0,0,0.12)'}}>
               {Number(freq).toLocaleString()}
             </div>
-            {data?.avg_days != null && (
-              <div style={{
-                fontSize:18,
-                color:'#8A8886',
-                background:'rgba(255,255,255,.8)',
-                padding:'0 4px',
-                borderRadius:2
-              }}>
+            {data?.avg_days!=null&&(
+              <div style={{fontSize:25,color:'#605E5C',background:'rgba(255,255,255,.9)',
+                padding:'0 4px',borderRadius:2}}>
                 {data.avg_days}d
               </div>
             )}
@@ -480,6 +530,21 @@ const CROSS_TO_PARAM={
   activity:'activity', month:'month', year:'year', quarter:'quarter',
   case_id:'case_id', lead_time:'lead_time', ernam:'ernam', status:'status'
 };
+
+const Skeleton=({width='100%',height='20px',borderRadius=4,style})=>(
+  <div className="skeleton-shimmer" style={{width,height,borderRadius,...style}}/>
+);
+
+const ChartSkeleton=()=>(
+  <div style={{display:'flex',flexDirection:'column',gap:12,padding:10}}>
+    <Skeleton width="60%" height="24px"/>
+    <Skeleton width="90%" height="150px"/>
+    <div style={{display:'flex',gap:10}}>
+      <Skeleton width="30%" height="16px"/>
+      <Skeleton width="30%" height="16px"/>
+    </div>
+  </div>
+);
 
 const Empty=()=>(
   <div style={{height:90,display:'flex',alignItems:'center',justifyContent:'center',
@@ -680,19 +745,24 @@ const ChartCard = React.memo(({title,subtitle,children,highlighted,onClear,style
       {loading && (
         <div style={{
           position:'absolute',inset:0,zIndex:10,
-          background:'rgba(255,255,255,0.85)',
-          backdropFilter:'blur(2px)',
-          display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:8
+          background: C.card,
+          display:'flex',flexDirection:'column',gap:12, padding:10
         }}>
-          <div style={{
-            width:20,height:20,borderRadius:'50%',
-            border:`2px solid ${C.blue700}`, borderTopColor:'transparent',
-            animation:'spin 0.8s linear infinite'
-          }}/>
-          <div style={{fontSize:11,fontWeight:600,color:C.blue700}}>Analysing...</div>
+          <div className="skeleton-loader" style={{width:'40%', height:14}}/>
+          <div style={{flex:1, display:'flex', alignItems:'flex-end', gap:8, marginTop: 10}}>
+             {[...Array(6)].map((_, i) => (
+               <div key={i} className="skeleton-loader" style={{
+                 flex:1, 
+                 height:`${30 + Math.random() * 60}%`,
+                 animationDelay: `${i * 0.1}s`
+               }}/>
+             ))}
+          </div>
         </div>
       )}
-      {children}
+      <div style={{opacity: loading ? 0 : 1, transition:'opacity 0.3s', height:'100%'}}>
+        {children}
+      </div>
     </div>
   </div>
 ));
@@ -974,6 +1044,7 @@ const StatusDonutChart = React.memo(({data,crossFilter,onSelect})=>{
           <Pie data={chartData} dataKey="count" nameKey={data[0]?.name ? "name" : "status"}
             cx="40%" cy="50%" innerRadius={60} outerRadius={95}
             paddingAngle={2} labelLine={false} label={renderLabel}
+            isAnimationActive={false}
             onClick={e=>e&&(e.name||e.status)&&onSelect('status',(e.name||e.status)===af?null:(e.name||e.status))}>
             {chartData.map((entry,i)=>(
               <Cell key={i} fill={entry.fill} cursor="pointer"
@@ -1022,7 +1093,7 @@ const ScrollableHBarChart = React.memo(({data,dataKey,labelKey,crossFilter,cross
             <XAxis type="number" hide/>
             <YAxis type="category" dataKey={labelKey} tick={{fontSize:10,fill:'#605E5C'}} width={120} interval={0}/>
             <Tooltip cursor={{fill:'rgba(0,0,0,.04)'}} content={<CustomTooltip nameKey={labelKey} labelOverride="cases"/>}/>
-            <Bar dataKey={dataKey} radius={[0,3,3,0]} barSize={20}
+            <Bar dataKey={dataKey} radius={[0,3,3,0]} barSize={20} isAnimationActive={false}
               onClick={e=>e&&e[labelKey]&&onSelect(crossKey,e[labelKey]===af?null:e[labelKey])}>
               {sorted.map((entry,i)=>(
                 <Cell key={i} cursor="pointer" fill={color||'#5C2D91'}
@@ -1050,7 +1121,7 @@ const ScrollableVBarChart = React.memo(({data,crossFilter,onSelect,dataKey='coun
             <XAxis dataKey={labelKey} tick={{fontSize:11,fill:'#605E5C'}} angle={-40} textAnchor="end" interval={0}/>
             <YAxis tick={{fontSize:10,fill:'#605E5C'}} width={40}/>
             <Tooltip cursor={{fill:'rgba(0,0,0,.04)'}} content={<CustomTooltip nameKey={labelKey} labelOverride="cases"/>}/>
-            <Bar dataKey={dataKey} radius={[4,4,0,0]}
+            <Bar dataKey={dataKey} radius={[4,4,0,0]} isAnimationActive={false}
               onClick={e=>e&&e[labelKey]&&onSelect(labelKey,e[labelKey]===af?null:e[labelKey])}>
               {data.map((entry,i)=>(
                 <Cell key={i} cursor="pointer" fill={ACCENT[i%ACCENT.length]} opacity={af&&af!==entry?.[labelKey]?0.25:1}/>
@@ -1075,7 +1146,7 @@ const LeadTimeChart = React.memo(({data, crossFilter, onSelect})=>{
           <XAxis dataKey="label" tick={{fontSize:9,fill:'#605E5C'}} angle={-45} textAnchor="end" interval={1}/>
           <YAxis tick={{fontSize:10,fill:'#605E5C'}} width={40}/>
           <Tooltip content={<CustomTooltip nameKey="label" labelOverride="cases"/>}/>
-          <Bar dataKey="count" radius={[2,2,0,0]}
+          <Bar dataKey="count" radius={[2,2,0,0]} isAnimationActive={false}
                onClick={e => e?.label && onSelect('lead_time', e.label === af ? null : e.label)}>
              {data.map((entry, i) => (
                 <Cell key={i} cursor="pointer" fill={af === entry.label ? '#CA5010' : '#038387'}
@@ -1105,7 +1176,7 @@ const ErnamChart = React.memo(({data, crossFilter, onSelect})=>{
               <XAxis type="number" hide/>
               <YAxis type="category" dataKey="ernam" tick={{fontSize:10,fill:'#605E5C'}} width={90} interval={0}/>
               <Tooltip cursor={{fill:'rgba(0,0,0,.04)'}} content={<CustomTooltip nameKey="ernam" labelOverride="cases"/>}/>
-              <Bar dataKey="count" radius={[0,3,3,0]} barSize={20}
+              <Bar dataKey="count" radius={[0,3,3,0]} barSize={20} isAnimationActive={false}
                   onClick={e => e?.ernam && onSelect('ernam', e.ernam === af ? null : e.ernam)}>
                   {sorted.map((entry,i)=>(
                     <Cell key={i} cursor="pointer" fill="#006B3C" opacity={af&&af!==entry?.ernam?0.25:1}/>
@@ -1119,8 +1190,9 @@ const ErnamChart = React.memo(({data, crossFilter, onSelect})=>{
 });
 
 /* ─── SoD VERTICAL BAR CHART ───────────────────────────────────── */
-const SodChart = React.memo(({ data }) => {
+const SodChart = React.memo(({ data, crossFilter, onSelect }) => {
   if (!Array.isArray(data) || !data.length) return <Empty />;
+  const af = crossFilter?.type === 'sod' ? crossFilter.value : null;
   return (
     <div style={{ width: '100%', height: 260 }}>
       <ResponsiveContainer width="100%" height="100%">
@@ -1129,9 +1201,10 @@ const SodChart = React.memo(({ data }) => {
           <XAxis dataKey="violation" tick={{ fontSize: 11, fill: '#605E5C' }} angle={-25} textAnchor="end" interval={0} />
           <YAxis tick={{ fontSize: 10, fill: '#605E5C' }} width={44} />
           <Tooltip cursor={{ fill: 'rgba(0,0,0,.04)' }} content={<CustomTooltip nameKey="violation" labelOverride="cases" />} />
-          <Bar dataKey="count" radius={[4, 4, 0, 0]} barSize={40} fill="#D13438">
+          <Bar dataKey="count" radius={[4, 4, 0, 0]} barSize={40} fill="#D13438" isAnimationActive={false}
+            onClick={e => e?.violation && onSelect('sod', e.violation === af ? null : e.violation)}>
             {data.map((entry, i) => (
-              <Cell key={i} fill="#D13438" />
+              <Cell key={i} cursor="pointer" fill={af === entry.violation ? C.orange : "#D13438"} opacity={af && af !== entry.violation ? 0.3 : 1} />
             ))}
           </Bar>
         </BarChart>
@@ -1140,16 +1213,21 @@ const SodChart = React.memo(({ data }) => {
   );
 });
 
-const DeviationsSummaryChart = React.memo(({ data }) => {
+const DeviationsSummaryChart = React.memo(({ data, crossFilter, onSelect }) => {
   if (!Array.isArray(data) || !data.length) return <Empty />;
+  const af = crossFilter?.type === 'activity' ? crossFilter.value : null;
   const DEV_COLORS = {
-    'SO Reversed':      '#D13438',
-    'SO Rev After GI':  '#E81123',
-    'Delivery Returned':'#E3008C',
-    'GI Reversed':      '#CA5010',
-    'Invoice Reversed': '#5C2D91',
-    'Credit Memo':      '#038387',
-    'Debit Memo':       '#F59E0B',
+    'SO Reversed':          '#D13438',
+    'SO Rev After GI':      '#E81123',
+    'Delivery Returned':    '#E3008C',
+    'GI Reversed':          '#CA5010',
+    'Invoice Reversed':     '#5C2D91',
+    'Credit Memo':          '#038387',
+    'Debit Memo':           '#F59E0B',
+  };
+  // Map deviation label back to original activity name for cross-filtering
+  const LABEL_TO_ACT = {
+    'SO Rev After GI': 'SO Reversed After GI'
   };
   return (
     <div style={{ width: '100%', height: 220 }}>
@@ -1159,9 +1237,10 @@ const DeviationsSummaryChart = React.memo(({ data }) => {
           <XAxis type="number" hide />
           <YAxis type="category" dataKey="deviation" tick={{ fontSize: 10, fill: '#605E5C' }} width={130} interval={0} />
           <Tooltip cursor={{ fill: 'rgba(0,0,0,.04)' }} content={<CustomTooltip nameKey="deviation" labelOverride="cases" />} />
-          <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={22}>
+          <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={22} isAnimationActive={false}
+            onClick={e => e?.deviation && onSelect('activity', (LABEL_TO_ACT[e.deviation] || e.deviation) === af ? null : (LABEL_TO_ACT[e.deviation] || e.deviation))}>
             {data.map((entry, i) => (
-              <Cell key={i} fill={DEV_COLORS[entry.deviation] || ACCENT[i % ACCENT.length]} />
+              <Cell key={i} cursor="pointer" fill={af === (LABEL_TO_ACT[entry.deviation] || entry.deviation) ? C.orange : (DEV_COLORS[entry.deviation] || ACCENT[i % ACCENT.length])} opacity={af && af !== (LABEL_TO_ACT[entry.deviation] || entry.deviation) ? 0.3 : 1} />
             ))}
           </Bar>
         </BarChart>
@@ -1194,8 +1273,8 @@ const BottleneckChart = React.memo(({ data }) => {
           <XAxis dataKey="step" tick={{ fontSize: 10, fill: '#605E5C' }} angle={-35} textAnchor="end" interval={0} />
           <YAxis tick={{ fontSize: 10, fill: '#605E5C' }} width={45} label={{ value: 'Days', angle: -90, position: 'insideLeft', offset: 5, style: { fontSize: 10, fill: '#605E5C' } }} />
           <Tooltip content={<BottleneckTooltip />} />
-          <Bar dataKey="avg_days" name="Avg Days" radius={[4, 4, 0, 0]} fill="#006B3C" />
-          <Line type="monotone" dataKey="median_days" name="Median Days" stroke="#CA5010" strokeWidth={2} dot={{ fill: '#CA5010', r: 4 }} />
+          <Bar dataKey="avg_days" name="Avg Days" radius={[4, 4, 0, 0]} fill="#006B3C" isAnimationActive={false} />
+          <Line type="monotone" dataKey="median_days" name="Median Days" stroke="#CA5010" strokeWidth={2} dot={{ fill: '#CA5010', r: 4 }} isAnimationActive={false} />
         </ComposedChart>
       </ResponsiveContainer>
     </div>
@@ -1255,6 +1334,7 @@ const CustomerAvgDaysChart = React.memo(({ data, crossFilter, onSelect }) => {
             <Bar
               dataKey="avg_days"
               radius={[5, 5, 0, 0]}
+              isAnimationActive={false}
               onClick={e => e?.customer && onSelect('customer', e.customer === af ? null : e.customer)}
             >
               {sorted.map((entry, i) => (
@@ -1424,6 +1504,7 @@ const EmptyState = ({ condition, message, children, action }) => {
 
 const O2CIntroScreen = ({ onGoTableBuild, onGoCsvUpload }) => {
   const [introStep, setIntroStep] = useState('overview'); // 'overview' | 'choose'
+  const [hoveredSide, setHoveredSide] = useState(null);
 
   const steps = [
     'Customer places an order — Sales Order (SO) is created in SAP',
@@ -1439,9 +1520,77 @@ const O2CIntroScreen = ({ onGoTableBuild, onGoCsvUpload }) => {
     'Invoice reversal and credit memo rate','Days Sales Outstanding (DSO)',
   ];
 
-  if (introStep === 'overview') return (
-    <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',padding:'36px 24px 48px',overflowY:'auto'}}>
-      <div style={{maxWidth:880,width:'100%',display:'flex',flexDirection:'column',gap:24}}>
+  const IconWrapper = ({ children, color }) => (
+    <div style={{
+      width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center',
+      color: color, flexShrink: 0
+    }}>
+      {children}
+    </div>
+  );
+
+  const icons = {
+    shoppingBag: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>
+      </svg>
+    ),
+    key: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3L15.5 7.5z"/>
+      </svg>
+    ),
+    package: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12.89 2.16L3 7v10l9.89 4.84L22.78 17V7l-9.89-4.84z"/><path d="M3.11 7.16l9.78 4.79 9.78-4.79"/><path d="M12.89 11.95v9.5"/><path d="M12.89 2.16l9.89 4.84"/>
+      </svg>
+    ),
+    truck: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+      </svg>
+    ),
+    fileText: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/>
+      </svg>
+    ),
+    bank: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="10" width="20" height="12"/><path d="m12 2 10 8H2Z"/><path d="M6 10v12"/><path d="M10 10v12"/><path d="M14 10v12"/><path d="M18 10v12"/>
+      </svg>
+    )
+  };
+
+  if (introStep === 'overview') {
+    const shortSteps = [
+      { icon: <IconWrapper color="#006B3C">{icons.shoppingBag}</IconWrapper>, text: 'Create Sales Order' },
+      { icon: <IconWrapper color="#006B3C">{icons.key}</IconWrapper>, text: 'Approve Sales Order' },
+      { icon: <IconWrapper color="#006B3C">{icons.package}</IconWrapper>, text: 'Pick & Pack' },
+      { icon: <IconWrapper color="#006B3C">{icons.truck}</IconWrapper>, text: 'Record Goods Issue' },
+      { icon: <IconWrapper color="#006B3C">{icons.fileText}</IconWrapper>, text: 'Record Invoice' },
+      { icon: <IconWrapper color="#107C10">{icons.bank}</IconWrapper>, text: 'Receive Payment' }
+    ];
+    return (
+      <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',overflowY:'auto'}}>
+        
+        {/* Continuous Process Ribbon */}
+        <div className="process-ribbon-container">
+          <div className="process-ribbon-content">
+            {/* Render multiple times for seamless looping */}
+            {[...shortSteps, ...shortSteps, ...shortSteps, ...shortSteps].map((s, i) => (
+              <React.Fragment key={i}>
+                <div className="process-ribbon-item">
+                  {s.icon}
+                  <span style={{marginLeft: 4}}>{s.text}</span>
+                </div>
+                {i < shortSteps.length * 4 - 1 && <div className="process-ribbon-arrow">→</div>}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+
+        <div style={{maxWidth:880,width:'100%',display:'flex',flexDirection:'column',gap:24,padding:'36px 24px 48px'}}>
 
         {/* Header */}
         <div style={{borderBottom:'2px solid #E2E8F0',paddingBottom:20}}>
@@ -1499,6 +1648,7 @@ const O2CIntroScreen = ({ onGoTableBuild, onGoCsvUpload }) => {
       </div>
     </div>
   );
+}
 
   /* ── Choose your path ── */
   return (
@@ -1523,53 +1673,87 @@ const O2CIntroScreen = ({ onGoTableBuild, onGoCsvUpload }) => {
           <p style={{margin:0,fontSize:13,color:'#64748b'}}>Select the method that matches your data format</p>
         </div>
 
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20}}>
-          {/* Build Event Log */}
-          <div style={{background:'#fff',border:'2px solid #E2E8F0',borderRadius:12,padding:'28px 24px',
-            display:'flex',flexDirection:'column',alignItems:'center',gap:14,textAlign:'center',
-            boxShadow:'0 2px 8px rgba(0,0,0,0.05)',transition:'all 0.2s',cursor:'pointer'}}
+        <div style={{display:'flex', width: '100%', height: 320, gap: 16}}>
+          {/* Build Event Log panel */}
+          <motion.div 
+            layout
+            style={{
+              flex: hoveredSide === 'build' ? 1.7 : (hoveredSide === 'csv' ? 0.6 : 1),
+              background:'#fff',border:'2px solid #E2E8F0',borderRadius:16,padding:'28px 24px',
+              display:'flex',flexDirection:'column',alignItems:'center',gap:14,textAlign:'center',
+              boxShadow:'0 4px 12px rgba(0,0,0,0.03)',cursor:'pointer',overflow:'hidden'
+            }}
             onClick={onGoTableBuild}
-            onMouseEnter={e=>{e.currentTarget.style.borderColor='#006B3C';e.currentTarget.style.boxShadow='0 4px 16px rgba(0,107,60,0.15)';}}
-            onMouseLeave={e=>{e.currentTarget.style.borderColor='#E2E8F0';e.currentTarget.style.boxShadow='0 2px 8px rgba(0,0,0,0.05)';}}>
-            <div style={{width:60,height:60,borderRadius:14,background:'#EDFAF4',display:'flex',alignItems:'center',justifyContent:'center',fontSize:28}}>🔨</div>
-            <div>
-              <div style={{fontSize:16,fontWeight:700,color:'#1e293b',marginBottom:8}}>Build Event Log</div>
-              <div style={{fontSize:13,color:'#64748b',lineHeight:1.65}}>
-                Upload raw SAP tables (VBAK, VBAP, VBFA, LIKP, LIPS, VBRK, VBRP, BSAD, KNA1) and
-                automatically build the O2C process event log.
-              </div>
-            </div>
-            <button onClick={e=>{e.stopPropagation();onGoTableBuild();}}
+            onMouseEnter={() => setHoveredSide('build')}
+            onMouseLeave={() => setHoveredSide(null)}
+            animate={{ borderColor: hoveredSide === 'build' ? '#006B3C' : '#E2E8F0' }}
+          >
+            <motion.div layout style={{width:60,height:60,borderRadius:14,background:'#EDFAF4',
+              display:'flex',alignItems:'center',justifyContent:'center',fontSize:28,flexShrink:0}}>
+              🔨
+            </motion.div>
+            <motion.div layout style={{flex:1}}>
+              <motion.div layout style={{fontSize:18,fontWeight:700,color:'#1e293b',marginBottom:8, whiteSpace: hoveredSide === 'csv' ? 'nowrap' : 'normal'}}>Build Event Log</motion.div>
+              <AnimatePresence>
+                {hoveredSide !== 'csv' && (
+                  <motion.div 
+                    initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
+                    style={{fontSize:13,color:'#64748b',lineHeight:1.65}}>
+                    Upload raw SAP tables (VBAK, VBAP, VBFA, LIKP, LIPS, VBRK, VBRP, BSAD, KNA1) and
+                    automatically build the O2C process event log.
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+            <motion.button layout
+              onClick={e=>{e.stopPropagation();onGoTableBuild();}}
               style={{background:'#006B3C',color:'#fff',border:'none',padding:'11px 28px',
                 borderRadius:7,fontSize:13,fontWeight:700,cursor:'pointer',width:'100%',marginTop:'auto'}}
               onMouseOver={e=>e.currentTarget.style.background='#004d2c'}
               onMouseOut={e=>e.currentTarget.style.background='#006B3C'}>
-              ⚡ Build Event Log
-            </button>
-          </div>
+              {hoveredSide === 'csv' ? 'Build' : '⚡ Build Event Log'}
+            </motion.button>
+          </motion.div>
 
-          {/* Upload Pre-built CSV */}
-          <div style={{background:'#fff',border:'2px solid #E2E8F0',borderRadius:12,padding:'28px 24px',
-            display:'flex',flexDirection:'column',alignItems:'center',gap:14,textAlign:'center',
-            boxShadow:'0 2px 8px rgba(0,0,0,0.05)',transition:'all 0.2s',cursor:'pointer'}}
+          {/* Upload Pre-built CSV panel */}
+          <motion.div 
+            layout
+            style={{
+              flex: hoveredSide === 'csv' ? 1.7 : (hoveredSide === 'build' ? 0.6 : 1),
+              background:'#fff',border:'2px solid #E2E8F0',borderRadius:16,padding:'28px 24px',
+              display:'flex',flexDirection:'column',alignItems:'center',gap:14,textAlign:'center',
+              boxShadow:'0 4px 12px rgba(0,0,0,0.03)',cursor:'pointer',overflow:'hidden'
+            }}
             onClick={onGoCsvUpload}
-            onMouseEnter={e=>{e.currentTarget.style.borderColor='#0078D4';e.currentTarget.style.boxShadow='0 4px 16px rgba(0,120,212,0.15)';}}
-            onMouseLeave={e=>{e.currentTarget.style.borderColor='#E2E8F0';e.currentTarget.style.boxShadow='0 2px 8px rgba(0,0,0,0.05)';}}>
-            <div style={{width:60,height:60,borderRadius:14,background:'#EFF6FF',display:'flex',alignItems:'center',justifyContent:'center',fontSize:28}}>📂</div>
-            <div>
-              <div style={{fontSize:16,fontWeight:700,color:'#1e293b',marginBottom:8}}>Upload Pre-built CSV</div>
-              <div style={{fontSize:13,color:'#64748b',lineHeight:1.65}}>
-                Already have a formatted event log? Upload your pre-built wide-format CSV directly to launch the dashboard.
-              </div>
-            </div>
-            <button onClick={e=>{e.stopPropagation();onGoCsvUpload();}}
+            onMouseEnter={() => setHoveredSide('csv')}
+            onMouseLeave={() => setHoveredSide(null)}
+            animate={{ borderColor: hoveredSide === 'csv' ? '#0078D4' : '#E2E8F0' }}
+          >
+            <motion.div layout style={{width:60,height:60,borderRadius:14,background:'#EFF6FF',
+              display:'flex',alignItems:'center',justifyContent:'center',fontSize:28,flexShrink:0}}>
+              📂
+            </motion.div>
+            <motion.div layout style={{flex:1}}>
+              <motion.div layout style={{fontSize:18,fontWeight:700,color:'#1e293b',marginBottom:8, whiteSpace: hoveredSide === 'build' ? 'nowrap' : 'normal'}}>Pre-built CSV</motion.div>
+              <AnimatePresence>
+                {hoveredSide !== 'build' && (
+                  <motion.div 
+                    initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
+                    style={{fontSize:13,color:'#64748b',lineHeight:1.65}}>
+                    Already have a formatted event log? Upload your pre-built wide-format CSV directly to launch the dashboard.
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+            <motion.button layout
+              onClick={e=>{e.stopPropagation();onGoCsvUpload();}}
               style={{background:'#0078D4',color:'#fff',border:'none',padding:'11px 28px',
                 borderRadius:7,fontSize:13,fontWeight:700,cursor:'pointer',width:'100%',marginTop:'auto'}}
               onMouseOver={e=>e.currentTarget.style.background='#005A9E'}
               onMouseOut={e=>e.currentTarget.style.background='#0078D4'}>
-              📂 Upload Pre-built CSV
-            </button>
-          </div>
+              {hoveredSide === 'build' ? 'Upload' : '📂 Upload Pre-built CSV'}
+            </motion.button>
+          </motion.div>
         </div>
       </div>
     </div>
@@ -1886,15 +2070,32 @@ const O2CTableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, m
             <div style={{fontSize:11,fontWeight:700,color:'#64748b',textTransform:'uppercase',letterSpacing:0.8}}>Required SAP Tables</div>
             <div style={{fontSize:11,color:'#94a3b8'}}>Upload each as <strong style={{color:'#475569'}}>.csv</strong></div>
           </div>
-          <div style={{display:'flex',flexDirection:'column',border:'1px solid #E2E8F0',borderRadius:8,overflow:'hidden'}}>
+          <motion.div 
+            variants={{
+              visible: { transition: { staggerChildren: 0.05 } }
+            }}
+            initial="hidden"
+            animate="visible"
+            style={{display:'flex',flexDirection:'column',border:'1px solid #E2E8F0',borderRadius:8,overflow:'hidden'}}
+          >
             {tables.map((t,i)=>{
               const s=si(tableStatus[t.name]);
               const ref=fileRefs.current[t.name];
               const isUp=tableStatus[t.name]==='uploading';
               return(
-                <div key={t.name} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 14px',
-                  background:tableStatus[t.name]==='done'?'#F0FAF0':tableStatus[t.name]==='error'?'#FDE7E9':i%2===0?'#F8FAFC':'#fff',
-                  borderBottom:i<tables.length-1?'1px solid #E2E8F0':'none',transition:'background 0.2s'}}>
+                <motion.div 
+                  key={t.name}
+                  variants={{
+                    hidden: { opacity: 0, x: -10 },
+                    visible: { opacity: 1, x: 0 }
+                  }}
+                  animate={isUp ? {
+                    backgroundColor: ['#F8FAFC', '#D1FAE5', '#F8FAFC'],
+                    transition: { duration: 1.5, repeat: Infinity }
+                  } : {}}
+                  style={{display:'flex',alignItems:'center',gap:12,padding:'10px 14px',
+                    background:tableStatus[t.name]==='done'?'#F0FAF0':tableStatus[t.name]==='error'?'#FDE7E9':i%2===0?'#F8FAFC':'#fff',
+                    borderBottom:i<tables.length-1?'1px solid #E2E8F0':'none',transition:'background 0.2s'}}>
                   <input ref={ref} type="file" accept=".csv" style={{display:'none'}}
                     onChange={e=>{uploadTable(t.name,e.target.files[0]);e.target.value='';}}/>
                   <button onClick={()=>{ if(!isUp&&ref.current){ref.current.value='';ref.current.click();} }}
@@ -1965,10 +2166,10 @@ const O2CTableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, m
                       </div>
                     )}
                   </div>
-                </div>
+                </motion.div>
               );
             })}
-          </div>
+          </motion.div>
           <div style={{marginTop:16,display:'flex',alignItems:'center',gap:12,justifyContent:'space-between',flexWrap:'wrap'}}>
             <div style={{fontSize:12,color:allDone?'#107C10':'#94a3b8',fontWeight:allDone?700:400}}>
               {allDone?'✓ All 9 tables uploaded — ready to build':`${tables.filter(t=>tableStatus[t.name]==='done').length} / ${tables.length} tables uploaded`}
@@ -2912,33 +3113,42 @@ export default function O2CDashboard({ currentUser, onSignOut, onBackHome }){
             </div>
           </div>
 
+          <AnimatePresence mode="wait">
           {kpis ? (
-            <>
+              <motion.div
+                key={activeTab + "-kpis"}
+                initial="hidden" animate="visible" exit="exit"
+                variants={{
+                  hidden: { opacity: 0 },
+                  visible: { opacity: 1, transition: { duration: 0.4 } },
+                  exit: { opacity: 0, transition: { duration: 0.4 } }
+                }}
+              >
             <EmptyState condition={kpis.total_cases === 0} message="No valid cases found. The column mapping may be incorrect. Please check your mapping and rebuild the event log.">
               <div style={{display:'grid',gridTemplateColumns:'repeat(9,1fr)',gap:8}}>
-                <KpiCard label="Sales Orders"       value={kpis.total_cases}        tooltip={kpiTooltips.total_cases}/>
-                <KpiCard label="Avg Life Cycle"     value={`${kpis.avg_cycle_days}d`} tooltip={kpiTooltips.avg_cycle_days}/>
-                <KpiCard label="SO Approved"        value={kpis.so_approved}         tooltip={kpiTooltips.so_approved}/>
-                <KpiCard label="Deliveries"         value={kpis.deliveries_created}  tooltip={kpiTooltips.deliveries_created}/>
-                <KpiCard label="Delivery Posted"    value={kpis.deliveries_posted}   tooltip={kpiTooltips.deliveries_posted}/>
-                <KpiCard label="Goods Issued"       value={kpis.goods_issues}        tooltip={kpiTooltips.goods_issues}/>
-                <KpiCard label="Invoices"           value={kpis.invoices_created}    tooltip={kpiTooltips.invoices_created}/>
-                <KpiCard label="Invoice Posted"     value={kpis.invoices_posted}     tooltip={kpiTooltips.invoices_posted}/>
-                <KpiCard label="Invoice Cleared"    value={kpis.invoices_cleared}    tooltip={kpiTooltips.invoices_cleared}/>
+                <motion.div><KpiCard label="Sales Orders"       value={kpis.total_cases}        tooltip={kpiTooltips.total_cases}/></motion.div>
+                <motion.div><KpiCard label="SO Approved"        value={kpis.so_approved}         tooltip={kpiTooltips.so_approved}/></motion.div>
+                <motion.div><KpiCard label="Deliveries"         value={kpis.deliveries_created}  tooltip={kpiTooltips.deliveries_created}/></motion.div>
+                <motion.div><KpiCard label="Delivery Posted"    value={kpis.deliveries_posted}   tooltip={kpiTooltips.deliveries_posted}/></motion.div>
+                <motion.div><KpiCard label="Goods Issued"       value={kpis.goods_issues}        tooltip={kpiTooltips.goods_issues}/></motion.div>
+                <motion.div><KpiCard label="Invoices"           value={kpis.invoices_created}    tooltip={kpiTooltips.invoices_created}/></motion.div>
+                <motion.div><KpiCard label="Invoice Posted"     value={kpis.invoices_posted}     tooltip={kpiTooltips.invoices_posted}/></motion.div>
+                <motion.div><KpiCard label="Invoice Cleared"    value={kpis.invoices_cleared}    tooltip={kpiTooltips.invoices_cleared}/></motion.div>
+                <motion.div><KpiCard label="Avg Life Cycle"     value={`${kpis.avg_cycle_days}d`} tooltip={kpiTooltips.avg_cycle_days}/></motion.div>
               </div>
               {/* ── Deviation KPIs – red border ── */}
-              <div style={{display:'grid',gridTemplateColumns:'repeat(8,1fr)',gap:8}}>
-                <ConfKpiCard label="SO Reversed"          value={kpis.so_reversals}      sub="SO Rejections"            tooltip={kpiTooltips.so_reversals}/>
-                <ConfKpiCard label="SO Rev After GI"      value={kpis.so_rev_after_gi}   sub="High-risk reversal"       tooltip={kpiTooltips.so_rev_after_gi}/>
-                <ConfKpiCard label="GI Reversed"          value={kpis.gi_reversals}       sub="GI Cancellations"         tooltip={kpiTooltips.gi_reversals}/>
-                <ConfKpiCard label="Invoice Reversed"     value={kpis.invoice_reversals}  sub="Invoice Cancellations"    tooltip={kpiTooltips.invoice_reversals}/>
-                <ConfKpiCard label="Credit Memos"         value={kpis.credit_memos}       sub="Credits issued"           tooltip={kpiTooltips.credit_memos}/>
-                <ConfKpiCard label="Debit Memos"          value={kpis.debit_memos}        sub="Debits issued"            tooltip={kpiTooltips.debit_memos}/>
-                <ConfKpiCard label="Invoice w/o Delivery" value={kpis.inv_no_del}         sub="Missing delivery"         tooltip={kpiTooltips.inv_no_del}/>
-                <ConfKpiCard label="Invoice Before GI"    value={kpis.inv_no_gi}          sub="Sequence violation"       tooltip={kpiTooltips.inv_no_gi}/>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(8,1fr)',gap:8, marginTop: 8}}>
+                <div><ConfKpiCard label="SO Reversed"          value={kpis.so_reversals}      sub="SO Rejections"            tooltip={kpiTooltips.so_reversals}/></div>
+                <div><ConfKpiCard label="SO Rev After GI"      value={kpis.so_rev_after_gi}   sub="High-risk reversal"       tooltip={kpiTooltips.so_rev_after_gi}/></div>
+                <div><ConfKpiCard label="GI Reversed"          value={kpis.gi_reversals}       sub="GI Cancellations"         tooltip={kpiTooltips.gi_reversals}/></div>
+                <div><ConfKpiCard label="Invoice Reversed"     value={kpis.invoice_reversals}  sub="Invoice Cancellations"    tooltip={kpiTooltips.invoice_reversals}/></div>
+                <div><ConfKpiCard label="Credit Memos"         value={kpis.credit_memos}       sub="Credits issued"           tooltip={kpiTooltips.credit_memos}/></div>
+                <div><ConfKpiCard label="Debit Memos"          value={kpis.debit_memos}        sub="Debits issued"            tooltip={kpiTooltips.debit_memos}/></div>
+                <div><ConfKpiCard label="Invoice w/o Delivery" value={kpis.inv_no_del}         sub="Missing delivery"         tooltip={kpiTooltips.inv_no_del}/></div>
+                <div><ConfKpiCard label="Invoice Before GI"    value={kpis.inv_no_gi}          sub="Sequence violation"       tooltip={kpiTooltips.inv_no_gi}/></div>
               </div>
             </EmptyState>
-            </>
+              </motion.div>
           ) : (
             dashboardLoading ? (
               <div style={{padding: '16px', textAlign: 'center', background: '#fff', borderRadius: 8, color: C.blue700, fontWeight: 600, fontSize: 13, border: `1px solid ${C.border}`}}>
@@ -2946,253 +3156,283 @@ export default function O2CDashboard({ currentUser, onSignOut, onBackHome }){
               </div>
             ) : null
           )}
+          </AnimatePresence>
 
-          {activeTab === 'process' && (
-            <div style={{display:'flex', flexDirection:'column', gap:10, flex:1, paddingBottom: '20px'}}>
-              <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:10}}>
-                <div style={{display:'flex', flexDirection:'column', gap:10}}>
+          <AnimatePresence mode="wait">
+            {activeTab === 'process' ? (
+              <motion.div 
+                key="process"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.4 }}
+                style={{display:'flex', flexDirection:'column', gap:10, flex:1, paddingBottom: '20px'}}
+              >
+                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:10}}>
+                  <div style={{display:'flex', flexDirection:'column', gap:10}}>
 
-                  <div style={{background:C.card,borderRadius:8,border:`1px solid ${C.border}`,
-                    boxShadow:'0 2px 8px rgba(0,0,0,.05)',overflow:'hidden',
-                    display:'flex',flexDirection:'column', height:960}}>
+                    <div style={{background:C.card,borderRadius:8,border:`1px solid ${C.border}`,
+                      boxShadow:'0 2px 8px rgba(0,0,0,.05)',overflow:'hidden',
+                      display:'flex',flexDirection:'column', height:960}}>
 
-                  <div style={{padding:'12px 14px 8px',borderBottom:`1px solid ${C.border}`,
-                    background: C.jkBlue, 
-                    display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0}}>
-                    <div>
-                      <div style={{fontSize:13,fontWeight:700,color:'#fff'}}>Process Map</div>
-                      <div style={{fontSize:10,color:'rgba(255,255,255,0.7)'}}>O2C Flow & Frequency Analysis</div>
-                    </div>
-                    <div style={{display:'flex', gap:4, background:'rgba(255,255,255,0.2)', padding:2, borderRadius:4}}>
-                      <button 
-                        onClick={() => setLayoutDir('LR')}
-                        style={{
-                          fontSize:11, padding:'4px 8px', border:'none', cursor:'pointer', borderRadius:3,
-                          background: layoutDir==='LR' ? '#fff' : 'transparent',
-                          color: layoutDir==='LR' ? C.jkBlue : '#fff',
-                          fontWeight: layoutDir==='LR' ? 700 : 400
-                        }}>Horizontal</button>
-                      <button 
-                        onClick={() => setLayoutDir('TB')}
-                        style={{
-                          fontSize:11, padding:'4px 8px', border:'none', cursor:'pointer', borderRadius:3,
-                          background: layoutDir==='TB' ? '#fff' : 'transparent',
-                          color: layoutDir==='TB' ? C.jkBlue : '#fff',
-                          fontWeight: layoutDir==='TB' ? 700 : 400
-                        }}>Vertical</button>
-                    </div>
-                  </div>
-
-                  <div style={{flex:1, position:'relative'}}>
-                    {pmError&&(
-                      <div style={{position:'absolute',top:8,left:8,right:8,zIndex:10,
-                        fontSize:11,color:'#A4262C',background:'#FDE7E9',
-                        border:'1px solid #FBC5C9',borderRadius:4,padding:'6px 12px'}}>
-                        Error: {pmError}
+                    <div style={{padding:'12px 14px 8px',borderBottom:`1px solid ${C.border}`,
+                      background: C.jkBlue, 
+                      display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0}}>
+                      <div>
+                        <div style={{fontSize:13,fontWeight:700,color:'#fff'}}>Process Map</div>
+                        <div style={{fontSize:10,color:'rgba(255,255,255,0.7)'}}>O2C Flow & Frequency Analysis</div>
                       </div>
-                    )}
+                      <div style={{display:'flex', gap:4, background:'rgba(255,255,255,0.2)', padding:2, borderRadius:4}}>
+                        <button 
+                          onClick={() => setLayoutDir('LR')}
+                          style={{
+                            fontSize:11, padding:'4px 8px', border:'none', cursor:'pointer', borderRadius:3,
+                            background: layoutDir==='LR' ? '#fff' : 'transparent',
+                            color: layoutDir==='LR' ? C.jkBlue : '#fff',
+                            fontWeight: layoutDir==='LR' ? 700 : 400
+                          }}>Horizontal</button>
+                        <button 
+                          onClick={() => setLayoutDir('TB')}
+                          style={{
+                            fontSize:11, padding:'4px 8px', border:'none', cursor:'pointer', borderRadius:3,
+                            background: layoutDir==='TB' ? '#fff' : 'transparent',
+                            color: layoutDir==='TB' ? C.jkBlue : '#fff',
+                            fontWeight: layoutDir==='TB' ? 700 : 400
+                          }}>Vertical</button>
+                      </div>
+                    </div>
 
-                    {pmLoading&&(
-                      <div style={{position:'absolute',inset:0,zIndex:20,
-                        background:'rgba(248,250,255,0.88)',backdropFilter:'blur(4px)',
-                        display:'flex',flexDirection:'column',
-                        alignItems:'center',justifyContent:'center',gap:14,borderRadius:6}}>
-                        <div style={{textAlign:'center'}}>
-                          <div style={{fontSize:13,fontWeight:700,color:'#323130',marginBottom:4}}>
-                            Building Process Map
-                          </div>
-                          <div style={{fontSize:11,color:C.slate}}>
-                            Analysing transitions and paths…
+                    <div style={{flex:1, position:'relative'}}>
+                      {pmError&&(
+                        <div style={{position:'absolute',top:8,left:8,right:8,zIndex:10,
+                          fontSize:11,color:'#A4262C',background:'#FDE7E9',
+                          border:'1px solid #FBC5C9',borderRadius:4,padding:'6px 12px'}}>
+                          Error: {pmError}
+                        </div>
+                      )}
+
+                      {pmLoading&&(
+                        <div style={{position:'absolute',inset:0,zIndex:20,
+                          background:'rgba(248,250,255,0.88)',backdropFilter:'blur(4px)',
+                          display:'flex',flexDirection:'column',
+                          alignItems:'center',justifyContent:'center',gap:14,borderRadius:6}}>
+                          <div style={{textAlign:'center'}}>
+                            <div style={{fontSize:13,fontWeight:700,color:'#323130',marginBottom:4}}>
+                              Building Process Map
+                            </div>
+                            <div style={{fontSize:11,color:C.slate}}>
+                              Analysing transitions and paths…
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    <div style={{position:'absolute',inset:0, background:'#FAFAFA'}}>
-                      <ReactFlow
-                        nodes={rfNodes} edges={rfEdges}
-                        onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
-                        nodeTypes={nodeTypes} edgeTypes={edgeTypes}
-                        fitView fitViewOptions={{padding:.18}}
-                        minZoom={0.1} maxZoom={4}
-                        proOptions={{hideAttribution:true}}
-                        onNodeMouseEnter={(e,n)=>setHoverInfo({x:e.clientX,y:e.clientY,
-                          title:n.data?.label||'',value:n.data?.frequency||0})}
-                        onNodeMouseLeave={()=>setHoverInfo(null)}
-                        onEdgeMouseEnter={(e,ed)=>setHoverInfo({x:e.clientX,y:e.clientY,
-                          title:`${ed.source} → ${ed.target}`,
-                          value:ed.data?.frequency||0,isEdge:true,avgDays:ed.data?.avg_days})}
-                        onEdgeMouseLeave={()=>setHoverInfo(null)}
-                        defaultEdgeOptions={{type:'freqEdge'}}>
-                        <Background color="#C8E6DA" gap={24} size={1} variant="dots"/>
-                        <Controls showInteractive={false}
-                          style={{background:'#fff',border:`1px solid ${C.border}`,borderRadius:6}}/>
-                        <MiniMap zoomable pannable
-                          nodeColor={C.mapNodeBg}
-                          maskColor="rgba(240,244,250,.85)"
-                          style={{border:`1px solid ${C.border}`,borderRadius:6}}/>
-                      </ReactFlow>
+                      <div style={{position:'absolute',inset:0, background:'#FAFAFA'}}>
+                        <ReactFlow
+                          nodes={rfNodes} edges={rfEdges}
+                          onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
+                          nodeTypes={nodeTypes} edgeTypes={edgeTypes}
+                          fitView fitViewOptions={{padding:.18}}
+                          minZoom={0.1} maxZoom={4}
+                          proOptions={{hideAttribution:true}}
+                          onNodeMouseEnter={(e,n)=>setHoverInfo({x:e.clientX,y:e.clientY,
+                            title:n.data?.label||'',value:n.data?.frequency||0})}
+                          onNodeMouseLeave={()=>setHoverInfo(null)}
+                          onEdgeMouseEnter={(e,ed)=>setHoverInfo({x:e.clientX,y:e.clientY,
+                            title:`${ed.source} → ${ed.target}`,
+                            value:ed.data?.frequency||0,isEdge:true,avgDays:ed.data?.avg_days})}
+                          onEdgeMouseLeave={()=>setHoverInfo(null)}
+                          defaultEdgeOptions={{type:'freqEdge'}}>
+                          <Background color="#C8E6DA" gap={24} size={1.5} variant="dots"/>
+                          <Controls showInteractive={false}
+                            style={{background:'#fff',border:`1px solid ${C.border}`,borderRadius:6}}/>
+                          <MiniMap zoomable pannable
+                            nodeColor={C.mapNodeBg}
+                            maskColor="rgba(240,244,250,.85)"
+                            style={{border:`1px solid ${C.border}`,borderRadius:6}}/>
+                        </ReactFlow>
+                      </div>
+
+                      {hoverInfo&&(
+                        <div style={{position:'fixed',left:hoverInfo.x+16,top:hoverInfo.y+16,
+                          zIndex:99999,pointerEvents:'none',
+                          background:'rgba(255,255,255,.98)',border:`1px solid ${C.border}`,
+                          borderRadius:6,padding:'10px 14px',
+                          boxShadow:'0 4px 12px rgba(0,0,0,.15)',fontSize:12,color:'#323130',minWidth:160}}>
+                          <div style={{fontWeight:700,color:'#006B3C',marginBottom:6}}>{hoverInfo.title}</div>
+                          <div style={{display:'flex',justifyContent:'space-between',gap:16}}>
+                            <span style={{color:C.slate}}>{hoverInfo.isEdge?'Transitions:':'Unique Cases:'}</span>
+                            <strong>{Number(hoverInfo.value).toLocaleString()}</strong>
+                          </div>
+                          {hoverInfo.avgDays!=null&&(
+                            <div style={{display:'flex',justifyContent:'space-between',gap:16,marginTop:4}}>
+                              <span style={{color:C.slate}}>Avg Duration:</span>
+                              <strong>{hoverInfo.avgDays}d</strong>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                     </div>
 
-                    {hoverInfo&&(
-                      <div style={{position:'fixed',left:hoverInfo.x+16,top:hoverInfo.y+16,
-                        zIndex:99999,pointerEvents:'none',
-                        background:'rgba(255,255,255,.98)',border:`1px solid ${C.border}`,
-                        borderRadius:6,padding:'10px 14px',
-                        boxShadow:'0 4px 12px rgba(0,0,0,.15)',fontSize:12,color:'#323130',minWidth:160}}>
-                        <div style={{fontWeight:700,color:'#006B3C',marginBottom:6}}>{hoverInfo.title}</div>
-                        <div style={{display:'flex',justifyContent:'space-between',gap:16}}>
-                          <span style={{color:C.slate}}>{hoverInfo.isEdge?'Transitions:':'Unique Cases:'}</span>
-                          <strong>{Number(hoverInfo.value).toLocaleString()}</strong>
-                        </div>
-                        {hoverInfo.avgDays!=null&&(
-                          <div style={{display:'flex',justifyContent:'space-between',gap:16,marginTop:4}}>
-                            <span style={{color:C.slate}}>Avg Duration:</span>
-                            <strong>{hoverInfo.avgDays}d</strong>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
                   </div>
 
+                  <div style={{display:'flex', flexDirection:'column', gap:10, height: '100%'}}>
+                    
+                    <ChartCard title="Happy Path vs Deviations" loading={dashboardLoading} highlighted={crossFilter?.type==='status'} onClear={clearCF}>
+                      <StatusDonutChart data={happyPathData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false}/>
+                    </ChartCard>
+
+                    <ChartCard title="Activity Frequency"
+                      loading={dashboardLoading}
+                      highlighted={crossFilter?.type==='activity'} onClear={clearCF}>
+                      <ActivityChart data={actData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false}/>
+                    </ChartCard>
+
+                    <ChartCard title="O2C Bottleneck Analysis" subtitle="Average vs Median days per process step" loading={dashboardLoading}>
+                      <BottleneckChart data={bottleneckData} isAnimationActive={false}/>
+                    </ChartCard>
+                  </div>
                 </div>
 
-                <div style={{display:'flex', flexDirection:'column', gap:10, height: '100%'}}>
-                  
-                  <ChartCard title="Happy Path vs Deviations" loading={dashboardLoading} highlighted={crossFilter?.type==='status'} onClear={clearCF}>
-                    <StatusDonutChart data={happyPathData} crossFilter={crossFilter} onSelect={handleSelect}/>
-                  </ChartCard>
+                <div style={{marginTop: '2px'}}>
+                  <div style={{display:'grid', gridTemplateColumns:'repeat(2, 1fr)', gap:10}}>
+                    
+                    <ChartCard title="Deviations Summary" subtitle="All deviation types by case count" loading={dashboardLoading}>
+                      <EmptyState condition={!dashboardLoading && deviationsSummary.length === 0} message="No deviations found (or delivery/invoice data is not uploaded).">
+                        <DeviationsSummaryChart data={deviationsSummary} isAnimationActive={false}/>
+                      </EmptyState>
+                    </ChartCard>
 
-                  <ChartCard title="Activity Frequency"
+                    <ChartCard title="Segregation of Duties (SoD)" subtitle="Internal control violations (same user doing multiple actions)" loading={dashboardLoading}>
+                      <EmptyState condition={!dashboardLoading && sodData.length === 0} message="No SoD violations found.">
+                        <SodChart data={sodData} isAnimationActive={false}/>
+                      </EmptyState>
+                    </ChartCard>
+
+                    <ChartCard title="Invoice Reversals Timeline" subtitle="Trend of Invoice reversals over time" loading={dashboardLoading} highlighted={crossFilter?.type==='month'} onClear={clearCF}>
+                      <EmptyState condition={!dashboardLoading && invRevTimeline.length === 0} message="No Invoice reversals found.">
+                        <MonthlyChart data={invRevTimeline} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false}/>
+                      </EmptyState>
+                    </ChartCard>
+
+                    <ChartCard title="Invoice Reversals (by User)" subtitle="Users reversing the most Invoices" loading={dashboardLoading} highlighted={crossFilter?.type==='ernam'} onClear={clearCF}>
+                      <EmptyState condition={!dashboardLoading && invRevErnam.length === 0} message="No Invoice reversals found.">
+                        <ScrollableHBarChart data={invRevErnam} dataKey="count" labelKey="ernam" color="#5aabee" crossFilter={crossFilter} crossKey="ernam" onSelect={handleSelect} isAnimationActive={false}/>
+                      </EmptyState>
+                    </ChartCard>
+
+                    <ChartCard title="Invoice Before GI (By User)" subtitle="Sequence violation: Invoice posted before Goods Issue" loading={dashboardLoading} highlighted={crossFilter?.type==='ernam'} onClear={clearCF}>
+                      <EmptyState condition={!dashboardLoading && seqViolation.length === 0} message="No sequence violations found (or delivery/invoice data is not uploaded).">
+                        <ScrollableHBarChart data={seqViolation} dataKey="count" labelKey="ernam" color="#CA5010" crossFilter={crossFilter} crossKey="ernam" onSelect={handleSelect} isAnimationActive={false}/>
+                      </EmptyState>
+                    </ChartCard>
+
+                    <ChartCard title="SO → GI Lead Time Distribution" 
+                      loading={dashboardLoading}
+                      highlighted={crossFilter?.type==='lead_time'} onClear={clearCF}>
+                      <EmptyState condition={!dashboardLoading && ltData.length === 0} message="No delivery data found to calculate lead time.">
+                        <LeadTimeChart data={ltData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false}/>
+                      </EmptyState>
+                    </ChartCard>
+
+                  </div>
+                </div>
+
+                <div style={{display:'grid', gridTemplateColumns:'1fr', gap:10, marginTop: '10px'}}>
+                    <ChartCard title="Case Details" subtitle="Click a Sales Order to view its chronological event log" loading={dashboardLoading}>
+                      <CaseTable 
+                        data={caseTableData} 
+                        events={caseEvents}
+                        selectedId={selected.case_id}
+                        onSelect={(id) => {
+                          const newId = selected.case_id === id ? 'ALL' : id;
+                          setSelected(prev => ({...prev, case_id: newId}));
+                          setCrossFilter(null);
+                          logAction('FILTER', `Clicked case row: ${newId}`);
+                        }} 
+                      />
+                    </ChartCard>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div 
+                key="dimensions"
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                variants={{
+                  hidden: { opacity: 0 },
+                  visible: { opacity: 1, transition: { duration: 0.4 } },
+                  exit: { opacity: 0, transition: { duration: 0.4 } }
+                }}
+                style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) minmax(0,1fr)',gap:10,
+                gridAutoRows:'minmax(280px, auto)', alignItems:'stretch', paddingBottom:'24px'}}
+              >
+                <div style={{display:'flex', flexDirection:'column'}}>
+                  <ChartCard title="Sales Org Distribution (VKORG)" subtitle="Cases per Sales Organisation"
                     loading={dashboardLoading}
-                    highlighted={crossFilter?.type==='activity'} onClear={clearCF}>
-                    <ActivityChart data={actData} crossFilter={crossFilter} onSelect={handleSelect}/>
-                  </ChartCard>
-
-                  <ChartCard title="O2C Bottleneck Analysis" subtitle="Average vs Median days per process step" loading={dashboardLoading}>
-                    <BottleneckChart data={bottleneckData} />
+                    highlighted={crossFilter?.type==='vkorg'} onClear={clearCF}>
+                    <GenericPieChart data={vkorgData} nameKey="vkorg" dataKey="count" crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false}/>
                   </ChartCard>
                 </div>
-              </div>
 
-              {/* --- ANOMALIES & DEVIATIONS — 2-col grid --- */}
-              <div style={{marginTop: '2px'}}>
-                <div style={{display:'grid', gridTemplateColumns:'repeat(2, 1fr)', gap:10}}>
-                  
-                  <ChartCard title="Deviations Summary" subtitle="All deviation types by case count" loading={dashboardLoading}>
-                    <EmptyState condition={!dashboardLoading && deviationsSummary.length === 0} message="No deviations found (or delivery/invoice data is not uploaded).">
-                      <DeviationsSummaryChart data={deviationsSummary} />
-                    </EmptyState>
-                  </ChartCard>
-
-                  <ChartCard title="Segregation of Duties (SoD)" subtitle="Internal control violations (same user doing multiple actions)" loading={dashboardLoading}>
-                    <EmptyState condition={!dashboardLoading && sodData.length === 0} message="No SoD violations found.">
-                      <SodChart data={sodData} />
-                    </EmptyState>
-                  </ChartCard>
-
-                  <ChartCard title="Invoice Reversals Timeline" subtitle="Trend of Invoice reversals over time" loading={dashboardLoading}>
-                    <EmptyState condition={!dashboardLoading && invRevTimeline.length === 0} message="No Invoice reversals found.">
-                      <MonthlyChart data={invRevTimeline} crossFilter={crossFilter} onSelect={handleSelect}/>
-                    </EmptyState>
-                  </ChartCard>
-
-                  <ChartCard title="Invoice Reversals (by User)" subtitle="Users reversing the most Invoices" loading={dashboardLoading} highlighted={crossFilter?.type==='ernam'} onClear={clearCF}>
-                    <EmptyState condition={!dashboardLoading && invRevErnam.length === 0} message="No Invoice reversals found.">
-                      <ScrollableHBarChart data={invRevErnam} dataKey="count" labelKey="ernam" color="#5aabee" crossFilter={crossFilter} crossKey="ernam" onSelect={handleSelect}/>
-                    </EmptyState>
-                  </ChartCard>
-
-                  <ChartCard title="Invoice Before GI (By User)" subtitle="Sequence violation: Invoice posted before Goods Issue" loading={dashboardLoading} highlighted={crossFilter?.type==='ernam'} onClear={clearCF}>
-                    <EmptyState condition={!dashboardLoading && seqViolation.length === 0} message="No sequence violations found (or delivery/invoice data is not uploaded).">
-                      <ScrollableHBarChart data={seqViolation} dataKey="count" labelKey="ernam" color="#CA5010" crossFilter={crossFilter} crossKey="ernam" onSelect={handleSelect}/>
-                    </EmptyState>
-                  </ChartCard>
-
-                  <ChartCard title="SO → GI Lead Time Distribution" 
+                <div style={{display:'flex', flexDirection:'column', minWidth: 0, minHeight: 0, height: '100%'}}>
+                  <ChartCard title="Monthly Trend (Unique Cases)" subtitle="Unique active cases per month"
                     loading={dashboardLoading}
-                    highlighted={crossFilter?.type==='lead_time'} onClear={clearCF}>
-                    <EmptyState condition={!dashboardLoading && ltData.length === 0} message="No delivery data found to calculate lead time.">
-                      <LeadTimeChart data={ltData} crossFilter={crossFilter} onSelect={handleSelect}/>
+                    highlighted={crossFilter?.type==='month'} onClear={clearCF}>
+                    <MonthlyChart data={monData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false}/>
+                  </ChartCard>
+                </div>
+
+                <div style={{display:'flex', flexDirection:'column', minWidth: 0, minHeight: 0, height: '100%'}}>
+                  <ChartCard title="User Activity (Order Creator)" subtitle="Who created Sales Orders (Unique Cases)" 
+                    loading={dashboardLoading}
+                    highlighted={crossFilter?.type==='ernam'} onClear={clearCF}>
+                    <ErnamChart data={ernamData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false}/>
+                  </ChartCard>
+                </div>
+
+                <div style={{display:'flex', flexDirection:'column', minWidth: 0, minHeight: 0, height: '100%'}}>
+                  <ChartCard title="Order Type (AUART)" subtitle="Distribution by order document type"
+                    loading={dashboardLoading}
+                    highlighted={crossFilter?.type==='auart'} onClear={clearCF}>
+                    <ScrollableVBarChart data={auartData} crossFilter={crossFilter} onSelect={handleSelect} dataKey="count" labelKey="auart" isAnimationActive={false}/>
+                  </ChartCard>
+                </div>
+
+                <div style={{display:'flex', flexDirection:'column', minWidth: 0, minHeight: 0, height: '100%'}}>
+                  <ChartCard title="Material Group (MATKL)" subtitle="Sales activity by material category"
+                    loading={dashboardLoading}
+                    highlighted={crossFilter?.type==='matkl'} onClear={clearCF}>
+                    <ScrollableHBarChart data={matklData} dataKey="count" labelKey="matkl"
+                      color="#038387" crossFilter={crossFilter} crossKey="matkl" onSelect={handleSelect} isAnimationActive={false}/>
+                  </ChartCard>
+                </div>
+
+                <div style={{display:'flex', flexDirection:'column', minWidth: 0, minHeight: 0, height: '100%'}}>
+                  <ChartCard title="Top Customers by Volume" subtitle="Customers by number of Sales Orders"
+                    loading={dashboardLoading}
+                    highlighted={crossFilter?.type==='customer'} onClear={clearCF}>
+                    <ScrollableHBarChart data={custData} dataKey="count" labelKey="customer"
+                      color="#5C2D91" crossFilter={crossFilter} crossKey="customer" onSelect={handleSelect} isAnimationActive={false}/>
+                  </ChartCard>
+                </div>
+
+                <div style={{display:'flex', flexDirection:'column', gridColumn: '1 / -1', minWidth: 0, minHeight: 0, height: '100%'}}>
+                  <ChartCard title="Avg SO → Cleared Days by Customer" subtitle="End-to-end cycle time per customer — click to filter"
+                    loading={dashboardLoading}
+                    highlighted={crossFilter?.type==='customer'} onClear={clearCF}
+                    style={{ gridColumn: '1 / -1' }}> 
+                    <EmptyState condition={!dashboardLoading && custLeadTime.length === 0} message="No cycle time data found.">
+                      <CustomerAvgDaysChart data={custLeadTime} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false}/>
                     </EmptyState>
                   </ChartCard>
-
                 </div>
-              </div>
 
-              <div style={{display:'grid', gridTemplateColumns:'1fr', gap:10, marginTop: '10px'}}>
-                  <ChartCard title="Case Details" subtitle="Click a Sales Order to view its chronological event log" loading={dashboardLoading}>
-                    <CaseTable 
-                      data={caseTableData} 
-                      events={caseEvents}
-                      selectedId={selected.case_id}
-                      onSelect={(id) => {
-                        const newId = selected.case_id === id ? 'ALL' : id;
-                        setSelected(prev => ({...prev, case_id: newId}));
-                        setCrossFilter(null);
-                        logAction('FILTER', `Clicked case row: ${newId}`);
-                      }} 
-                    />
-                  </ChartCard>
-              </div>
-
-            </div>
-          )}
-
-          {activeTab === 'dimensions' && (
-            <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) minmax(0,1fr)',gap:10,
-              gridAutoRows:'minmax(280px, auto)', alignItems:'stretch', paddingBottom:'24px'}}>
-              
-              <ChartCard title="Sales Org Distribution (VKORG)" subtitle="Cases per Sales Organisation"
-                loading={dashboardLoading}
-                highlighted={crossFilter?.type==='vkorg'} onClear={clearCF}>
-                <GenericPieChart data={vkorgData} nameKey="vkorg" dataKey="count" crossFilter={crossFilter} onSelect={handleSelect}/>
-              </ChartCard>
-
-              <ChartCard title="Monthly Trend (Unique Cases)" subtitle="Unique active cases per month"
-                loading={dashboardLoading}
-                highlighted={crossFilter?.type==='month'} onClear={clearCF}>
-                <MonthlyChart data={monData} crossFilter={crossFilter} onSelect={handleSelect}/>
-              </ChartCard>
-
-              <ChartCard title="User Activity (Order Creator)" subtitle="Who created Sales Orders (Unique Cases)" 
-                loading={dashboardLoading}
-                highlighted={crossFilter?.type==='ernam'} onClear={clearCF}>
-                <ErnamChart data={ernamData} crossFilter={crossFilter} onSelect={handleSelect}/>
-              </ChartCard>
-
-              <ChartCard title="Order Type (AUART)" subtitle="Distribution by order document type"
-                loading={dashboardLoading}
-                highlighted={crossFilter?.type==='auart'} onClear={clearCF}>
-                <ScrollableVBarChart data={auartData} crossFilter={crossFilter} onSelect={handleSelect} dataKey="count" labelKey="auart"/>
-              </ChartCard>
-
-              <ChartCard title="Material Group (MATKL)" subtitle="Sales activity by material category"
-                loading={dashboardLoading}
-                highlighted={crossFilter?.type==='matkl'} onClear={clearCF}>
-                <ScrollableHBarChart data={matklData} dataKey="count" labelKey="matkl"
-                  color="#038387" crossFilter={crossFilter} crossKey="matkl" onSelect={handleSelect}/>
-              </ChartCard>
-
-              <ChartCard title="Top Customers by Volume" subtitle="Customers by number of Sales Orders"
-                loading={dashboardLoading}
-                highlighted={crossFilter?.type==='customer'} onClear={clearCF}>
-                <ScrollableHBarChart data={custData} dataKey="count" labelKey="customer"
-                  color="#5C2D91" crossFilter={crossFilter} crossKey="customer" onSelect={handleSelect}/>
-              </ChartCard>
-
-              <ChartCard title="Avg SO → Cleared Days by Customer" subtitle="End-to-end cycle time per customer — click to filter"
-                loading={dashboardLoading}
-                highlighted={crossFilter?.type==='customer'} onClear={clearCF}
-                style={{ gridColumn: '1 / -1' }}> 
-                <EmptyState condition={!dashboardLoading && custLeadTime.length === 0} message="No cycle time data found.">
-                  <CustomerAvgDaysChart data={custLeadTime} crossFilter={crossFilter} onSelect={handleSelect} />
-                </EmptyState>
-              </ChartCard>
-
-            </div>
-          )}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
         </>)}
 
