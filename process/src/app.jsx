@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import P2PDashboard from './p2p';
 import O2CDashboard from './o2c';
 import P2IDashboard from './p2i';
@@ -392,6 +393,33 @@ const LoginScreen = ({ onLogin }) => {
 };
 
 /* ─── MODULE SELECTOR ─────────────────────────────────────────────────────── */
+const containerVariants = {
+  hidden: {},
+  show: {
+    transition: {
+      staggerChildren: 0.15,
+      delayChildren: 0.1,
+    }
+  }
+};
+
+const cardVariants = {
+  hidden: { opacity: 0, scale: 0.6, y: 80, rotateX: 30, rotateZ: -5 },
+  show: { 
+    opacity: 1, 
+    scale: 1, 
+    y: 0, 
+    rotateX: 0, 
+    rotateZ: 0,
+    transition: {
+      type: "spring",
+      stiffness: 120,
+      damping: 14,
+      mass: 0.8
+    }
+  }
+};
+
 const ModuleSelector = ({ currentUser, onSelect, onSignOut }) => (
   <div className="login-screen-bg" style={{ display: 'block', overflowY: 'auto' }}>
     <InteractiveProcessMap restrictToRight={false} />
@@ -447,13 +475,19 @@ const ModuleSelector = ({ currentUser, onSelect, onSignOut }) => (
         Choose the process you want to analyse
       </p>
 
-      <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', justifyContent: 'center' }}
+      >
 
-        <div
+        <motion.div
+          variants={cardVariants}
           onClick={() => onSelect('p2p')}
           style={cardStyle}
-          onMouseEnter={e => Object.assign(e.currentTarget.style, cardHover)}
-          onMouseLeave={e => Object.assign(e.currentTarget.style, cardStyle)}
+          whileHover={{ y: -4, boxShadow: '0 12px 40px rgba(0,0,0,0.4)', backgroundColor: 'rgba(255, 255, 255, 0.08)' }}
+          whileTap={{ scale: 0.95 }}
         >
           <div style={{ width: 48, height: 48, background: '#EBF5FF', borderRadius: 10, marginBottom: 16,
             display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -471,13 +505,14 @@ const ModuleSelector = ({ currentUser, onSelect, onSignOut }) => (
             Analyse purchasing, goods receipts, and invoice timelines.
           </p>
           <button style={{ ...btnStyle, background: '#0078D4' }}>Launch P2P</button>
-        </div>
+        </motion.div>
 
-        <div
+        <motion.div
+          variants={cardVariants}
           onClick={() => onSelect('o2c')}
           style={cardStyle}
-          onMouseEnter={e => Object.assign(e.currentTarget.style, cardHover)}
-          onMouseLeave={e => Object.assign(e.currentTarget.style, cardStyle)}
+          whileHover={{ y: -4, boxShadow: '0 12px 40px rgba(0,0,0,0.4)', backgroundColor: 'rgba(255, 255, 255, 0.08)' }}
+          whileTap={{ scale: 0.95 }}
         >
           <div style={{ width: 48, height: 48, background: '#EDFAF4', borderRadius: 10, marginBottom: 16,
             display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -493,13 +528,14 @@ const ModuleSelector = ({ currentUser, onSelect, onSignOut }) => (
             Analyse sales orders, deliveries, and billing cycles.
           </p>
           <button style={{ ...btnStyle, background: '#006B3C' }}>Launch O2C</button>
-        </div>
+        </motion.div>
 
-        <div
+        <motion.div
+          variants={cardVariants}
           onClick={() => onSelect('p2i')}
           style={cardStyle}
-          onMouseEnter={e => Object.assign(e.currentTarget.style, cardHover)}
-          onMouseLeave={e => Object.assign(e.currentTarget.style, cardStyle)}
+          whileHover={{ y: -4, boxShadow: '0 12px 40px rgba(0,0,0,0.4)', backgroundColor: 'rgba(255, 255, 255, 0.08)' }}
+          whileTap={{ scale: 0.95 }}
         >
           <div style={{ width: 48, height: 48, background: '#FEF3C7', borderRadius: 10, marginBottom: 16,
             display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -515,9 +551,9 @@ const ModuleSelector = ({ currentUser, onSelect, onSignOut }) => (
             Analyse production planning, material reservations, and shop floor execution.
           </p>
           <button style={{ ...btnStyle, background: '#D97706' }}>Launch P2I</button>
-        </div>
+        </motion.div>
 
-      </div>
+      </motion.div>
     </div>
 
     <div style={{ textAlign: 'center', fontSize: 12, color: 'rgba(255,255,255,0.5)', padding: '16px 0' }}>
@@ -541,13 +577,7 @@ const cardStyle = {
   cursor: 'pointer',
   width: 280,
   textAlign: 'center',
-  transition: 'transform 0.2s, box-shadow 0.2s, background 0.2s',
   border: '1px solid rgba(255,255,255,0.1)',
-};
-const cardHover = {
-  transform: 'translateY(-4px)',
-  boxShadow: '0 12px 40px rgba(0,0,0,0.4)',
-  background: 'rgba(255, 255, 255, 0.08)',
 };
 const btnStyle = {
   padding: '9px 0',
@@ -560,8 +590,20 @@ const btnStyle = {
   width: '100%',
 };
 
+const pageVariants = {
+  initial: { opacity: 0, x: 15 },
+  animate: { opacity: 1, x: 0 },
+  exit: { opacity: 0, x: -15 },
+};
+
+const pageTransition = {
+  duration: 0.3,
+  ease: "easeInOut"
+};
+
 /* ─── ROOT APP ────────────────────────────────────────────────────────────── */
 export default function App() {
+
   const [currentUser,   setCurrentUser]   = useState(null);
   const [activeModule,  setActiveModule]  = useState(null); // null | 'p2p' | 'o2c'
 
@@ -570,21 +612,37 @@ export default function App() {
   const handleSelect   = (mod) => setActiveModule(mod);
   const handleBackHome = () => setActiveModule(null);
 
-  if (!currentUser) {
-    return <LoginScreen onLogin={handleLogin} />;
-  }
-
-  if (activeModule === 'p2p') {
-    return <P2PDashboard currentUser={currentUser} onSignOut={handleSignOut} onBackHome={handleBackHome} />;
-  }
-
-  if (activeModule === 'o2c') {
-    return <O2CDashboard currentUser={currentUser} onSignOut={handleSignOut} onBackHome={handleBackHome} />;
-  }
-
-  if (activeModule === 'p2i') {
-    return <P2IDashboard currentUser={currentUser} onSignOut={handleSignOut} onBackHome={handleBackHome} />;
-  }
-
-  return <ModuleSelector currentUser={currentUser} onSelect={handleSelect} onSignOut={handleSignOut} />;
+  return (
+    <>
+      <style>{`
+        @keyframes cometFlow {
+          from { stroke-dashoffset: 200; }
+          to { stroke-dashoffset: 0; }
+        }
+      `}</style>
+      <AnimatePresence mode="wait">
+      {!currentUser ? (
+        <motion.div key="login" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition} style={{ height: '100%' }}>
+          <LoginScreen onLogin={handleLogin} />
+        </motion.div>
+      ) : activeModule === 'p2p' ? (
+        <motion.div key="p2p" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition} style={{ height: '100%' }}>
+          <P2PDashboard currentUser={currentUser} onSignOut={handleSignOut} onBackHome={handleBackHome} />
+        </motion.div>
+      ) : activeModule === 'o2c' ? (
+        <motion.div key="o2c" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition} style={{ height: '100%' }}>
+          <O2CDashboard currentUser={currentUser} onSignOut={handleSignOut} onBackHome={handleBackHome} />
+        </motion.div>
+      ) : activeModule === 'p2i' ? (
+        <motion.div key="p2i" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition} style={{ height: '100%' }}>
+          <P2IDashboard currentUser={currentUser} onSignOut={handleSignOut} onBackHome={handleBackHome} />
+        </motion.div>
+      ) : (
+        <motion.div key="selector" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition} style={{ height: '100%' }}>
+          <ModuleSelector currentUser={currentUser} onSelect={handleSelect} onSignOut={handleSignOut} />
+        </motion.div>
+      )}
+      </AnimatePresence>
+    </>
+  );
 }
