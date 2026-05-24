@@ -280,9 +280,7 @@
   flex: 1;
   max-width: 550px;
   color: #fff;
-  animation: fade-in-left 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  opacity: 0;
-  transform: translateX(-40px);
+  /* Animation handled by framer-motion in app.jsx */
 }
 
 @keyframes fade-in-left {
