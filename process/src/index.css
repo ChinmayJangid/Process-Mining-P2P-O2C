@@ -36,3 +36,40 @@ a:hover {
 * {
   box-sizing: border-box;
 }
+
+/* Cinematic Animations */
+@keyframes vortex-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes hero-pulse {
+  0% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.02); filter: brightness(1.1); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+.vortex-spin {
+  animation: vortex-spin 60s linear infinite;
+}
+
+.hero-pulse {
+  animation: hero-pulse 8s ease-in-out infinite;
+}
+
+.float-animation {
+  animation: float 4s ease-in-out infinite;
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+}
