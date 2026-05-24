@@ -3,6 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import P2PDashboard from './p2p';
 import O2CDashboard from './o2c';
 import P2IDashboard from './p2i';
+import R2RDashboard from './r2r';
+import HRJDashboard from './hrj';
+import HRLDashboard from './hrl';
+import FINDashboard from './fin';
+import CMDashboard from './cm';
 import './App.css';
 import './Login.css';
 
@@ -43,7 +48,7 @@ const InteractiveProcessMap = ({ restrictToRight = false }) => {
         dist: i === j ? Infinity : Math.hypot(n.x - generatedNodes[i].x, n.y - generatedNodes[i].y)
       }));
       distances.sort((a, b) => a.dist - b.dist);
-      
+
       for (let k = 0; k < 2; k++) {
         const targetIdx = distances[k].index;
         // Avoid duplicate reverse edges
@@ -82,7 +87,7 @@ const InteractiveProcessMap = ({ restrictToRight = false }) => {
           // Continuous slow background drift
           node.x += node.vx;
           node.y += node.vy;
-          
+
           // Bounce off boundaries
           if (restrictToRight) {
             if (node.x > 97 || node.x < 50) node.vx *= -1;
@@ -102,7 +107,7 @@ const InteractiveProcessMap = ({ restrictToRight = false }) => {
             if (dist < 15) {
               const power = Math.pow((15 - dist) / 15, 2); // Ease-in pull
               pullX = dx * power * 0.6; // Max 60% pull towards cursor
-              pullY = (mouseYPct - node.y) * power * 0.6; 
+              pullY = (mouseYPct - node.y) * power * 0.6;
             }
           }
         }
@@ -156,7 +161,7 @@ const InteractiveProcessMap = ({ restrictToRight = false }) => {
       const rect = containerRef.current.getBoundingClientRect();
       const mouseXPct = ((e.clientX - rect.left) / rect.width) * 100;
       const mouseYPct = ((e.clientY - rect.top) / rect.height) * 100;
-      
+
       let closest = null;
       let minDist = Infinity;
       baseNodes.current.forEach(node => {
@@ -164,7 +169,7 @@ const InteractiveProcessMap = ({ restrictToRight = false }) => {
         const dy = (mouseYPct - (node.cy || node.y)) * (rect.height / rect.width);
         const dist = Math.hypot(dx, dy);
         // 4% radius hit area for clicking
-        if (dist < 4 && dist < minDist) { 
+        if (dist < 4 && dist < minDist) {
           minDist = dist;
           closest = node;
         }
@@ -248,8 +253,8 @@ const LoginScreen = ({ onLogin }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError]       = useState('');
-  const [loading, setLoading]   = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -274,35 +279,122 @@ const LoginScreen = ({ onLogin }) => {
   return (
     <div className="login-screen-bg">
       <InteractiveProcessMap restrictToRight={true} />
-      
+
       <div className="login-content-wrapper">
         <div className="login-hero-info">
-          <h1 className="hero-title">
-            Uncover Hidden <br/>
+          <motion.h1
+            className="hero-title"
+            initial={{ opacity: 0, x: -40 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+          >
+            Uncover Hidden <br />
             <span className="text-highlight">Inefficiencies.</span>
-          </h1>
-          <p className="hero-subtitle">
-            Process mining is a data science technique that analyzes event log data from IT systems 
-            (ERP, CRM) to visualize, analyze, and improve business processes. 
+          </motion.h1>
+          <motion.p
+            className="hero-subtitle"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+          >
+            Process mining is a data science technique that analyzes event log data from IT systems
+            (ERP, CRM) to visualize, analyze, and improve business processes.
             It creates a data-driven map of actual operational workflows to identify bottlenecks, compliance issues, and inefficiencies.
-            <br/>
+            <br />
             Transform your raw operational data into actionable insights.
             Visualize how your enterprise processes truly execute, uncover bottlenecks, and drive continuous improvement across your entire organization.
-          </p>
-          <div className="hero-features">
-            <div className="feature-item">
+          </motion.p>
+          <motion.div
+            className="hero-features"
+            initial="hidden"
+            animate="show"
+            variants={{
+              hidden: { opacity: 0 },
+              show: {
+                opacity: 1,
+                transition: {
+                  staggerChildren: 0.08, // Very fast stagger
+                  delayChildren: 0.4    // Starts much sooner
+                }
+              }
+            }}
+          >
+            <motion.div
+              className="feature-item"
+              variants={{
+                hidden: {
+                  opacity: 0,
+                  rotateY: -90,
+                  x: -30,
+                  perspective: 1000
+                },
+                show: {
+                  opacity: 1,
+                  rotateY: 0,
+                  x: 0,
+                  transition: {
+                    type: "spring",
+                    stiffness: 150, // Much snappier
+                    damping: 15
+                  }
+                }
+              }}
+              style={{ transformOrigin: "left center" }}
+            >
               <div className="feature-icon-wrapper">⚡</div>
               <span>Real-time Process Discovery</span>
-            </div>
-            <div className="feature-item">
+            </motion.div>
+            <motion.div
+              className="feature-item"
+              variants={{
+                hidden: {
+                  opacity: 0,
+                  rotateY: -90,
+                  x: -30,
+                  perspective: 1000
+                },
+                show: {
+                  opacity: 1,
+                  rotateY: 0,
+                  x: 0,
+                  transition: {
+                    type: "spring",
+                    stiffness: 150,
+                    damping: 15
+                  }
+                }
+              }}
+              style={{ transformOrigin: "left center" }}
+            >
               <div className="feature-icon-wrapper">🔍</div>
               <span>Root Cause Analysis</span>
-            </div>
-            <div className="feature-item">
+            </motion.div>
+            <motion.div
+              className="feature-item"
+              variants={{
+                hidden: {
+                  opacity: 0,
+                  rotateY: -90,
+                  x: -30,
+                  perspective: 1000
+                },
+                show: {
+                  opacity: 1,
+                  rotateY: 0,
+                  x: 0,
+                  transition: {
+                    type: "spring",
+                    stiffness: 150,
+                    damping: 15
+                  }
+                }
+              }}
+              style={{ transformOrigin: "left center" }}
+            >
               <div className="feature-icon-wrapper">📈</div>
               <span>Continuous Optimization</span>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         </div>
 
         <div className="login-form-container">
@@ -317,67 +409,67 @@ const LoginScreen = ({ onLogin }) => {
             <h2 className="login-title">
               Welcome
             </h2>
-        <p className="login-subtitle">
-          Sign in to access your dashboard
-        </p>
+            <p className="login-subtitle">
+              Sign in to access your dashboard
+            </p>
 
-        {error && (
-          <div className="login-error">
-            {error}
-          </div>
-        )}
+            {error && (
+              <div className="login-error">
+                {error}
+              </div>
+            )}
 
-        <form onSubmit={handleSubmit} className="login-form">
-          <div className="input-group">
-            <input
-              type="text"
-              placeholder="Username"
-              required
-              value={username}
-              onChange={e => setUsername(e.target.value)}
-              className="glass-input"
-            />
+            <form onSubmit={handleSubmit} className="login-form">
+              <div className="input-group">
+                <input
+                  type="text"
+                  placeholder="Username"
+                  required
+                  value={username}
+                  onChange={e => setUsername(e.target.value)}
+                  className="glass-input"
+                />
+              </div>
+              <div className="input-group" style={{ position: 'relative' }}>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Password"
+                  required
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  className="glass-input"
+                  style={{ paddingRight: 40 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: 'absolute',
+                    right: 12,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    color: 'rgba(255,255,255,0.7)',
+                    cursor: 'pointer',
+                    fontSize: 14,
+                    padding: 4
+                  }}
+                  title={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? "🙈" : "👁️"}
+                </button>
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="login-btn"
+              >
+                {loading ? 'Signing in…' : 'Sign In'}
+              </button>
+            </form>
           </div>
-          <div className="input-group" style={{ position: 'relative' }}>
-            <input
-              type={showPassword ? "text" : "password"}
-              placeholder="Password"
-              required
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              className="glass-input"
-              style={{ paddingRight: 40 }}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              style={{
-                position: 'absolute',
-                right: 12,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                background: 'none',
-                border: 'none',
-                color: 'rgba(255,255,255,0.7)',
-                cursor: 'pointer',
-                fontSize: 14,
-                padding: 4
-              }}
-              title={showPassword ? "Hide password" : "Show password"}
-            >
-              {showPassword ? "🙈" : "👁️"}
-            </button>
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="login-btn"
-          >
-            {loading ? 'Signing in…' : 'Sign In'}
-          </button>
-        </form>
-      </div>
-      </div>
+        </div>
       </div>
 
       <div className="login-footer">
@@ -405,11 +497,11 @@ const containerVariants = {
 
 const cardVariants = {
   hidden: { opacity: 0, scale: 0.6, y: 80, rotateX: 30, rotateZ: -5 },
-  show: { 
-    opacity: 1, 
-    scale: 1, 
-    y: 0, 
-    rotateX: 0, 
+  show: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    rotateX: 0,
     rotateZ: 0,
     transition: {
       type: "spring",
@@ -420,151 +512,274 @@ const cardVariants = {
   }
 };
 
+const MODULES = [
+  {
+    id: 'p2p',
+    title: 'Procure-to-Pay',
+    desc: 'Analyse purchasing, goods receipts, and invoice timelines.',
+    bg: '#EBF5FF',
+    color: '#0078D4',
+    btnText: 'Launch P2P',
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M3 3h18v4H3zM3 10h18v4H3zM3 17h18v4H3z" fill="#0078D4" opacity="0.15" />
+        <rect x="3" y="3" width="18" height="4" rx="1" stroke="#0078D4" strokeWidth="1.5" fill="none" />
+        <rect x="3" y="10" width="18" height="4" rx="1" stroke="#0078D4" strokeWidth="1.5" fill="none" />
+        <rect x="3" y="17" width="18" height="4" rx="1" stroke="#0078D4" strokeWidth="1.5" fill="none" />
+      </svg>
+    )
+  },
+  {
+    id: 'o2c',
+    title: 'Order-to-Cash',
+    desc: 'Analyse sales orders, deliveries, and billing cycles.',
+    bg: '#EDFAF4',
+    color: '#006B3C',
+    btnText: 'Launch O2C',
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="9" fill="#006B3C" opacity="0.12" />
+        <path d="M8 12l3 3 5-5" stroke="#006B3C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    )
+  },
+  {
+    id: 'p2i',
+    title: 'Plan-to-Inventory',
+    desc: 'Analyse production planning, material reservations, and shop floor execution.',
+    bg: '#FEF3C7',
+    color: '#D97706',
+    btnText: 'Launch P2I',
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M4 4h16v16H4z" fill="#D97706" opacity="0.12" />
+        <path d="M4 12h16M12 4v16" stroke="#D97706" strokeWidth="2" strokeLinecap="round" />
+      </svg>
+    )
+  },
+  {
+    id: 'r2r',
+    title: 'Record-to-Report',
+    desc: 'Analyse journal entry flows, reconciliations, and financial report closures.',
+    bg: '#E6F4F5',
+    color: '#00828A',
+    btnText: 'Launch R2R',
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M4 3h16v18H4z" fill="#00828A" opacity="0.12" />
+        <path d="M8 7h8M8 12h8M8 17h5" stroke="#00828A" strokeWidth="2" strokeLinecap="round" />
+      </svg>
+    )
+  },
+  {
+    id: 'hrj',
+    title: 'HR Joining',
+    desc: 'Analyse new hire onboarding schedules, background checks, and provisioning.',
+    bg: '#EFF6EF',
+    color: '#107C10',
+    btnText: 'Launch HRJ',
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="8" r="4" fill="#107C10" opacity="0.12" />
+        <path d="M6 20v-2a4 4 0 014-4h4a4 4 0 014 4v2" stroke="#107C10" strokeWidth="2" strokeLinecap="round" />
+        <path d="M12 6v4M10 8h4" stroke="#107C10" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
+    )
+  },
+  {
+    id: 'hrl',
+    title: 'HR Leaving',
+    desc: 'Analyse resignation timelines, exit surveys, and asset return clearances.',
+    bg: '#FDE7E9',
+    color: '#D13438',
+    btnText: 'Launch HRL',
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="8" r="4" fill="#D13438" opacity="0.12" />
+        <path d="M6 20v-2a4 4 0 014-4h4a4 4 0 014 4v2" stroke="#D13438" strokeWidth="2" strokeLinecap="round" />
+        <path d="M9 8h6" stroke="#D13438" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
+    )
+  },
+  {
+    id: 'fin',
+    title: 'Finance Budget',
+    desc: 'Analyse departmental requests, committee approvals, and ERP allocations.',
+    bg: '#FDF0F1',
+    color: '#7A0016',
+    btnText: 'Launch FIN',
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="#7A0016" opacity="0.12" />
+        <path d="M12 6v12M15 8H10.5a2.5 2.5 0 000 5H14a2.5 2.5 0 010 5H9" stroke="#7A0016" strokeWidth="2" strokeLinecap="round" />
+      </svg>
+    )
+  },
+  {
+    id: 'cm',
+    title: 'Change Management',
+    desc: 'Analyse ITIL change requests, CAB approvals, and deployment rollbacks.',
+    bg: '#FFF3E0',
+    color: '#F7630C',
+    btnText: 'Launch CM',
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M12 2v4M12 18v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M2 12h4M18 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" stroke="#F7630C" strokeWidth="2" strokeLinecap="round" />
+        <circle cx="12" cy="12" r="5" fill="#F7630C" opacity="0.12" stroke="#F7630C" strokeWidth="1.5" />
+      </svg>
+    )
+  }
+];
+
 const ModuleSelector = ({ currentUser, onSelect, onSignOut }) => (
   <div className="login-screen-bg" style={{ display: 'block', overflowY: 'auto' }}>
     <InteractiveProcessMap restrictToRight={false} />
     <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-    {/* Header */}
-    <div style={{
-      background: 'rgba(0, 0, 0, 0.2)', padding: '14px 28px',
-      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      backdropFilter: 'blur(10px)',
-      borderBottom: '1px solid rgba(255,255,255,0.1)'
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <img
-          src="/logo.png"
-          alt="ajaLabs Logo"
-          onError={e => { e.target.style.display = 'none'; }}
-          style={{ height: 36, borderRadius: 6 }}
-        />
-        <div>
-          <div style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>Process Mining</div>
-          <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>AJALabs Select a module</div>
+      {/* Header */}
+      <div style={{
+        background: 'rgba(0, 0, 0, 0.2)', padding: '14px 28px',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        backdropFilter: 'blur(10px)',
+        borderBottom: '1px solid rgba(255,255,255,0.1)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <img
+            src="/logo.png"
+            alt="ajaLabs Logo"
+            onError={e => { e.target.style.display = 'none'; }}
+            style={{ height: 36, borderRadius: 6 }}
+          />
+          <div>
+            <div style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>Process Mining</div>
+            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>AJALabs Select a module</div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>
+            Signed in as <strong style={{ color: '#fff' }}>{currentUser}</strong>
+          </span>
+          <button
+            onClick={onSignOut}
+            style={{
+              background: 'rgba(209,52,56,0.85)', color: '#fff',
+              border: 'none', padding: '6px 14px', borderRadius: 4,
+              cursor: 'pointer', fontSize: 12, fontWeight: 700,
+            }}
+            onMouseOver={e => e.currentTarget.style.background = '#D13438'}
+            onMouseOut={e => e.currentTarget.style.background = 'rgba(209,52,56,0.85)'}
+          >
+            Sign Out
+          </button>
         </div>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>
-          Signed in as <strong style={{ color: '#fff' }}>{currentUser}</strong>
-        </span>
-        <button
-          onClick={onSignOut}
-          style={{
-            background: 'rgba(209,52,56,0.85)', color: '#fff',
-            border: 'none', padding: '6px 14px', borderRadius: 4,
-            cursor: 'pointer', fontSize: 12, fontWeight: 700,
-          }}
-          onMouseOver={e => e.currentTarget.style.background = '#D13438'}
-          onMouseOut={e => e.currentTarget.style.background = 'rgba(209,52,56,0.85)'}
+
+      {/* Cards */}
+      <div style={{
+        flex: 1, display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        padding: '3rem 2rem',
+      }}>
+        <h1 style={{ fontSize: '1.9rem', color: '#fff', margin: '0 0 0.5rem', fontWeight: 700 }}>
+          Select a Module
+        </h1>
+        <p style={{ color: '#cbd5e1', fontSize: 14, margin: '0 0 2rem' }}>
+          Choose the process you want to analyse
+        </p>
+
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', width: '100%', maxWidth: 1200 }}
         >
-          Sign Out
-        </button>
+          {MODULES.filter(m => m.id === 'p2p' || m.id === 'o2c').map(m => (
+            <motion.div
+              key={m.id}
+              variants={cardVariants}
+              onClick={() => onSelect(m.id)}
+              style={{ ...cardStyle, width: 'auto' }}
+              whileHover={{ y: -4, boxShadow: '0 12px 40px rgba(0,0,0,0.4)', backgroundColor: 'rgba(255, 255, 255, 0.08)' }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <div style={{
+                width: 48, height: 48, background: m.bg, borderRadius: 10, marginBottom: 16,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px'
+              }}>
+                {m.icon}
+              </div>
+              <h2 style={{ fontSize: '1.05rem', margin: '0 0 8px', color: '#fff', fontWeight: 700 }}>
+                {m.title}
+              </h2>
+              <p style={{ fontSize: 13, color: '#94a3b8', margin: '0 0 20px', lineHeight: 1.5, minHeight: 60 }}>
+                {m.desc}
+              </p>
+              <button style={{ ...btnStyle, background: m.color }}>{m.btnText}</button>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {/* Modern Premium Separator */}
+        <div style={{
+          width: '100%',
+          maxWidth: 1200,
+          margin: '3.5rem 0 2.5rem',
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '1.5px'
+        }}>
+          <div style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            height: '100%',
+            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15) 20%, rgba(255,255,255,0.15) 80%, transparent)'
+          }} />
+        </div>
+
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', width: '100%', maxWidth: 1200 }}
+        >
+          {MODULES.filter(m => m.id !== 'p2p' && m.id !== 'o2c').map(m => (
+            <motion.div
+              key={m.id}
+              variants={cardVariants}
+              onClick={() => onSelect(m.id)}
+              style={{ ...cardStyle, width: 'auto' }}
+              whileHover={{ y: -4, boxShadow: '0 12px 40px rgba(0,0,0,0.4)', backgroundColor: 'rgba(255, 255, 255, 0.08)' }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <div style={{
+                width: 48, height: 48, background: m.bg, borderRadius: 10, marginBottom: 16,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px'
+              }}>
+                {m.icon}
+              </div>
+              <h2 style={{ fontSize: '1.05rem', margin: '0 0 8px', color: '#fff', fontWeight: 700 }}>
+                {m.title}
+              </h2>
+              <p style={{ fontSize: 13, color: '#94a3b8', margin: '0 0 20px', lineHeight: 1.5, minHeight: 60 }}>
+                {m.desc}
+              </p>
+              <button style={{ ...btnStyle, background: m.color }}>{m.btnText}</button>
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
+
+      <div style={{ textAlign: 'center', fontSize: 12, color: 'rgba(255,255,255,0.5)', padding: '16px 0' }}>
+        ©2023{' '}
+        <a href="https://ajalabs.ai" target="_blank" rel="noopener noreferrer"
+          style={{ color: '#fff', textDecoration: 'none', fontWeight: 700 }}>
+          ajalabs.ai
+        </a>{' '}
+        All rights reserved
       </div>
     </div>
-
-    {/* Cards */}
-    <div style={{
-      flex: 1, display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      padding: '3rem 2rem',
-    }}>
-      <h1 style={{ fontSize: '1.9rem', color: '#fff', margin: '0 0 0.5rem', fontWeight: 700 }}>
-        Select a Module
-      </h1>
-      <p style={{ color: '#cbd5e1', fontSize: 14, margin: '0 0 3rem' }}>
-        Choose the process you want to analyse
-      </p>
-
-      <motion.div 
-        variants={containerVariants}
-        initial="hidden"
-        animate="show"
-        style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', justifyContent: 'center' }}
-      >
-
-        <motion.div
-          variants={cardVariants}
-          onClick={() => onSelect('p2p')}
-          style={cardStyle}
-          whileHover={{ y: -4, boxShadow: '0 12px 40px rgba(0,0,0,0.4)', backgroundColor: 'rgba(255, 255, 255, 0.08)' }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <div style={{ width: 48, height: 48, background: '#EBF5FF', borderRadius: 10, marginBottom: 16,
-            display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M3 3h18v4H3zM3 10h18v4H3zM3 17h18v4H3z" fill="#0078D4" opacity="0.15"/>
-              <rect x="3" y="3" width="18" height="4" rx="1" stroke="#0078D4" strokeWidth="1.5" fill="none"/>
-              <rect x="3" y="10" width="18" height="4" rx="1" stroke="#0078D4" strokeWidth="1.5" fill="none"/>
-              <rect x="3" y="17" width="18" height="4" rx="1" stroke="#0078D4" strokeWidth="1.5" fill="none"/>
-            </svg>
-          </div>
-          <h2 style={{ fontSize: '1.05rem', margin: '0 0 8px', color: '#fff', fontWeight: 700 }}>
-            Procure-to-Pay
-          </h2>
-          <p style={{ fontSize: 13, color: '#94a3b8', margin: '0 0 20px', lineHeight: 1.5 }}>
-            Analyse purchasing, goods receipts, and invoice timelines.
-          </p>
-          <button style={{ ...btnStyle, background: '#0078D4' }}>Launch P2P</button>
-        </motion.div>
-
-        <motion.div
-          variants={cardVariants}
-          onClick={() => onSelect('o2c')}
-          style={cardStyle}
-          whileHover={{ y: -4, boxShadow: '0 12px 40px rgba(0,0,0,0.4)', backgroundColor: 'rgba(255, 255, 255, 0.08)' }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <div style={{ width: 48, height: 48, background: '#EDFAF4', borderRadius: 10, marginBottom: 16,
-            display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="9" fill="#006B3C" opacity="0.12"/>
-              <path d="M8 12l3 3 5-5" stroke="#006B3C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </div>
-          <h2 style={{ fontSize: '1.05rem', margin: '0 0 8px', color: '#fff', fontWeight: 700 }}>
-            Order-to-Cash
-          </h2>
-          <p style={{ fontSize: 13, color: '#94a3b8', margin: '0 0 20px', lineHeight: 1.5 }}>
-            Analyse sales orders, deliveries, and billing cycles.
-          </p>
-          <button style={{ ...btnStyle, background: '#006B3C' }}>Launch O2C</button>
-        </motion.div>
-
-        <motion.div
-          variants={cardVariants}
-          onClick={() => onSelect('p2i')}
-          style={cardStyle}
-          whileHover={{ y: -4, boxShadow: '0 12px 40px rgba(0,0,0,0.4)', backgroundColor: 'rgba(255, 255, 255, 0.08)' }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <div style={{ width: 48, height: 48, background: '#FEF3C7', borderRadius: 10, marginBottom: 16,
-            display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M4 4h16v16H4z" fill="#D97706" opacity="0.12"/>
-              <path d="M4 12h16M12 4v16" stroke="#D97706" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-          </div>
-          <h2 style={{ fontSize: '1.05rem', margin: '0 0 8px', color: '#fff', fontWeight: 700 }}>
-            Plan-to-Inventory
-          </h2>
-          <p style={{ fontSize: 13, color: '#94a3b8', margin: '0 0 20px', lineHeight: 1.5 }}>
-            Analyse production planning, material reservations, and shop floor execution.
-          </p>
-          <button style={{ ...btnStyle, background: '#D97706' }}>Launch P2I</button>
-        </motion.div>
-
-      </motion.div>
-    </div>
-
-    <div style={{ textAlign: 'center', fontSize: 12, color: 'rgba(255,255,255,0.5)', padding: '16px 0' }}>
-      ©2023{' '}
-      <a href="https://ajalabs.ai" target="_blank" rel="noopener noreferrer"
-        style={{ color: '#fff', textDecoration: 'none', fontWeight: 700 }}>
-        ajalabs.ai
-      </a>{' '}
-      All rights reserved
-    </div>
-  </div>
   </div>
 );
 
@@ -604,12 +819,12 @@ const pageTransition = {
 /* ─── ROOT APP ────────────────────────────────────────────────────────────── */
 export default function App() {
 
-  const [currentUser,   setCurrentUser]   = useState(null);
-  const [activeModule,  setActiveModule]  = useState(null); // null | 'p2p' | 'o2c'
+  const [currentUser, setCurrentUser] = useState(null);
+  const [activeModule, setActiveModule] = useState(null); // null | 'p2p' | 'o2c'
 
-  const handleLogin    = (u) => setCurrentUser(u);
-  const handleSignOut  = () => { setCurrentUser(null); setActiveModule(null); };
-  const handleSelect   = (mod) => setActiveModule(mod);
+  const handleLogin = (u) => setCurrentUser(u);
+  const handleSignOut = () => { setCurrentUser(null); setActiveModule(null); };
+  const handleSelect = (mod) => setActiveModule(mod);
   const handleBackHome = () => setActiveModule(null);
 
   return (
@@ -621,27 +836,47 @@ export default function App() {
         }
       `}</style>
       <AnimatePresence mode="wait">
-      {!currentUser ? (
-        <motion.div key="login" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition} style={{ height: '100%' }}>
-          <LoginScreen onLogin={handleLogin} />
-        </motion.div>
-      ) : activeModule === 'p2p' ? (
-        <motion.div key="p2p" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition} style={{ height: '100%' }}>
-          <P2PDashboard currentUser={currentUser} onSignOut={handleSignOut} onBackHome={handleBackHome} />
-        </motion.div>
-      ) : activeModule === 'o2c' ? (
-        <motion.div key="o2c" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition} style={{ height: '100%' }}>
-          <O2CDashboard currentUser={currentUser} onSignOut={handleSignOut} onBackHome={handleBackHome} />
-        </motion.div>
-      ) : activeModule === 'p2i' ? (
-        <motion.div key="p2i" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition} style={{ height: '100%' }}>
-          <P2IDashboard currentUser={currentUser} onSignOut={handleSignOut} onBackHome={handleBackHome} />
-        </motion.div>
-      ) : (
-        <motion.div key="selector" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition} style={{ height: '100%' }}>
-          <ModuleSelector currentUser={currentUser} onSelect={handleSelect} onSignOut={handleSignOut} />
-        </motion.div>
-      )}
+        {!currentUser ? (
+          <motion.div key="login" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition} style={{ height: '100%' }}>
+            <LoginScreen onLogin={handleLogin} />
+          </motion.div>
+        ) : activeModule === 'p2p' ? (
+          <motion.div key="p2p" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition} style={{ height: '100%' }}>
+            <P2PDashboard currentUser={currentUser} onSignOut={handleSignOut} onBackHome={handleBackHome} />
+          </motion.div>
+        ) : activeModule === 'o2c' ? (
+          <motion.div key="o2c" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition} style={{ height: '100%' }}>
+            <O2CDashboard currentUser={currentUser} onSignOut={handleSignOut} onBackHome={handleBackHome} />
+          </motion.div>
+        ) : activeModule === 'p2i' ? (
+          <motion.div key="p2i" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition} style={{ height: '100%' }}>
+            <P2IDashboard currentUser={currentUser} onSignOut={handleSignOut} onBackHome={handleBackHome} />
+          </motion.div>
+        ) : activeModule === 'r2r' ? (
+          <motion.div key="r2r" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition} style={{ height: '100%' }}>
+            <R2RDashboard currentUser={currentUser} onSignOut={handleSignOut} onBackHome={handleBackHome} />
+          </motion.div>
+        ) : activeModule === 'hrj' ? (
+          <motion.div key="hrj" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition} style={{ height: '100%' }}>
+            <HRJDashboard currentUser={currentUser} onSignOut={handleSignOut} onBackHome={handleBackHome} />
+          </motion.div>
+        ) : activeModule === 'hrl' ? (
+          <motion.div key="hrl" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition} style={{ height: '100%' }}>
+            <HRLDashboard currentUser={currentUser} onSignOut={handleSignOut} onBackHome={handleBackHome} />
+          </motion.div>
+        ) : activeModule === 'fin' ? (
+          <motion.div key="fin" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition} style={{ height: '100%' }}>
+            <FINDashboard currentUser={currentUser} onSignOut={handleSignOut} onBackHome={handleBackHome} />
+          </motion.div>
+        ) : activeModule === 'cm' ? (
+          <motion.div key="cm" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition} style={{ height: '100%' }}>
+            <CMDashboard currentUser={currentUser} onSignOut={handleSignOut} onBackHome={handleBackHome} />
+          </motion.div>
+        ) : (
+          <motion.div key="selector" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition} style={{ height: '100%' }}>
+            <ModuleSelector currentUser={currentUser} onSelect={handleSelect} onSignOut={handleSignOut} />
+          </motion.div>
+        )}
       </AnimatePresence>
     </>
   );
