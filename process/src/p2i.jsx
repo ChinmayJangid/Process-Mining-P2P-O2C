@@ -17,13 +17,16 @@ import './App.css';
 const API = 'http://localhost:8000';
 
 const C = {
-  amber: '#D97706', amberDark: '#B45309', amberLight: '#FEF3C7',
-  teal: '#92400E', red: '#78350F', purple: '#F59E0B',
-  slate: '#605E5C', bg: '#F0F2F5', card: '#FFFFFF', border: '#E1DFDD',
-  orange: '#FBBF24', green: '#FCD34D', selected: '#FFFBEB', selectedBorder: '#D97706',
-  headerBg: '#5C2806', blue700: '#D97706',
+  amber: '#d97706', amberDark: '#b45309', amberLight: '#fffbeb',
+  teal: '#ca8a04', red: '#A80000', purple: '#a16207',
+  slate: '#605E5C', bg: '#F4F6F9', card: '#FFFFFF', border: '#E1DFDD',
+  orange: '#fbbf24', green: '#f59e0b', selected: '#fffbeb', selectedBorder: '#d97706',
+  headerBg: '#d97706', blue700: '#d97706',
 };
-const ACCENT = ['#D97706', '#B45309', '#92400E', '#78350F', '#F59E0B', '#FBBF24', '#FCD34D', '#FDE68A', '#FEF3C7', '#FFE082', '#FFD54F', '#FFCA28', '#FFB300'];
+const ACCENT = [
+  '#d97706', '#b45309', '#ca8a04', '#92400e', '#78350f',
+  '#fbbf24', '#f59e0b', '#fde68a', '#fef3c7', '#fffbeb'
+];
 
 /* ─── LOADING OVERLAY ───────────────────────────────────────────────────────── */
 const LoadingOverlay = ({ visible, progress, label }) => {
@@ -37,18 +40,18 @@ const LoadingOverlay = ({ visible, progress, label }) => {
     { num: 3, name: 'Dashboard Created' }
   ];
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(27,42,74,0.92)', backdropFilter: 'blur(1px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 36 }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 99999, background: 'rgba(30,27,22,0.95)', backdropFilter: 'blur(1px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 36 }}>
       <style>{`@keyframes lo-pulse{0%,100%{opacity:1}50%{opacity:.45}}`}</style>
       <img src="/logo.png" alt="AJALabs Logo" style={{ height: 80, objectFit: 'contain', animation: 'lo-pulse 1.5s ease-in-out infinite' }} />
       <div style={{ display: 'flex', gap: 40, alignItems: 'center' }}>
         {phases.map((phase, index) => {
           const isActive = activeStep === phase.num;
           const isDone = activeStep > phase.num;
-          const color = isActive || isDone ? '#D97706' : 'rgba(255,255,255,0.25)';
+          const color = isActive || isDone ? '#d97706' : 'rgba(255,255,255,0.25)';
           return (
             <div key={phase.num} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, position: 'relative' }}>
-              {index > 0 && (<div style={{ position: 'absolute', right: '100%', top: 16, width: 40, height: 2, background: isDone || isActive ? '#D97706' : 'rgba(255,255,255,0.15)', marginRight: 10, transition: 'all 0.4s ease' }} />)}
-              <div style={{ width: 32, height: 32, borderRadius: '50%', background: isDone ? '#D97706' : (isActive ? 'rgba(217,119,6,0.1)' : 'transparent'), border: `2px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: isDone ? '#1B2A4A' : color, fontWeight: 'bold', fontSize: 14, transition: 'all 0.3s ease', boxShadow: isActive ? '0 0 12px rgba(217,119,6,0.4)' : 'none' }}>
+              {index > 0 && (<div style={{ position: 'absolute', right: '100%', top: 16, width: 40, height: 2, background: isDone || isActive ? '#d97706' : 'rgba(255,255,255,0.15)', marginRight: 10, transition: 'all 0.4s ease' }} />)}
+              <div style={{ width: 32, height: 32, borderRadius: '50%', background: isDone ? '#d97706' : (isActive ? 'rgba(217,119,6,0.1)' : 'transparent'), border: `2px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: isDone ? '#1B2A4A' : color, fontWeight: 'bold', fontSize: 14, transition: 'all 0.3s ease', boxShadow: isActive ? '0 0 12px rgba(217,119,6,0.4)' : 'none' }}>
                 {isDone ? '✓' : phase.num}
               </div>
               <div style={{ color: isActive || isDone ? '#fff' : 'rgba(255,255,255,0.4)', fontSize: 13, fontWeight: isActive ? 700 : 500, transition: 'all 0.3s ease', letterSpacing: 0.5 }}>{phase.name}</div>
@@ -58,7 +61,7 @@ const LoadingOverlay = ({ visible, progress, label }) => {
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, width: 400 }}>
         <div style={{ width: '100%', background: 'rgba(255,255,255,.15)', borderRadius: 8, height: 6, overflow: 'hidden' }}>
-          <div style={{ height: '100%', borderRadius: 8, transition: 'width .4s ease', background: 'linear-gradient(90deg,#D97706,#F59E0B)', width: `${progress}%`, boxShadow: '0 0 12px rgba(217,119,6,.6)' }} />
+          <div style={{ height: '100%', borderRadius: 8, transition: 'width .4s ease', background: 'linear-gradient(90deg,#d97706,#f59e0b)', width: `${progress}%`, boxShadow: '0 0 12px rgba(217,119,6,.6)' }} />
         </div>
         <div style={{ fontSize: 12, color: 'rgba(255,255,255,.6)' }}>{label}</div>
       </div>
@@ -99,7 +102,7 @@ const HAPPY_PATH_NODES = new Set([
 ]);
 const getLaneStyle = (label, isMain) => {
   if (REVERSAL_NODES.has(label)) return { bg: '#FEF2F2', border: '#F87171', text: '#991B1B', badge: '#DC2626' };
-  if (isMain || HAPPY_PATH_NODES.has(label)) return { bg: '#FFFBEB', border: '#D97706', text: '#78350F', badge: '#D97706' };
+  if (isMain || HAPPY_PATH_NODES.has(label)) return { bg: '#FFFBEB', border: '#d97706', text: '#78350F', badge: '#d97706' };
   return { bg: '#F8FAFC', border: '#94A3B8', text: '#334155', badge: '#64748B' };
 };
 
@@ -110,12 +113,12 @@ const ProcessNode = React.memo(({ data }) => {
   const isDeviation = REVERSAL_NODES.has(data?.label);
 
   /* colour scheme mirrors p2p exactly for happy-path; P2I adds red for deviations */
-  const bgColor = isHappy ? '#7ebe42' : (isDeviation ? '#e74c3c' : '#999999');
+  const bgColor = isHappy ? '#d97706' : (isDeviation ? '#e74c3c' : '#999999');
 
   return (
     <div style={{
       background: bgColor,
-      border: '2px solid #064f86',
+      border: '2px solid #78350F',
       borderRadius: 8,
       minWidth: 600,
       minHeight: 220,
@@ -134,7 +137,7 @@ const ProcessNode = React.memo(({ data }) => {
       <motion.div
         style={{
           position: 'absolute', inset: -4, borderRadius: 12,
-          border: '4px solid #00B7C3', zIndex: -1, pointerEvents: 'none'
+          border: '4px solid #f59e0b', zIndex: -1, pointerEvents: 'none'
         }}
         initial={{ opacity: 0, scale: 0.95 }}
         whileHover={{
@@ -150,7 +153,7 @@ const ProcessNode = React.memo(({ data }) => {
       </div>
       <div style={{ alignSelf: 'center' }}>
         <span style={{
-          fontSize: 38, fontWeight: 600, color: '#005A9E',
+          fontSize: 38, fontWeight: 600, color: '#92400e',
           backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 12,
           padding: '3px 12px', border: '1px solid rgba(0,0,0,0.08)', whiteSpace: 'nowrap'
         }}>
@@ -172,9 +175,9 @@ const ProcessNode = React.memo(({ data }) => {
 /* ─── P2P GATEWAY NODE ───────────────────────────────────────────────────────── */
 const P2pGatewayNode = React.memo(() => (
   <div style={{
-    background: 'linear-gradient(135deg,#1B2A4A,#2D4A7A)', border: '2.5px solid #4F6BED',
+    background: 'linear-gradient(135deg,#78350F,#92400E)', border: '2.5px solid #FBBF24',
     borderRadius: 10, minWidth: 600, minHeight: 220, padding: '20px 24px',
-    boxShadow: '0 4px 16px rgba(79,107,237,.4)',
+    boxShadow: '0 4px 16px rgba(245,158,11,.4)',
     fontFamily: "'Segoe UI',sans-serif", cursor: 'pointer', textAlign: 'center',
     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12,
   }}
@@ -233,9 +236,9 @@ const FreqEdge = React.memo(({ id, sourceX, sourceY, targetX, targetY, sourcePos
   return (
     <>
       <BaseEdge id={id} path={edgePath} markerEnd={markerEnd} style={{ ...style, stroke: arcColor, strokeWidth: width, opacity: .85 }} />
-      <path d={edgePath} fill="none" stroke="#D97706" strokeWidth={Math.max(4, width / 1.5)} strokeDasharray="1 20" strokeLinecap="round" style={{ opacity: 0.6, animation: `cometFlow ${duration}s linear infinite` }} />
+      <path d={edgePath} fill="none" stroke="#d97706" strokeWidth={Math.max(4, width / 1.5)} strokeDasharray="1 20" strokeLinecap="round" style={{ opacity: 0.6, animation: `cometFlow ${duration}s linear infinite` }} />
       {[0, 1, 2].map((i) => (
-        <path key={i} d="M -8,-6 L 8,0 L -8,6 Z" fill="#D97706" style={{ opacity: 0 }}>
+        <path key={i} d="M -8,-6 L 8,0 L -8,6 Z" fill="#d97706" style={{ opacity: 0 }}>
           <animateMotion dur={`${duration}s`} repeatCount="indefinite" path={edgePath} rotate="auto" begin={`${i * (duration / 3)}s`} />
           <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur={`${duration}s`} repeatCount="indefinite" begin={`${i * (duration / 3)}s`} />
         </path>
@@ -460,7 +463,7 @@ const buildFlowMap = (bNodes, bEdges, setRfNodes, setRfEdges, dir) => {
     const { sh, th, curvature, sweepSide, sweepDist } = classifyEdge(e.source, e.target, sN.position, tN.position, dir);
     const isHappyEdge = HAPPY_PATH_NODES.has(e.source) && HAPPY_PATH_NODES.has(e.target);
     const isRevEdge = REVERSAL_NODES.has(e.source) || REVERSAL_NODES.has(e.target);
-    const ec = isRevEdge ? '#e74c3c' : (isHappyEdge ? '#5a9e2f' : '#605E5C');
+    const ec = isRevEdge ? '#e74c3c' : (isHappyEdge ? '#d97706' : '#605E5C');
     return {
       id: e.id || `${e.source}--${e.target}`, source: e.source, target: e.target,
       sourceHandle: sh, targetHandle: th, type: 'freqEdge',
@@ -469,7 +472,7 @@ const buildFlowMap = (bNodes, bEdges, setRfNodes, setRfEdges, dir) => {
     };
   }).filter(Boolean);
 
-  // Gateway edge: FG→QI → P2P gateway (dashed blue)
+  // Gateway edge: FG→QI → P2P gateway (dashed blue/gold)
   const gatewaySourceId = qiNode ? 'Finished Goods to Quality Inspection' : 'Invoice Posting';
   const gatewaySourceNode = qiNode || invNode;
   if (gatewaySourceNode) {
@@ -479,9 +482,9 @@ const buildFlowMap = (bNodes, bEdges, setRfNodes, setRfEdges, dir) => {
       id: `${gatewaySourceId}--${P2P_GATEWAY_ID}`,
       source: gatewaySourceId, target: P2P_GATEWAY_ID,
       sourceHandle: sh, targetHandle: th, type: 'freqEdge',
-      markerEnd: { type: MarkerType.ArrowClosed, color: '#4F6BED', width: 16, height: 16 },
-      style: { stroke: '#4F6BED', strokeWidth: 2, strokeDasharray: '6 4' },
-      data: { frequency: 0, avg_days: null, maxFreq: 1, curvature: 0.05, edgeColor: '#4F6BED' }
+      markerEnd: { type: MarkerType.ArrowClosed, color: '#f59e0b', width: 16, height: 16 },
+      style: { stroke: '#f59e0b', strokeWidth: 2, strokeDasharray: '6 4' },
+      data: { frequency: 0, avg_days: null, maxFreq: 1, curvature: 0.05, edgeColor: '#f59e0b' }
     });
   }
   setRfNodes(nodes);
@@ -489,12 +492,12 @@ const buildFlowMap = (bNodes, bEdges, setRfNodes, setRfEdges, dir) => {
 };
 
 /* ─── HELPERS ────────────────────────────────────────────────────────────────── */
-const VALID_KEYS = new Set(['company', 'plant', 'matnr', 'bsart', 'ekgrp', 'lifnr', 'vendor', 'case_id', 'month', 'activity', 'year', 'quarter', 'lead_time', 'ernam', 'status']);
+const VALID_KEYS = new Set(['company', 'plant', 'matnr', 'auart', 'kostl', 'fevor', 'ekgrp', 'lifnr', 'vendor', 'case_id', 'month', 'activity', 'year', 'quarter', 'lead_time', 'ernam', 'status']);
 const qs = (params) => {
   const p = Object.entries(params).filter(([k, v]) => VALID_KEYS.has(k) && v && v !== 'ALL');
   return p.length ? '?' + p.map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&') : '';
 };
-const CROSS_TO_PARAM = { company: 'company', plant: 'plant', matnr: 'matnr', bsart: 'bsart', ekgrp: 'ekgrp', lifnr: 'lifnr', vendor: 'vendor', case_id: 'case_id', month: 'month', activity: 'activity', year: 'year', quarter: 'quarter', lead_time: 'lead_time', ernam: 'ernam', status: 'status' };
+const CROSS_TO_PARAM = { company: 'company', plant: 'plant', matnr: 'matnr', auart: 'auart', kostl: 'kostl', fevor: 'fevor', ekgrp: 'ekgrp', lifnr: 'lifnr', vendor: 'vendor', case_id: 'case_id', month: 'month', activity: 'activity', year: 'year', quarter: 'quarter', lead_time: 'lead_time', ernam: 'ernam', status: 'status' };
 
 const Skeleton = ({ width = '100%', height = '20px', borderRadius = 4, style }) => (
   <div className="skeleton-shimmer" style={{ width, height, borderRadius, ...style }} />
@@ -534,8 +537,8 @@ const KpiCard = React.memo(({ label, value, onClick, tooltip, highlighted }) => 
   const [hover, setHover] = useState(false);
   const bColor = hover ? 'rgba(217,119,6,0.5)' : (highlighted ? C.selectedBorder : 'transparent');
   return (
-    <div onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} style={{ background: highlighted ? C.selected : C.card, borderRadius: 6, padding: '10px 14px', borderTop: `1.5px solid ${bColor}`, borderRight: `1.5px solid ${bColor}`, borderBottom: `1.5px solid ${bColor}`, borderLeft: `4px solid #D97706`, boxShadow: hover ? '0 6px 16px rgba(217,119,6,.15)' : '0 2px 6px rgba(0,0,0,.05)', transition: 'all .2s', cursor: onClick ? 'pointer' : 'default', minWidth: 0, position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', transform: hover ? 'translateY(-3px)' : 'none', boxSizing: 'border-box', zIndex: hover ? 50 : 1 }}>
-      <div style={{ fontSize: 10, fontWeight: 600, color: '#D97706', textTransform: 'uppercase', letterSpacing: .5, marginBottom: 2 }}>{label}</div>
+    <div onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} style={{ background: highlighted ? C.selected : C.card, borderRadius: 6, padding: '10px 14px', borderTop: `1.5px solid ${bColor}`, borderRight: `1.5px solid ${bColor}`, borderBottom: `1.5px solid ${bColor}`, borderLeft: `4px solid ${C.amber}`, boxShadow: hover ? '0 6px 16px rgba(217,119,6,.15)' : '0 2px 6px rgba(0,0,0,.05)', transition: 'all .2s', cursor: onClick ? 'pointer' : 'default', minWidth: 0, position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', transform: hover ? 'translateY(-3px)' : 'none', boxSizing: 'border-box', zIndex: hover ? 50 : 1 }}>
+      <div style={{ fontSize: 10, fontWeight: 600, color: C.amber, textTransform: 'uppercase', letterSpacing: .5, marginBottom: 2 }}>{label}</div>
       <div style={{ fontSize: 20, fontWeight: 600, color: '#000000', lineHeight: 1 }}>{value != null ? Number(value).toLocaleString() : '—'}</div>
       {hover && tooltip && (<div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 4, background: '#fff', border: `1px solid ${C.border}`, borderRadius: 4, padding: '6px 10px', boxShadow: '0 4px 12px rgba(0,0,0,.15)', fontSize: 11, color: '#323130', zIndex: 100, whiteSpace: 'nowrap', textAlign: 'left' }}>{tooltip}</div>)}
     </div>
@@ -712,7 +715,7 @@ const ActivityChart = React.memo(({ data, crossFilter, onSelect, isAnimationActi
             <YAxis type="category" dataKey="activity" tick={{ fontSize: 10, fill: '#605E5C' }} width={160} interval={0} />
             <Tooltip cursor={{ fill: 'rgba(0,0,0,.03)' }} content={<CustomTooltip nameKey="activity" />} />
             <Bar dataKey="count" barSize={18} onClick={e => e?.activity && onSelect('activity', e.activity === af ? null : e.activity)} isAnimationActive={isAnimationActive}>
-              {rows.map((e, i) => (<Cell key={i} cursor="pointer" fill={af === e?.activity ? '#B45309' : C.amber} opacity={af && af !== e?.activity ? 0.35 : 1} />))}
+              {rows.map((e, i) => (<Cell key={i} cursor="pointer" fill={af === e?.activity ? '#005A9E' : C.amber} opacity={af && af !== e?.activity ? 0.35 : 1} />))}
             </Bar>
             <Bar dataKey="unique_cases" radius={[0, 3, 3, 0]} barSize={18} onClick={e => e?.activity && onSelect('activity', e.activity === af ? null : e.activity)} isAnimationActive={isAnimationActive}>
               {rows.map((e, i) => (<Cell key={i} cursor="pointer" fill={af === e?.activity ? '#999999' : '#92400E'} opacity={af && af !== e?.activity ? 0.3 : 0.9} />))}
@@ -1685,7 +1688,7 @@ const P2IIntroScreen = ({ onGoTableBuild, onGoCsvUpload, currentUser }) => {
   };
 
   const ProcessTreeFlow = ({ steps }) => {
-    const colors = ['#D97706', '#F59E0B', '#B45309', '#92400E', '#78350F', '#FBBF24'];
+    const colors = ['#d97706', '#ca8a04', '#b45309', '#92400e', '#78350f', '#fbbf24'];
     return (
       <div style={{ position: 'relative', width: '100%', display: 'flex', flexDirection: 'column', gap: '10px', padding: '10px 0' }}>
         {steps.map((step, i) => {
@@ -1801,8 +1804,8 @@ const P2IIntroScreen = ({ onGoTableBuild, onGoCsvUpload, currentUser }) => {
               display: 'flex', alignItems: 'center', gap: 6,
               boxShadow: '0 2px 8px rgba(217,119,6,0.25)'
             }}
-            onMouseOver={e => e.currentTarget.style.background = '#B45309'}
-            onMouseOut={e => e.currentTarget.style.background = '#D97706'}>
+            onMouseOver={e => e.currentTarget.style.background = '#b45309'}
+            onMouseOut={e => e.currentTarget.style.background = '#d97706'}>
             📸 Snapshot
           </button>
         </div>
@@ -1858,6 +1861,7 @@ const UploadBanner = React.memo(({ currentUser, onUploaded, serverOk, onLoadingC
   const [status, setStatus] = useState('idle');
   const [msg, setMsg] = useState('');
   const [colMapping, setColMapping] = useState(null);
+  const [showAvailablePopup, setShowAvailablePopup] = useState(false);
   const inputRef = useRef(null);
 
   useEffect(() => { if (defaultStep) setStep(defaultStep); }, [defaultStep]);
@@ -1926,11 +1930,91 @@ const UploadBanner = React.memo(({ currentUser, onUploaded, serverOk, onLoadingC
   /* ── Page 1: Info / Choose ── */
   if (step === 'info') {
     return (
-      <P2IIntroScreen
-        onGoTableBuild={() => setStep('table')}
-        onGoCsvUpload={() => setStep('upload')}
-        currentUser={currentUser}
-      />
+      <>
+        <AnimatePresence>
+          {showAvailablePopup && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                zIndex: 999999,
+                background: 'rgba(15, 23, 42, 0.45)',
+                backdropFilter: 'blur(16px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '20px'
+              }}
+            >
+              <motion.div
+                initial={{ scale: 0.9, y: 20, opacity: 0 }}
+                animate={{ scale: 1, y: 0, opacity: 1 }}
+                exit={{ scale: 0.9, y: 20, opacity: 0 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                style={{
+                  background: 'rgba(30, 41, 59, 0.85)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: '16px',
+                  padding: '2.5rem',
+                  width: '100%',
+                  maxWidth: '460px',
+                  color: '#fff',
+                  boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                  backdropFilter: 'blur(20px)',
+                  textAlign: 'center'
+                }}
+              >
+                <div style={{
+                  width: '64px',
+                  height: '64px',
+                  background: `${C.amber}22`,
+                  border: `1.5px solid ${C.amber}`,
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 1.5rem',
+                  fontSize: '28px'
+                }}>
+                  🔒
+                </div>
+                <h3 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 2rem', letterSpacing: '-0.3px', color: '#fff' }}>
+                  Available in Production
+                </h3>
+                <button
+                  onClick={() => setShowAvailablePopup(false)}
+                  style={{
+                    background: C.amber,
+                    color: '#fff',
+                    border: 'none',
+                    padding: '12px 30px',
+                    borderRadius: '8px',
+                    fontWeight: 700,
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    width: '100%',
+                    boxShadow: `0 4px 12px rgba(0,120,212,0.3)`,
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseOver={e => { e.currentTarget.style.filter = 'brightness(1.1)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                  onMouseOut={e => { e.currentTarget.style.filter = 'none'; e.currentTarget.style.transform = 'none'; }}
+                >
+                  Got it
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <P2IIntroScreen
+          onGoTableBuild={() => setShowAvailablePopup(true)}
+          onGoCsvUpload={() => setShowAvailablePopup(true)}
+          currentUser={currentUser}
+        />
+      </>
     );
   }
 
@@ -2068,14 +2152,14 @@ const P2pProcessModal = React.memo(({ onClose }) => {
     id: n.id, type: 'processNode', position: { x: n.x, y: n.y },
     data: {
       label: n.label, is_main: n.isHappy, frequency: 0, maxFreq: 1,
-      _overrideBg: n.isHappy ? '#FFFBEB' : '#FEF2F2',
-      _overrideBorder: n.isHappy ? '#D97706' : '#F87171',
+      _overrideBg: n.isHappy ? '#fffbeb' : '#FEF2F2',
+      _overrideBorder: n.isHappy ? '#d97706' : '#F87171',
       _overrideText: n.isHappy ? '#78350F' : '#991B1B',
-      _overrideBadge: n.isHappy ? '#D97706' : '#DC2626',
+      _overrideBadge: n.isHappy ? '#d97706' : '#DC2626',
     },
   }));
   const rfEdgesP2P = P2P_EDGES_DEF.map((e, i) => {
-    const col = e.dev ? '#F87171' : '#D97706';
+    const col = e.dev ? '#F87171' : '#d97706';
     return {
       id: `p2p-e-${i}`, source: e.s, target: e.t,
       sourceHandle: e.sh, targetHandle: e.th,
@@ -2101,7 +2185,7 @@ const P2pProcessModal = React.memo(({ onClose }) => {
 
         {/* Modal header */}
         <div style={{
-          background: '#1B2A4A', padding: '14px 20px', display: 'flex',
+          background: '#78350F', padding: '14px 20px', display: 'flex',
           justifyContent: 'space-between', alignItems: 'center', flexShrink: 0
         }}>
           <div>
@@ -2109,12 +2193,12 @@ const P2pProcessModal = React.memo(({ onClose }) => {
               🔗 Procure-to-Pay (P2P) Process Map
             </div>
             <div style={{ fontSize: 11, color: 'rgba(255,255,255,.55)', marginTop: 2 }}>
-              Standard P2P flow — amber = happy path &nbsp;|&nbsp; red = deviation / reversal
+              Standard P2P flow — golden = happy path &nbsp;|&nbsp; red = deviation / reversal
             </div>
           </div>
           {/* Legend */}
           <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginRight: 16 }}>
-            {[['#D97706', 'Happy Path'], ['#F87171', 'Deviation / Reversal']].map(([c, l]) => (
+            {[['#d97706', 'Happy Path'], ['#F87171', 'Deviation / Reversal']].map(([c, l]) => (
               <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <div style={{ width: 12, height: 12, borderRadius: 2, background: c }} />
                 <span style={{ fontSize: 11, color: 'rgba(255,255,255,.75)' }}>{l}</span>
@@ -2137,7 +2221,7 @@ const P2pProcessModal = React.memo(({ onClose }) => {
             panOnScroll zoomOnScroll>
             <Background color="#E1DFDD" gap={24} />
             <Controls />
-            <MiniMap nodeColor={n => n.data?.is_main ? '#D97706' : '#F87171'}
+            <MiniMap nodeColor={n => n.data?.is_main ? '#d97706' : '#F87171'}
               style={{ background: '#F8FAFC', border: '1px solid #E1DFDD', borderRadius: 6 }} />
           </ReactFlow>
         </div>
@@ -2167,7 +2251,7 @@ export default function P2IDashboard({ currentUser, onSignOut, onBackHome }) {
   const [uploadStepOverride, setUploadStepOverride] = useState(null);
 
   const [selected, setSelected] = useState({
-    company: 'ALL', plant: 'ALL', matnr: 'ALL', bsart: 'ALL',
+    company: 'ALL', plant: 'ALL', matnr: 'ALL', auart: 'ALL', kostl: 'ALL', fevor: 'ALL',
     ekgrp: 'ALL', lifnr: 'ALL', vendor: 'ALL', case_id: 'ALL',
     month: 'ALL', year: 'ALL', quarter: 'ALL', lead_time: 'ALL', ernam: 'ALL', status: 'ALL'
   });
@@ -2257,7 +2341,7 @@ export default function P2IDashboard({ currentUser, onSignOut, onBackHome }) {
     setDataLoaded(false); setChartsReady(false); setPmReady(false);
     setUploadStepOverride(null); setKpis(null); setActData([]);
     setCaseTableData([]); setCaseEvents([]); setErnamData([]);
-    setSelected({ company: 'ALL', plant: 'ALL', matnr: 'ALL', bsart: 'ALL', ekgrp: 'ALL', lifnr: 'ALL', vendor: 'ALL', case_id: 'ALL', month: 'ALL', year: 'ALL', quarter: 'ALL', lead_time: 'ALL', ernam: 'ALL', status: 'ALL' });
+    setSelected({ company: 'ALL', plant: 'ALL', matnr: 'ALL', auart: 'ALL', kostl: 'ALL', fevor: 'ALL', ekgrp: 'ALL', lifnr: 'ALL', vendor: 'ALL', case_id: 'ALL', month: 'ALL', year: 'ALL', quarter: 'ALL', lead_time: 'ALL', ernam: 'ALL', status: 'ALL' });
     setCrossFilter(null);
   };
 
@@ -2361,7 +2445,7 @@ export default function P2IDashboard({ currentUser, onSignOut, onBackHome }) {
 
   const resetAll = () => {
     logAction('FILTER', 'Reset all slicers');
-    setSelected({ company: 'ALL', plant: 'ALL', matnr: 'ALL', bsart: 'ALL', ekgrp: 'ALL', lifnr: 'ALL', vendor: 'ALL', case_id: 'ALL', month: 'ALL', year: 'ALL', quarter: 'ALL', lead_time: 'ALL', ernam: 'ALL', status: 'ALL' });
+    setSelected({ company: 'ALL', plant: 'ALL', matnr: 'ALL', auart: 'ALL', kostl: 'ALL', fevor: 'ALL', ekgrp: 'ALL', lifnr: 'ALL', vendor: 'ALL', case_id: 'ALL', month: 'ALL', year: 'ALL', quarter: 'ALL', lead_time: 'ALL', ernam: 'ALL', status: 'ALL' });
     setCrossFilter(null);
   };
 
@@ -2379,7 +2463,7 @@ export default function P2IDashboard({ currentUser, onSignOut, onBackHome }) {
         ::-webkit-scrollbar-thumb:hover{background:#A19F9D}
         .tab-button{padding:8px 16px;font-size:11px;font-weight:600;background:transparent;color:rgba(255,255,255,0.75);border:none;cursor:pointer;transition:all 0.2s;white-space:nowrap}
         .tab-button:hover{background:rgba(255,255,255,0.1);color:#fff}
-        .tab-button.active{background:rgba(217,119,6,0.25);color:#F59E0B;border-bottom:2px solid #D97706}
+        .tab-button.active{background:rgba(217,119,6,0.2);color:#D97706;border-bottom:2px solid #D97706}
         .skeleton-shimmer{background:linear-gradient(90deg,#F3F2F1 25%,#E8E6E3 50%,#F3F2F1 75%);background-size:200% 100%;animation:shimmer 1.5s infinite}
         @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
         .tab-skeleton-card{background:#fff;border-radius:8px;padding:14px;border:1px solid #E1DFDD;display:flex;flex-direction:column;gap:10;animation:shimmer 1.8s infinite}
@@ -2403,7 +2487,7 @@ export default function P2IDashboard({ currentUser, onSignOut, onBackHome }) {
             <div style={{ fontWeight: 700, fontSize: 16, color: '#fff' }}>P2I Process Explorer</div>
             <div style={{ fontSize: 10, color: 'rgba(255,255,255,.5)' }}>Plan-to-Inventory Process Mining</div>
           </div>
-          {crossFilter && (<div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 16, background: 'rgba(217,119,6,0.2)', border: '1px solid rgba(217,119,6,0.4)', borderRadius: 6, padding: '4px 12px', fontSize: 12 }}><span style={{ color: '#F59E0B', fontWeight: 600 }}>Filter: {crossFilter.type}: <strong>{crossFilter.value}</strong></span><button onClick={clearCF} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,.8)', fontWeight: 700, fontSize: 14, padding: '0 2px' }}>X</button></div>)}
+          {crossFilter && (<div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 16, background: 'rgba(217,119,6,0.2)', border: '1px solid rgba(217,119,6,0.4)', borderRadius: 6, padding: '4px 12px', fontSize: 12 }}><span style={{ color: '#D97706', fontWeight: 600 }}>Filter: {crossFilter.type}: <strong>{crossFilter.value}</strong></span><button onClick={clearCF} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,.8)', fontWeight: 700, fontSize: 14, padding: '0 2px' }}>X</button></div>)}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {dataLoaded && kpis && (<div style={{ fontSize: 11, color: 'rgba(255,255,255,.5)' }}>{Number(kpis.total_orders || 0).toLocaleString()} order items loaded</div>)}
@@ -2411,7 +2495,7 @@ export default function P2IDashboard({ currentUser, onSignOut, onBackHome }) {
             <div style={{ display: 'flex', alignItems: 'stretch', gap: 0, background: 'rgba(255,255,255,0.08)', borderRadius: 6, border: '1px solid rgba(255,255,255,0.15)', overflow: 'hidden' }}>
               <button className={`tab-button ${activeTab === 'process' ? 'active' : ''}`} onClick={() => { if (activeTab !== 'process') { logAction('TAB', 'Viewed Process Mining'); setActiveTab('process'); setTabSkeleton(true); setTimeout(() => setTabSkeleton(false), 500); } }}>Process Mining</button>
               <button className={`tab-button ${activeTab === 'dimensions' ? 'active' : ''}`} onClick={() => { if (activeTab !== 'dimensions') { logAction('TAB', 'Viewed EDA'); setActiveTab('dimensions'); setTabSkeleton(true); setTimeout(() => setTabSkeleton(false), 500); } }}>EDA</button>
-              <button onClick={() => { window.open(`${API}/p2i/download_output?username=${encodeURIComponent(currentUser || 'Unknown')}`, '_blank'); logAction('DOWNLOAD', 'Downloaded P2I output CSV'); }} style={{ fontSize: 11, fontWeight: 600, background: 'transparent', color: 'rgba(255,255,255,0.75)', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.15)', padding: '8px 14px', cursor: 'pointer', whiteSpace: 'nowrap' }} onMouseOver={e => { e.currentTarget.style.background = 'rgba(217,119,6,0.18)'; e.currentTarget.style.color = '#F59E0B'; }} onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.75)'; }}>⬇ Export CSV</button>
+              <button onClick={() => { window.open(`${API}/p2i/download_output?username=${encodeURIComponent(currentUser || 'Unknown')}`, '_blank'); logAction('DOWNLOAD', 'Downloaded P2I output CSV'); }} style={{ fontSize: 11, fontWeight: 600, background: 'transparent', color: 'rgba(255,255,255,0.75)', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.15)', padding: '8px 14px', cursor: 'pointer', whiteSpace: 'nowrap' }} onMouseOver={e => { e.currentTarget.style.background = 'rgba(217,119,6,0.15)'; e.currentTarget.style.color = '#D97706'; }} onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.75)'; }}>⬇ Export CSV</button>
               <button onClick={handleResetData} style={{ fontSize: 11, fontWeight: 600, background: 'transparent', color: 'rgba(255,255,255,0.75)', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.15)', padding: '8px 14px', cursor: 'pointer', whiteSpace: 'nowrap' }} onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = '#fff'; }} onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.75)'; }}>📂 Upload New File</button>
             </div>
           )}
@@ -2442,20 +2526,24 @@ export default function P2IDashboard({ currentUser, onSignOut, onBackHome }) {
 
         {dataLoaded && (<>
           {/* ─── Filter Bar ─── */}
-          <div style={{ background: C.card, borderRadius: 8, padding: '10px 14px', border: `1px solid ${C.border}`, boxShadow: '0 2px 6px rgba(0,0,0,.04)' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px', alignItems: 'end' }}>
-              {slicer('case_id', 'Case ID (AUFNR+POSNR)', 'case_ids')}
-              {slicer('company', 'Company', 'companies')}
-              {slicer('plant', 'Plant', 'plants')}
-              {slicer('matnr', 'Material', 'matnrs')}
-              {slicer('bsart', 'Order Type', 'bsarts')}
-              {slicer('ekgrp', 'Purchasing Grp', 'ekgrps')}
-              {slicer('vendor', 'Vendor', 'vendors')}
-              {slicer('year', 'Year', 'years')}
-              {slicer('month', 'Month', 'months')}
-              {slicer('ernam', 'Creator', 'ernams')}
-              <FilterSelect label="Status" value={selected.status || 'ALL'} options={['ALL', 'Happy Path', 'Deviations']} onChange={v => { logAction('FILTER', `Status = ${v}`); setSelected(p => ({ ...p, status: v })); setCrossFilter(null); }} />
-              {hasActiveFilters && (<button onClick={resetAll} style={{ padding: '5px 12px', borderRadius: 4, border: `1px solid ${C.amber}`, background: C.amberLight, color: C.amberDark, fontSize: 11, fontWeight: 700, cursor: 'pointer', alignSelf: 'flex-end', height: 30 }}>✕ Reset All</button>)}
+          <div style={{ background: C.card, borderRadius: 8, padding: '10px 14px', border: `1px solid ${C.border}`, boxShadow: '0 2px 6px rgba(0,0,0,.04)', overflowX: 'auto' }}>
+            <div style={{ display: 'flex', flexWrap: 'nowrap', gap: '12px', alignItems: 'end', minWidth: 'max-content', paddingBottom: '4px' }}>
+              <div style={{ flexShrink: 0, width: 170 }}>{slicer('case_id', 'Case ID', 'case_ids')}</div>
+              <div style={{ flexShrink: 0, width: 130 }}>{slicer('company', 'Company', 'companies')}</div>
+              <div style={{ flexShrink: 0, width: 130 }}>{slicer('plant', 'Plant', 'plants')}</div>
+              <div style={{ flexShrink: 0, width: 130 }}>{slicer('matnr', 'Material', 'matnrs')}</div>
+              <div style={{ flexShrink: 0, width: 130 }}>{slicer('auart', 'Order Type', 'auarts')}</div>
+              <div style={{ flexShrink: 0, width: 130 }}>{slicer('kostl', 'Cost Center', 'kostls')}</div>
+              <div style={{ flexShrink: 0, width: 130 }}>{slicer('fevor', 'Supervisor', 'fevors')}</div>
+              <div style={{ flexShrink: 0, width: 130 }}>{slicer('ernam', 'Creator', 'ernams')}</div>
+              <div style={{ flexShrink: 0, width: 130 }}>
+                <FilterSelect label="Status" value={selected.status || 'ALL'} options={['ALL', 'Happy Path', 'Deviations']} onChange={v => { logAction('FILTER', `Status = ${v}`); setSelected(p => ({ ...p, status: v })); setCrossFilter(null); }} />
+              </div>
+              <div style={{ flexShrink: 0, width: 90 }}>{slicer('year', 'Year', 'years')}</div>
+              <div style={{ flexShrink: 0, width: 100 }}>{slicer('month', 'Month', 'months')}</div>
+              {hasActiveFilters && (
+                <button onClick={resetAll} style={{ flexShrink: 0, padding: '5px 12px', borderRadius: 4, border: `1px solid ${C.selectedBorder}`, background: C.selected, color: C.blue700, fontSize: 11, fontWeight: 700, cursor: 'pointer', height: 30, marginBottom: 1 }}>✕ Reset All</button>
+              )}
             </div>
           </div>
 
@@ -2493,7 +2581,7 @@ export default function P2IDashboard({ currentUser, onSignOut, onBackHome }) {
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 10 }}>
 
                   {/* Process Map */}
-                  <ChartCard title="P2I Process Map" subtitle="Green = happy path (8 steps) · Red = deviation/reversal · Blue dashed = P2P gateway (double-click to explore)" loading={dashboardLoading || tabSkeleton} style={{ height: '100%' }}>
+                  <ChartCard title="P2I Process Map" subtitle="Gold = happy path (8 steps) · Red = deviation/reversal · Orange dashed = P2P gateway (double-click to explore)" loading={dashboardLoading || tabSkeleton} style={{ height: '100%' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexShrink: 0 }}>
                         <div style={{ display: 'flex', gap: 6 }}>
@@ -2504,10 +2592,10 @@ export default function P2IDashboard({ currentUser, onSignOut, onBackHome }) {
                         {/* Swim-lane legend */}
                         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                           {[
-                            { color: '#7ebe42', border: '#5a9e2f', label: 'Happy Path (8 steps)' },
+                            { color: '#d97706', border: '#b45309', label: 'Happy Path (8 steps)' },
                             { color: '#e74c3c', border: '#c0392b', label: 'Deviations / Reversals' },
                             { color: '#999999', border: '#666666', label: 'P2P Branch' },
-                            { color: '#EEF2FF', border: '#4F6BED', label: 'P2P Gateway ↗' },
+                            { color: '#fffbeb', border: '#f59e0b', label: 'P2P Gateway ↗' },
                           ].map(({ color, border, label }) => (
                             <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                               <div style={{ width: 12, height: 12, borderRadius: 2, background: color, border: `1.5px solid ${border}` }} />
@@ -2523,7 +2611,7 @@ export default function P2IDashboard({ currentUser, onSignOut, onBackHome }) {
                           <ReactFlow nodes={rfNodes} edges={rfEdges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} nodeTypes={nodeTypes} edgeTypes={edgeTypes} onNodeDoubleClick={onNodeDoubleClick} fitView fitViewOptions={{ padding: 0.2 }} minZoom={0.01} maxZoom={2}>
                             <Background color="#E1DFDD" gap={24} />
                             <Controls />
-                            <MiniMap nodeColor={n => HAPPY_PATH_NODES.has(n.id) ? '#7ebe42' : (REVERSAL_NODES.has(n.id) ? '#e74c3c' : '#999999')} style={{ background: '#F8FAFC', border: `1px solid ${C.border}`, borderRadius: 6 }} />
+                            <MiniMap nodeColor={n => HAPPY_PATH_NODES.has(n.id) ? '#d97706' : (REVERSAL_NODES.has(n.id) ? '#e74c3c' : '#999999')} style={{ background: '#F8FAFC', border: `1px solid ${C.border}`, borderRadius: 6 }} />
                           </ReactFlow>
                         </div>
                       </div>
