@@ -575,14 +575,14 @@ const MODULES = [
     id: 'hrj',
     title: 'HR Joining',
     desc: 'Analyse new hire onboarding schedules, background checks, and provisioning.',
-    bg: '#EFF6EF',
-    color: '#107C10',
+    bg: '#f5edf7',
+    color: '#2e0a4a',
     btnText: 'Launch HRJ',
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="8" r="4" fill="#107C10" opacity="0.12" />
-        <path d="M6 20v-2a4 4 0 014-4h4a4 4 0 014 4v2" stroke="#107C10" strokeWidth="2" strokeLinecap="round" />
-        <path d="M12 6v4M10 8h4" stroke="#107C10" strokeWidth="1.5" strokeLinecap="round" />
+        <circle cx="12" cy="8" r="4" fill="#2e0a4a" opacity="0.12" />
+        <path d="M6 20v-2a4 4 0 014-4h4a4 4 0 014 4v2" stroke="#2e0a4a" strokeWidth="2" strokeLinecap="round" />
+        <path d="M12 6v4M10 8h4" stroke="#2e0a4a" strokeWidth="1.5" strokeLinecap="round" />
       </svg>
     )
   },
@@ -686,13 +686,67 @@ const ModuleSelector = ({ currentUser, onSelect, onSignOut }) => (
           Choose the process you want to analyse
         </p>
 
+        {/* Core Process Section */}
+        <div style={{
+          width: '100%',
+          maxWidth: 1200,
+          textAlign: 'left',
+          marginBottom: '1rem',
+          fontSize: '1.2rem',
+          fontWeight: 700,
+          color: '#fff',
+          textTransform: 'uppercase',
+          letterSpacing: '0.8px',
+          borderBottom: '1px solid rgba(255,255,255,0.15)',
+          paddingBottom: '8px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          <span>Core Process</span>
+        </div>
+
+        {/* Row 1: P2P & O2C */}
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="show"
-          style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', width: '100%', maxWidth: 1200 }}
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', width: '100%', maxWidth: 900, justifyContent: 'center', marginBottom: '1.5rem' }}
         >
-          {MODULES.filter(m => m.id === 'p2p' || m.id === 'o2c').map(m => (
+          {MODULES.filter(m => ['p2p', 'o2c'].includes(m.id)).map(m => (
+            <motion.div
+              key={m.id}
+              variants={cardVariants}
+              onClick={() => onSelect(m.id)}
+              style={{ ...cardStyle, width: 'auto' }}
+              whileHover={{ y: -4, boxShadow: '0 12px 40px rgba(0,0,0,0.4)', backgroundColor: 'rgba(255, 255, 255, 0.08)' }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <div style={{
+                width: 48, height: 48, background: m.bg, borderRadius: 10, marginBottom: 16,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px'
+              }}>
+                {m.icon}
+              </div>
+              <h2 style={{ fontSize: '1.05rem', margin: '0 0 8px', color: '#fff', fontWeight: 700 }}>
+                {m.title}
+              </h2>
+              <p style={{ fontSize: 13, color: '#94a3b8', margin: '0 0 20px', lineHeight: 1.5, minHeight: 60 }}>
+                {m.desc}
+              </p>
+              <button style={{ ...btnStyle, background: m.color }}>{m.btnText}</button>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {/* Row 2: P2I, R2R & FIN */}
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', width: '100%', maxWidth: 900, justifyContent: 'center' }}
+        >
+          {MODULES.filter(m => ['p2i', 'r2r', 'fin'].includes(m.id)).map(m => (
             <motion.div
               key={m.id}
               variants={cardVariants}
@@ -722,7 +776,7 @@ const ModuleSelector = ({ currentUser, onSelect, onSignOut }) => (
         <div style={{
           width: '100%',
           maxWidth: 1200,
-          margin: '3.5rem 0 2.5rem',
+          margin: '3rem 0 2rem',
           position: 'relative',
           display: 'flex',
           alignItems: 'center',
@@ -738,13 +792,33 @@ const ModuleSelector = ({ currentUser, onSelect, onSignOut }) => (
           }} />
         </div>
 
+        {/* Sub Process Section */}
+        <div style={{
+          width: '100%',
+          maxWidth: 1200,
+          textAlign: 'left',
+          marginBottom: '1rem',
+          fontSize: '1.2rem',
+          fontWeight: 700,
+          color: '#fff',
+          textTransform: 'uppercase',
+          letterSpacing: '0.8px',
+          borderBottom: '1px solid rgba(255,255,255,0.15)',
+          paddingBottom: '8px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          <span>🔧 Sub Process</span>
+        </div>
+
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="show"
-          style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', width: '100%', maxWidth: 1200 }}
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', width: '100%', maxWidth: 900 }}
         >
-          {MODULES.filter(m => m.id !== 'p2p' && m.id !== 'o2c').map(m => (
+          {MODULES.filter(m => ['hrj', 'hrl', 'cm'].includes(m.id)).map(m => (
             <motion.div
               key={m.id}
               variants={cardVariants}
