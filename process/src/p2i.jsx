@@ -1981,9 +1981,12 @@ const UploadBanner = React.memo(({ currentUser, onUploaded, serverOk, onLoadingC
                 }}>
                   🔒
                 </div>
-                <h3 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 2rem', letterSpacing: '-0.3px', color: '#fff' }}>
-                  Available in Production
+                <h3 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 1rem', letterSpacing: '-0.3px', color: '#fff' }}>
+                  Uploading Unavailable
                 </h3>
+                <p style={{ fontSize: '14px', color: '#cbd5e1', lineHeight: '1.5', margin: '0 0 1.5rem' }}>
+                  Uploading is not available in the current environment. It is available in the production environment. Kindly contact administrator to get access.
+                </p>
                 <button
                   onClick={() => setShowAvailablePopup(false)}
                   style={{
@@ -2002,7 +2005,7 @@ const UploadBanner = React.memo(({ currentUser, onUploaded, serverOk, onLoadingC
                   onMouseOver={e => { e.currentTarget.style.filter = 'brightness(1.1)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
                   onMouseOut={e => { e.currentTarget.style.filter = 'none'; e.currentTarget.style.transform = 'none'; }}
                 >
-                  Got it
+                  Contact Admin
                 </button>
               </motion.div>
             </motion.div>
