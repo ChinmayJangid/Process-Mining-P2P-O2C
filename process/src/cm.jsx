@@ -342,6 +342,7 @@ export default function CMDashboard({ currentUser, onSignOut, onBackHome }) {
   const [loadProg, setLoadProg] = useState(0);
   const [loadLabel, setLoadLabel] = useState('Initializing Change Management module...');
   const [showAvailablePopup, setShowAvailablePopup] = useState(false);
+  const [hoveredSide, setHoveredSide] = useState(null);
   const [showFaqModal, setShowFaqModal] = useState(false);
 
   const [selected, setSelected] = useState({
@@ -849,9 +850,12 @@ export default function CMDashboard({ currentUser, onSignOut, onBackHome }) {
               }}>
                 🔒
               </div>
-              <h3 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 2rem', letterSpacing: '-0.3px', color: '#fff' }}>
-                Available in Production
+              <h3 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 1rem', letterSpacing: '-0.3px', color: '#fff' }}>
+                Uploading Unavailable
               </h3>
+              <p style={{ fontSize: '14px', color: '#cbd5e1', lineHeight: '1.5', margin: '0 0 1.5rem' }}>
+                Uploading is not available in the current environment. It is available in the production environment. Kindly contact administrator to get access.
+              </p>
               <button
                 onClick={() => setShowAvailablePopup(false)}
                 style={{
@@ -870,7 +874,7 @@ export default function CMDashboard({ currentUser, onSignOut, onBackHome }) {
                 onMouseOver={e => { e.currentTarget.style.filter = 'brightness(1.1)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
                 onMouseOut={e => { e.currentTarget.style.filter = 'none'; e.currentTarget.style.transform = 'none'; }}
               >
-                Got it
+                Contact Admin
               </button>
             </motion.div>
           </motion.div>
@@ -1031,117 +1035,161 @@ export default function CMDashboard({ currentUser, onSignOut, onBackHome }) {
           </motion.div>
 
           <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, 1fr)',
-            gap: '1.5rem',
+            display: 'flex',
             width: '100%',
+            height: 320,
+            gap: 16,
             maxWidth: '700px',
             alignItems: 'stretch'
           }}>
             {/* Card 1: Build Event Log */}
             <motion.div
+              layout
               whileHover={{ y: -4, boxShadow: '0 12px 30px rgba(0,0,0,0.08)' }}
               style={{
+                flex: hoveredSide === 'build' ? 1.7 : (hoveredSide === 'csv' ? 0.6 : 1),
                 background: 'rgba(255,255,255,0.7)',
                 backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255, 255, 255, 0.4)',
+                border: '2px solid rgba(255, 255, 255, 0.4)',
                 borderRadius: '12px',
-                padding: '2.25rem 2rem',
+                padding: '28px 24px',
                 display: 'flex',
                 flexDirection: 'column',
-                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 14,
                 textAlign: 'center',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                overflow: 'hidden'
               }}
               onClick={() => setShowAvailablePopup(true)}
+              onMouseEnter={() => setHoveredSide('build')}
+              onMouseLeave={() => setHoveredSide(null)}
+              animate={{ borderColor: hoveredSide === 'build' ? C.amber : 'rgba(255, 255, 255, 0.4)' }}
             >
-              <div>
-                <div style={{
-                  width: '56px',
-                  height: '56px',
-                  background: `${C.amber}10`,
-                  borderRadius: '10px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto 1.5rem',
-                  fontSize: '24px',
-                  border: `1.5px solid ${C.amber}30`
-                }}>
-                  🔌
-                </div>
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#1B2A4A', margin: '0 0 0.75rem' }}>
-                  Build Event Log
-                </h3>
-                <p style={{ fontSize: '12.5px', color: '#605E5C', lineHeight: '1.5', margin: '0 0 2rem' }}>
-                  Connect directly to your ITSM tools and query tables such as <strong>ITIL_RFC</strong>, <strong>CAB_DECISIONS</strong>, and <strong>DEPLOY_LOGS</strong> automatically.
-                </p>
-              </div>
-              <button style={{
-                background: 'transparent',
-                color: C.amber,
-                border: `1.5px solid ${C.amber}`,
-                padding: '8px 20px',
-                borderRadius: '6px',
-                fontWeight: 700,
-                fontSize: '12px',
-                cursor: 'pointer'
+              <motion.div layout style={{
+                width: '56px',
+                height: '56px',
+                background: `${C.amber}10`,
+                borderRadius: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '24px',
+                border: `1.5px solid ${C.amber}30`,
+                flexShrink: 0
               }}>
-                Build Log
-              </button>
+                🔌
+              </motion.div>
+              <motion.div layout style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <motion.div layout style={{ fontSize: '1.15rem', fontWeight: 700, color: '#1B2A4A', marginBottom: '0.75rem', whiteSpace: hoveredSide === 'csv' ? 'nowrap' : 'normal' }}>
+                  Build Event Log
+                </motion.div>
+                <AnimatePresence>
+                  {hoveredSide !== 'csv' && (
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      style={{ fontSize: '12.5px', color: '#605E5C', lineHeight: '1.5', margin: 0 }}
+                    >
+                      Connect directly to your ITSM tools and query tables such as <strong>ITIL_RFC</strong>, <strong>CAB_DECISIONS</strong>, and <strong>DEPLOY_LOGS</strong> automatically.
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+              <motion.button
+                layout
+                onClick={(e) => { e.stopPropagation(); setShowAvailablePopup(true); }}
+                style={{
+                  background: 'transparent',
+                  color: C.amber,
+                  border: `1.5px solid ${C.amber}`,
+                  padding: '8px 20px',
+                  borderRadius: '6px',
+                  fontWeight: 700,
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  width: '100%',
+                  marginTop: 'auto'
+                }}
+              >
+                {hoveredSide === 'csv' ? 'Build' : 'Build Event Log'}
+              </motion.button>
             </motion.div>
 
             {/* Card 2: Upload Pre-built CSV */}
             <motion.div
+              layout
               whileHover={{ y: -4, boxShadow: '0 12px 30px rgba(0,0,0,0.08)' }}
               style={{
+                flex: hoveredSide === 'csv' ? 1.7 : (hoveredSide === 'build' ? 0.6 : 1),
                 background: 'rgba(255,255,255,0.7)',
                 backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255, 255, 255, 0.4)',
+                border: '2px solid rgba(255, 255, 255, 0.4)',
                 borderRadius: '12px',
-                padding: '2.25rem 2rem',
+                padding: '28px 24px',
                 display: 'flex',
                 flexDirection: 'column',
-                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 14,
                 textAlign: 'center',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                overflow: 'hidden'
               }}
               onClick={() => setShowAvailablePopup(true)}
+              onMouseEnter={() => setHoveredSide('csv')}
+              onMouseLeave={() => setHoveredSide(null)}
+              animate={{ borderColor: hoveredSide === 'csv' ? C.amber : 'rgba(255, 255, 255, 0.4)' }}
             >
-              <div>
-                <div style={{
-                  width: '56px',
-                  height: '56px',
-                  background: `${C.amber}10`,
-                  borderRadius: '10px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto 1.5rem',
-                  fontSize: '24px',
-                  border: `1.5px solid ${C.amber}30`
-                }}>
-                  📤
-                </div>
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#1B2A4A', margin: '0 0 0.75rem' }}>
-                  Upload Pre-built CSV
-                </h3>
-                <p style={{ fontSize: '12.5px', color: '#605E5C', lineHeight: '1.5', margin: '0 0 2rem' }}>
-                  Import change request event logs from your configuration database. Map CSV headers for Case ID, Activity, and Timestamp in real-time.
-                </p>
-              </div>
-              <button style={{
-                background: 'transparent',
-                color: C.amber,
-                border: `1.5px solid ${C.amber}`,
-                padding: '8px 20px',
-                borderRadius: '6px',
-                fontWeight: 700,
-                fontSize: '12px',
-                cursor: 'pointer'
+              <motion.div layout style={{
+                width: '56px',
+                height: '56px',
+                background: `${C.amber}10`,
+                borderRadius: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '24px',
+                border: `1.5px solid ${C.amber}30`,
+                flexShrink: 0
               }}>
-                Upload CSV
-              </button>
+                📤
+              </motion.div>
+              <motion.div layout style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <motion.div layout style={{ fontSize: '1.15rem', fontWeight: 700, color: '#1B2A4A', marginBottom: '0.75rem', whiteSpace: hoveredSide === 'build' ? 'nowrap' : 'normal' }}>
+                  Upload Pre-built CSV
+                </motion.div>
+                <AnimatePresence>
+                  {hoveredSide !== 'build' && (
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      style={{ fontSize: '12.5px', color: '#605E5C', lineHeight: '1.5', margin: 0 }}
+                    >
+                      Import change request event logs from your configuration database. Map CSV headers for Case ID, Activity, and Timestamp in real-time.
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+              <motion.button
+                layout
+                onClick={(e) => { e.stopPropagation(); setShowAvailablePopup(true); }}
+                style={{
+                  background: 'transparent',
+                  color: C.amber,
+                  border: `1.5px solid ${C.amber}`,
+                  padding: '8px 20px',
+                  borderRadius: '6px',
+                  fontWeight: 700,
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  width: '100%',
+                  marginTop: 'auto'
+                }}
+              >
+                {hoveredSide === 'build' ? 'Upload' : 'Upload CSV'}
+              </motion.button>
             </motion.div>
           </div>
 
