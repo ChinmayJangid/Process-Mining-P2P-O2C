@@ -192,7 +192,7 @@ const ProcessNode = React.memo(({ data }) => {
         width: 170,
         height: 165,
         borderRadius: '60%',
-        background: isHappyPath ? '#2f5e85' : '#877b6fff',
+        background: isHappyPath ? '#2f8556ff' : '#877b6fff',
         color: '#ffffff',
         display: 'flex',
         alignItems: 'center',
