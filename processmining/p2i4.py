@@ -34,7 +34,7 @@ import io
 import os
 import json
 import pandas as pd
-from fastapi import APIRouter, Query, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Query, HTTPException, UploadFile, File, Form, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional
@@ -625,6 +625,51 @@ def fp(company, plant, matnr, bsart, ekgrp, lifnr, vendor, case_id,
                 auart=auart, kostl=kostl, fevor=fevor)
 
 
+def get_filter_params(
+    username: str = Query("Unknown"),
+    company: Optional[str] = Query(None),
+    plant: Optional[str] = Query(None),
+    matnr: Optional[str] = Query(None),
+    bsart: Optional[str] = Query(None),
+    ekgrp: Optional[str] = Query(None),
+    lifnr: Optional[str] = Query(None),
+    vendor: Optional[str] = Query(None),
+    case_id: Optional[str] = Query(None),
+    activity: Optional[str] = Query(None),
+    month: Optional[str] = Query(None),
+    year: Optional[str] = Query(None),
+    quarter: Optional[str] = Query(None),
+    lead_time: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    ernam: Optional[str] = Query(None),
+    auart: Optional[str] = Query(None),
+    kostl: Optional[str] = Query(None),
+    fevor: Optional[str] = Query(None),
+):
+    return {
+        "username": username,
+        "company": company,
+        "plant": plant,
+        "matnr": matnr,
+        "bsart": bsart,
+        "ekgrp": ekgrp,
+        "lifnr": lifnr,
+        "vendor": vendor,
+        "case_id": case_id,
+        "activity": activity,
+        "month": month,
+        "year": year,
+        "quarter": quarter,
+        "lead_time": lead_time,
+        "status": status,
+        "ernam": ernam,
+        "auart": auart,
+        "kostl": kostl,
+        "fevor": fevor,
+    }
+
+
+
 def col_unique_cases(df, col):
     if col not in df.columns or COL_CASE not in df.columns:
         return 0
@@ -751,25 +796,12 @@ async def upload_csv(
 # ─── Filters ──────────────────────────────────────────────────────────────────
 
 @router.get("/filters")
-def get_filters(
-    username: str = Query("Unknown"),
-    company: Optional[str] = Query(None), plant: Optional[str] = Query(None),
-    matnr: Optional[str] = Query(None), bsart: Optional[str] = Query(None),
-    ekgrp: Optional[str] = Query(None), lifnr: Optional[str] = Query(None),
-    vendor: Optional[str] = Query(None), case_id: Optional[str] = Query(None),
-    activity: Optional[str] = Query(None), month: Optional[str] = Query(None),
-    year: Optional[str] = Query(None), quarter: Optional[str] = Query(None),
-    lead_time: Optional[str] = Query(None), status: Optional[str] = Query(None),
-    ernam: Optional[str] = Query(None),
-    auart: Optional[str] = Query(None), kostl: Optional[str] = Query(None),
-    fevor: Optional[str] = Query(None),
-):
-    df_raw = get_user_df(username)
+def get_filters(params: dict = Depends(get_filter_params)):
+    df_raw = get_user_df(params.get("username", "Unknown"))
     if df_raw.empty:
         raise HTTPException(500, "Data not loaded")
-    d = filter_raw(df_raw.copy(), **fp(company, plant, matnr, bsart, ekgrp, lifnr, vendor,
-                                       case_id, activity, month, year, quarter, lead_time,
-                                       status, ernam, auart, kostl, fevor))
+    filter_args = {k: v for k, v in params.items() if k != "username"}
+    d = filter_raw(df_raw.copy(), **fp(**filter_args))
 
     def uniq(col):
         return ["ALL"] + sorted(d[col].dropna().astype(str).unique().tolist()) if col in d.columns else ["ALL"]
@@ -800,24 +832,12 @@ def get_filters(
 # NOTE: Quantity KPIs (GAMNG, MAX_GAMNG etc.) are excluded per requirement.
 
 @router.get("/kpis")
-def get_kpis(
-    username: str = Query("Unknown"),
-    company: Optional[str] = Query(None), plant: Optional[str] = Query(None),
-    matnr: Optional[str] = Query(None), bsart: Optional[str] = Query(None),
-    ekgrp: Optional[str] = Query(None), lifnr: Optional[str] = Query(None),
-    vendor: Optional[str] = Query(None), case_id: Optional[str] = Query(None),
-    activity: Optional[str] = Query(None), month: Optional[str] = Query(None),
-    year: Optional[str] = Query(None), quarter: Optional[str] = Query(None),
-    lead_time: Optional[str] = Query(None), status: Optional[str] = Query(None),
-    ernam: Optional[str] = Query(None),
-    auart: Optional[str] = Query(None), kostl: Optional[str] = Query(None),
-):
-    df_raw = get_user_df(username)
+def get_kpis(params: dict = Depends(get_filter_params)):
+    df_raw = get_user_df(params.get("username", "Unknown"))
     if df_raw.empty:
         raise HTTPException(500, "Data not loaded")
-    d = filter_raw(df_raw.copy(), **fp(company, plant, matnr, bsart, ekgrp, lifnr, vendor,
-                                       case_id, activity, month, year, quarter, lead_time,
-                                       status, ernam, auart, kostl))
+    filter_args = {k: v for k, v in params.items() if k != "username"}
+    d = filter_raw(df_raw.copy(), **fp(**filter_args))
 
     # ── Core counts ──
     total_orders      = unique_cases(d)           # unique AUFNR+POSNR items
@@ -938,25 +958,12 @@ def get_kpis(
 # ─── Cases ────────────────────────────────────────────────────────────────────
 
 @router.get("/cases")
-def get_cases(
-    username: str = Query("Unknown"),
-    company: Optional[str] = Query(None), plant: Optional[str] = Query(None),
-    matnr: Optional[str] = Query(None), bsart: Optional[str] = Query(None),
-    ekgrp: Optional[str] = Query(None), lifnr: Optional[str] = Query(None),
-    vendor: Optional[str] = Query(None), case_id: Optional[str] = Query(None),
-    activity: Optional[str] = Query(None), month: Optional[str] = Query(None),
-    year: Optional[str] = Query(None), quarter: Optional[str] = Query(None),
-    lead_time: Optional[str] = Query(None), status: Optional[str] = Query(None),
-    ernam: Optional[str] = Query(None),
-    auart: Optional[str] = Query(None), kostl: Optional[str] = Query(None),
-    fevor: Optional[str] = Query(None),
-):
-    df_raw = get_user_df(username)
+def get_cases(params: dict = Depends(get_filter_params)):
+    df_raw = get_user_df(params.get("username", "Unknown"))
     if df_raw.empty:
         raise HTTPException(500, "Data not loaded")
-    d = filter_raw(df_raw.copy(), **fp(company, plant, matnr, bsart, ekgrp, lifnr, vendor,
-                                       case_id, activity, month, year, quarter, lead_time,
-                                       status, ernam, auart, kostl, fevor))
+    filter_args = {k: v for k, v in params.items() if k != "username"}
+    d = filter_raw(df_raw.copy(), **fp(**filter_args))
     if COL_CASE not in d.columns:
         return []
     time_cols = [c for c in ACTIVITY_COLUMNS if c in d.columns]
@@ -1039,13 +1046,14 @@ def get_case_events(case_id: str = Query(...), username: str = Query("Unknown"))
 
 # ─── Chart Endpoints ─────────────────────────────────────────────────────────
 
-def _get_filtered(username, company, plant, matnr, bsart, ekgrp, lifnr, vendor,
-                  case_id, activity, month, year, quarter, lead_time, status, ernam):
+def _get_filtered(params: dict):
+    username = params.get("username", "Unknown")
     df_raw = get_user_df(username)
     if df_raw.empty:
         raise HTTPException(500, "Data not loaded")
-    return filter_raw(df_raw.copy(), **fp(company, plant, matnr, bsart, ekgrp, lifnr, vendor,
-                                          case_id, activity, month, year, quarter, lead_time, status, ernam))
+    filter_args = {k: v for k, v in params.items() if k != "username"}
+    return filter_raw(df_raw.copy(), **fp(**filter_args))
+
 
 
 COMMON_PARAMS = dict(
@@ -1058,18 +1066,8 @@ COMMON_PARAMS = dict(
 
 
 @router.get("/charts/activity")
-def chart_activity(
-    username: str = Query("Unknown"), company: Optional[str] = Query(None),
-    plant: Optional[str] = Query(None), matnr: Optional[str] = Query(None),
-    bsart: Optional[str] = Query(None), ekgrp: Optional[str] = Query(None),
-    lifnr: Optional[str] = Query(None), vendor: Optional[str] = Query(None),
-    case_id: Optional[str] = Query(None), activity: Optional[str] = Query(None),
-    month: Optional[str] = Query(None), year: Optional[str] = Query(None),
-    quarter: Optional[str] = Query(None), lead_time: Optional[str] = Query(None),
-    status: Optional[str] = Query(None), ernam: Optional[str] = Query(None),
-):
-    d = _get_filtered(username, company, plant, matnr, bsart, ekgrp, lifnr, vendor,
-                      case_id, activity, month, year, quarter, lead_time, status, ernam)
+def chart_activity(params: dict = Depends(get_filter_params)):
+    d = _get_filtered(params)
     results = []
     for col in ACTIVITY_COLUMNS:
         if col not in d.columns:
@@ -1081,18 +1079,8 @@ def chart_activity(
 
 
 @router.get("/charts/monthly")
-def chart_monthly(
-    username: str = Query("Unknown"), company: Optional[str] = Query(None),
-    plant: Optional[str] = Query(None), matnr: Optional[str] = Query(None),
-    bsart: Optional[str] = Query(None), ekgrp: Optional[str] = Query(None),
-    lifnr: Optional[str] = Query(None), vendor: Optional[str] = Query(None),
-    case_id: Optional[str] = Query(None), activity: Optional[str] = Query(None),
-    month: Optional[str] = Query(None), year: Optional[str] = Query(None),
-    quarter: Optional[str] = Query(None), lead_time: Optional[str] = Query(None),
-    status: Optional[str] = Query(None), ernam: Optional[str] = Query(None),
-):
-    d = _get_filtered(username, company, plant, matnr, bsart, ekgrp, lifnr, vendor,
-                      case_id, activity, month, year, quarter, lead_time, status, ernam)
+def chart_monthly(params: dict = Depends(get_filter_params)):
+    d = _get_filtered(params)
     cols_to_melt = [c for c in ACTIVITY_COLUMNS if c in d.columns]
     if not cols_to_melt:
         return []
@@ -1104,18 +1092,8 @@ def chart_monthly(
 
 
 @router.get("/charts/company")
-def chart_company(
-    username: str = Query("Unknown"), company: Optional[str] = Query(None),
-    plant: Optional[str] = Query(None), matnr: Optional[str] = Query(None),
-    bsart: Optional[str] = Query(None), ekgrp: Optional[str] = Query(None),
-    lifnr: Optional[str] = Query(None), vendor: Optional[str] = Query(None),
-    case_id: Optional[str] = Query(None), activity: Optional[str] = Query(None),
-    month: Optional[str] = Query(None), year: Optional[str] = Query(None),
-    quarter: Optional[str] = Query(None), lead_time: Optional[str] = Query(None),
-    status: Optional[str] = Query(None), ernam: Optional[str] = Query(None),
-):
-    d = _get_filtered(username, company, plant, matnr, bsart, ekgrp, lifnr, vendor,
-                      case_id, activity, month, year, quarter, lead_time, status, ernam)
+def chart_company(params: dict = Depends(get_filter_params)):
+    d = _get_filtered(params)
     if COL_BUKRS not in d.columns:
         return []
     vc = d.dropna(subset=[COL_BUKRS]).groupby(COL_BUKRS)[COL_CASE].nunique().reset_index()
@@ -1124,18 +1102,8 @@ def chart_company(
 
 
 @router.get("/charts/plant")
-def chart_plant(
-    username: str = Query("Unknown"), company: Optional[str] = Query(None),
-    plant: Optional[str] = Query(None), matnr: Optional[str] = Query(None),
-    bsart: Optional[str] = Query(None), ekgrp: Optional[str] = Query(None),
-    lifnr: Optional[str] = Query(None), vendor: Optional[str] = Query(None),
-    case_id: Optional[str] = Query(None), activity: Optional[str] = Query(None),
-    month: Optional[str] = Query(None), year: Optional[str] = Query(None),
-    quarter: Optional[str] = Query(None), lead_time: Optional[str] = Query(None),
-    status: Optional[str] = Query(None), ernam: Optional[str] = Query(None),
-):
-    d = _get_filtered(username, company, plant, matnr, bsart, ekgrp, lifnr, vendor,
-                      case_id, activity, month, year, quarter, lead_time, status, ernam)
+def chart_plant(params: dict = Depends(get_filter_params)):
+    d = _get_filtered(params)
     if COL_PLANT not in d.columns:
         return []
     vc = d.dropna(subset=[COL_PLANT]).groupby(COL_PLANT)[COL_CASE].nunique().reset_index()
@@ -1144,18 +1112,8 @@ def chart_plant(
 
 
 @router.get("/charts/material")
-def chart_material(
-    username: str = Query("Unknown"), company: Optional[str] = Query(None),
-    plant: Optional[str] = Query(None), matnr: Optional[str] = Query(None),
-    bsart: Optional[str] = Query(None), ekgrp: Optional[str] = Query(None),
-    lifnr: Optional[str] = Query(None), vendor: Optional[str] = Query(None),
-    case_id: Optional[str] = Query(None), activity: Optional[str] = Query(None),
-    month: Optional[str] = Query(None), year: Optional[str] = Query(None),
-    quarter: Optional[str] = Query(None), lead_time: Optional[str] = Query(None),
-    status: Optional[str] = Query(None), ernam: Optional[str] = Query(None),
-):
-    d = _get_filtered(username, company, plant, matnr, bsart, ekgrp, lifnr, vendor,
-                      case_id, activity, month, year, quarter, lead_time, status, ernam)
+def chart_material(params: dict = Depends(get_filter_params)):
+    d = _get_filtered(params)
     if COL_MATNR not in d.columns:
         return []
     vc = d.dropna(subset=[COL_MATNR]).groupby(COL_MATNR)[COL_CASE].nunique().reset_index()
@@ -1164,18 +1122,8 @@ def chart_material(
 
 
 @router.get("/charts/ernam")
-def chart_ernam(
-    username: str = Query("Unknown"), company: Optional[str] = Query(None),
-    plant: Optional[str] = Query(None), matnr: Optional[str] = Query(None),
-    bsart: Optional[str] = Query(None), ekgrp: Optional[str] = Query(None),
-    lifnr: Optional[str] = Query(None), vendor: Optional[str] = Query(None),
-    case_id: Optional[str] = Query(None), activity: Optional[str] = Query(None),
-    month: Optional[str] = Query(None), year: Optional[str] = Query(None),
-    quarter: Optional[str] = Query(None), lead_time: Optional[str] = Query(None),
-    status: Optional[str] = Query(None), ernam: Optional[str] = Query(None),
-):
-    d = _get_filtered(username, company, plant, matnr, bsart, ekgrp, lifnr, vendor,
-                      case_id, activity, month, year, quarter, lead_time, status, ernam)
+def chart_ernam(params: dict = Depends(get_filter_params)):
+    d = _get_filtered(params)
     if COL_ERNAM not in d.columns:
         return []
     vc = d.dropna(subset=[COL_ERNAM]).groupby(COL_ERNAM)[COL_CASE].nunique().reset_index()
@@ -1184,18 +1132,8 @@ def chart_ernam(
 
 
 @router.get("/charts/vendors")
-def chart_vendors(
-    username: str = Query("Unknown"), company: Optional[str] = Query(None),
-    plant: Optional[str] = Query(None), matnr: Optional[str] = Query(None),
-    bsart: Optional[str] = Query(None), ekgrp: Optional[str] = Query(None),
-    lifnr: Optional[str] = Query(None), vendor: Optional[str] = Query(None),
-    case_id: Optional[str] = Query(None), activity: Optional[str] = Query(None),
-    month: Optional[str] = Query(None), year: Optional[str] = Query(None),
-    quarter: Optional[str] = Query(None), lead_time: Optional[str] = Query(None),
-    status: Optional[str] = Query(None), ernam: Optional[str] = Query(None),
-):
-    d = _get_filtered(username, company, plant, matnr, bsart, ekgrp, lifnr, vendor,
-                      case_id, activity, month, year, quarter, lead_time, status, ernam)
+def chart_vendors(params: dict = Depends(get_filter_params)):
+    d = _get_filtered(params)
     name_col = None
     if COL_VENDOR in d.columns and d[COL_VENDOR].notna().any():
         name_col = COL_VENDOR
@@ -1209,19 +1147,9 @@ def chart_vendors(
 
 
 @router.get("/charts/leadtime")
-def chart_leadtime(
-    username: str = Query("Unknown"), company: Optional[str] = Query(None),
-    plant: Optional[str] = Query(None), matnr: Optional[str] = Query(None),
-    bsart: Optional[str] = Query(None), ekgrp: Optional[str] = Query(None),
-    lifnr: Optional[str] = Query(None), vendor: Optional[str] = Query(None),
-    case_id: Optional[str] = Query(None), activity: Optional[str] = Query(None),
-    month: Optional[str] = Query(None), year: Optional[str] = Query(None),
-    quarter: Optional[str] = Query(None), lead_time: Optional[str] = Query(None),
-    status: Optional[str] = Query(None), ernam: Optional[str] = Query(None),
-):
+def chart_leadtime(params: dict = Depends(get_filter_params)):
     """Histogram: Basic Start → FG→QI duration (fallback: Order Confirmation → FG→QI)."""
-    d = _get_filtered(username, company, plant, matnr, bsart, ekgrp, lifnr, vendor,
-                      case_id, activity, month, year, quarter, lead_time, status, ernam)
+    d = _get_filtered(params)
     _end_col = "Finished Goods to Quality Inpection" if (
         "Finished Goods to Quality Inpection" in d.columns and
         d["Finished Goods to Quality Inpection"].notna().any()
@@ -1241,23 +1169,15 @@ def chart_leadtime(
 
 
 @router.get("/charts/happy_path")
-def chart_happy_path(
-    username: str = Query("Unknown"), company: Optional[str] = Query(None),
-    plant: Optional[str] = Query(None), matnr: Optional[str] = Query(None),
-    bsart: Optional[str] = Query(None), ekgrp: Optional[str] = Query(None),
-    lifnr: Optional[str] = Query(None), vendor: Optional[str] = Query(None),
-    case_id: Optional[str] = Query(None), activity: Optional[str] = Query(None),
-    month: Optional[str] = Query(None), year: Optional[str] = Query(None),
-    quarter: Optional[str] = Query(None), lead_time: Optional[str] = Query(None),
-    ernam: Optional[str] = Query(None),
-):
+def chart_happy_path(params: dict = Depends(get_filter_params)):
     """
     Happy Path: Production Order Creation → Order Confirmation → Basic Start
                 → Scheduled Start → Actual Start → Goods Issued to Order
                 → Finished Goods Receipt → Finished Goods to Quality Inspection.
     """
-    d = _get_filtered(username, company, plant, matnr, bsart, ekgrp, lifnr, vendor,
-                      case_id, activity, month, year, quarter, lead_time, None, ernam)
+    params_copy = params.copy()
+    params_copy["status"] = None
+    d = _get_filtered(params_copy)
 
     possible_req = [
         "Production Order Creation",
@@ -1308,19 +1228,9 @@ def chart_happy_path(
 
 
 @router.get("/charts/bottleneck")
-def chart_bottleneck(
-    username: str = Query("Unknown"), company: Optional[str] = Query(None),
-    plant: Optional[str] = Query(None), matnr: Optional[str] = Query(None),
-    bsart: Optional[str] = Query(None), ekgrp: Optional[str] = Query(None),
-    lifnr: Optional[str] = Query(None), vendor: Optional[str] = Query(None),
-    case_id: Optional[str] = Query(None), activity: Optional[str] = Query(None),
-    month: Optional[str] = Query(None), year: Optional[str] = Query(None),
-    quarter: Optional[str] = Query(None), lead_time: Optional[str] = Query(None),
-    status: Optional[str] = Query(None), ernam: Optional[str] = Query(None),
-):
+def chart_bottleneck(params: dict = Depends(get_filter_params)):
     """Avg days between key P2I process steps."""
-    d = _get_filtered(username, company, plant, matnr, bsart, ekgrp, lifnr, vendor,
-                      case_id, activity, month, year, quarter, lead_time, status, ernam)
+    d = _get_filtered(params)
     steps = [
         ("Production Order Creation", "Order Confirmation",                 "Creation → Confirm"),
         ("Order Confirmation",        "Basic Start",                        "Confirm → Basic Start"),
@@ -1348,19 +1258,9 @@ def chart_bottleneck(
 
 
 @router.get("/charts/operation_reversals")
-def chart_operation_reversals(
-    username: str = Query("Unknown"), company: Optional[str] = Query(None),
-    plant: Optional[str] = Query(None), matnr: Optional[str] = Query(None),
-    bsart: Optional[str] = Query(None), ekgrp: Optional[str] = Query(None),
-    lifnr: Optional[str] = Query(None), vendor: Optional[str] = Query(None),
-    case_id: Optional[str] = Query(None), activity: Optional[str] = Query(None),
-    month: Optional[str] = Query(None), year: Optional[str] = Query(None),
-    quarter: Optional[str] = Query(None), lead_time: Optional[str] = Query(None),
-    status: Optional[str] = Query(None), ernam: Optional[str] = Query(None),
-):
+def chart_operation_reversals(params: dict = Depends(get_filter_params)):
     """Operation reversals by month (AFRU: Document Reverse = X)."""
-    d = _get_filtered(username, company, plant, matnr, bsart, ekgrp, lifnr, vendor,
-                      case_id, activity, month, year, quarter, lead_time, status, ernam)
+    d = _get_filtered(params)
     if "Operation Reversed" not in d.columns:
         return []
     b = d.dropna(subset=["Operation Reversed"]).copy()
@@ -1370,19 +1270,9 @@ def chart_operation_reversals(
 
 
 @router.get("/charts/gi_before_confirm_ernam")
-def chart_gi_before_confirm_ernam(
-    username: str = Query("Unknown"), company: Optional[str] = Query(None),
-    plant: Optional[str] = Query(None), matnr: Optional[str] = Query(None),
-    bsart: Optional[str] = Query(None), ekgrp: Optional[str] = Query(None),
-    lifnr: Optional[str] = Query(None), vendor: Optional[str] = Query(None),
-    case_id: Optional[str] = Query(None), activity: Optional[str] = Query(None),
-    month: Optional[str] = Query(None), year: Optional[str] = Query(None),
-    quarter: Optional[str] = Query(None), lead_time: Optional[str] = Query(None),
-    status: Optional[str] = Query(None), ernam: Optional[str] = Query(None),
-):
+def chart_gi_before_confirm_ernam(params: dict = Depends(get_filter_params)):
     """GI before Order Confirmation sequence violations grouped by ERNAM."""
-    d = _get_filtered(username, company, plant, matnr, bsart, ekgrp, lifnr, vendor,
-                      case_id, activity, month, year, quarter, lead_time, status, ernam)
+    d = _get_filtered(params)
     if "Order Confirmation" not in d.columns or "Goods Issued to Order" not in d.columns:
         return []
     sub = d.dropna(subset=["Order Confirmation", "Goods Issued to Order", COL_ERNAM])
@@ -1395,19 +1285,9 @@ def chart_gi_before_confirm_ernam(
 
 
 @router.get("/charts/plant_lead_time")
-def chart_plant_lead_time(
-    username: str = Query("Unknown"), company: Optional[str] = Query(None),
-    plant: Optional[str] = Query(None), matnr: Optional[str] = Query(None),
-    bsart: Optional[str] = Query(None), ekgrp: Optional[str] = Query(None),
-    lifnr: Optional[str] = Query(None), vendor: Optional[str] = Query(None),
-    case_id: Optional[str] = Query(None), activity: Optional[str] = Query(None),
-    month: Optional[str] = Query(None), year: Optional[str] = Query(None),
-    quarter: Optional[str] = Query(None), lead_time: Optional[str] = Query(None),
-    status: Optional[str] = Query(None), ernam: Optional[str] = Query(None),
-):
+def chart_plant_lead_time(params: dict = Depends(get_filter_params)):
     """Average production lead time per plant (Production Order Creation → FG→QI, fallback Confirm → FG→QI)."""
-    d = _get_filtered(username, company, plant, matnr, bsart, ekgrp, lifnr, vendor,
-                      case_id, activity, month, year, quarter, lead_time, status, ernam)
+    d = _get_filtered(params)
     _end_col = "Finished Goods to Quality Inspection" if (
         "Finished Goods to Quality Inspection" in d.columns and
         d["Finished Goods to Quality Inspection"].notna().any()
@@ -1431,18 +1311,8 @@ def chart_plant_lead_time(
 
 
 @router.get("/charts/po_rev_timeline")
-def chart_po_rev_timeline(
-    username: str = Query("Unknown"), company: Optional[str] = Query(None),
-    plant: Optional[str] = Query(None), matnr: Optional[str] = Query(None),
-    bsart: Optional[str] = Query(None), ekgrp: Optional[str] = Query(None),
-    lifnr: Optional[str] = Query(None), vendor: Optional[str] = Query(None),
-    case_id: Optional[str] = Query(None), activity: Optional[str] = Query(None),
-    month: Optional[str] = Query(None), year: Optional[str] = Query(None),
-    quarter: Optional[str] = Query(None), lead_time: Optional[str] = Query(None),
-    status: Optional[str] = Query(None), ernam: Optional[str] = Query(None),
-):
-    d = _get_filtered(username, company, plant, matnr, bsart, ekgrp, lifnr, vendor,
-                      case_id, activity, month, year, quarter, lead_time, status, ernam)
+def chart_po_rev_timeline(params: dict = Depends(get_filter_params)):
+    d = _get_filtered(params)
     if "PO Reversal Date" not in d.columns:
         return []
     b = d.dropna(subset=["PO Reversal Date"]).copy()
@@ -1455,20 +1325,9 @@ def chart_po_rev_timeline(
 # ─── AUFK Chart Endpoints ─────────────────────────────────────────────────────
 
 @router.get("/charts/order_type")
-def chart_order_type(
-    username: str = Query("Unknown"), company: Optional[str] = Query(None),
-    plant: Optional[str] = Query(None), matnr: Optional[str] = Query(None),
-    bsart: Optional[str] = Query(None), ekgrp: Optional[str] = Query(None),
-    lifnr: Optional[str] = Query(None), vendor: Optional[str] = Query(None),
-    case_id: Optional[str] = Query(None), activity: Optional[str] = Query(None),
-    month: Optional[str] = Query(None), year: Optional[str] = Query(None),
-    quarter: Optional[str] = Query(None), lead_time: Optional[str] = Query(None),
-    status: Optional[str] = Query(None), ernam: Optional[str] = Query(None),
-    auart: Optional[str] = Query(None), kostl: Optional[str] = Query(None),
-):
+def chart_order_type(params: dict = Depends(get_filter_params)):
     """Production order count by SAP order type (AUART) — from AUFK."""
-    d = _get_filtered(username, company, plant, matnr, bsart, ekgrp, lifnr, vendor,
-                      case_id, activity, month, year, quarter, lead_time, status, ernam)
+    d = _get_filtered(params)
     if COL_AUART not in d.columns or d[COL_AUART].isna().all():
         return []
     vc = d.dropna(subset=[COL_AUART]).groupby(COL_AUART)[COL_CASE].nunique().reset_index()
@@ -1477,24 +1336,13 @@ def chart_order_type(
 
 
 @router.get("/charts/schedule_adherence")
-def chart_schedule_adherence(
-    username: str = Query("Unknown"), company: Optional[str] = Query(None),
-    plant: Optional[str] = Query(None), matnr: Optional[str] = Query(None),
-    bsart: Optional[str] = Query(None), ekgrp: Optional[str] = Query(None),
-    lifnr: Optional[str] = Query(None), vendor: Optional[str] = Query(None),
-    case_id: Optional[str] = Query(None), activity: Optional[str] = Query(None),
-    month: Optional[str] = Query(None), year: Optional[str] = Query(None),
-    quarter: Optional[str] = Query(None), lead_time: Optional[str] = Query(None),
-    status: Optional[str] = Query(None), ernam: Optional[str] = Query(None),
-    auart: Optional[str] = Query(None), kostl: Optional[str] = Query(None),
-):
+def chart_schedule_adherence(params: dict = Depends(get_filter_params)):
     """
     Schedule slip per month: avg(Actual Finish Date − Planned Finish Date) in days.
     Planned = AUFK.GLTRP  |  Actual = AUFK.LTRMI (falls back to FG→QI event date).
     Positive slip = late; negative = early.
     """
-    d = _get_filtered(username, company, plant, matnr, bsart, ekgrp, lifnr, vendor,
-                      case_id, activity, month, year, quarter, lead_time, status, ernam)
+    d = _get_filtered(params)
 
     planned_col = COL_GLTRP  # "Planned Finish Date"
     actual_col  = COL_LTRMI  # "Actual Finish Date"
@@ -1528,20 +1376,9 @@ def chart_schedule_adherence(
 
 
 @router.get("/charts/order_quantity")
-def chart_order_quantity(
-    username: str = Query("Unknown"), company: Optional[str] = Query(None),
-    plant: Optional[str] = Query(None), matnr: Optional[str] = Query(None),
-    bsart: Optional[str] = Query(None), ekgrp: Optional[str] = Query(None),
-    lifnr: Optional[str] = Query(None), vendor: Optional[str] = Query(None),
-    case_id: Optional[str] = Query(None), activity: Optional[str] = Query(None),
-    month: Optional[str] = Query(None), year: Optional[str] = Query(None),
-    quarter: Optional[str] = Query(None), lead_time: Optional[str] = Query(None),
-    status: Optional[str] = Query(None), ernam: Optional[str] = Query(None),
-    auart: Optional[str] = Query(None), kostl: Optional[str] = Query(None),
-):
+def chart_order_quantity(params: dict = Depends(get_filter_params)):
     """Histogram of planned order quantity (GAMNG) from AUFK."""
-    d = _get_filtered(username, company, plant, matnr, bsart, ekgrp, lifnr, vendor,
-                      case_id, activity, month, year, quarter, lead_time, status, ernam)
+    d = _get_filtered(params)
 
     if COL_GAMNG not in d.columns or d[COL_GAMNG].isna().all():
         return []
@@ -1559,20 +1396,9 @@ def chart_order_quantity(
 
 
 @router.get("/charts/cost_center")
-def chart_cost_center(
-    username: str = Query("Unknown"), company: Optional[str] = Query(None),
-    plant: Optional[str] = Query(None), matnr: Optional[str] = Query(None),
-    bsart: Optional[str] = Query(None), ekgrp: Optional[str] = Query(None),
-    lifnr: Optional[str] = Query(None), vendor: Optional[str] = Query(None),
-    case_id: Optional[str] = Query(None), activity: Optional[str] = Query(None),
-    month: Optional[str] = Query(None), year: Optional[str] = Query(None),
-    quarter: Optional[str] = Query(None), lead_time: Optional[str] = Query(None),
-    status: Optional[str] = Query(None), ernam: Optional[str] = Query(None),
-    auart: Optional[str] = Query(None), kostl: Optional[str] = Query(None),
-):
+def chart_cost_center(params: dict = Depends(get_filter_params)):
     """Production order count by Cost Center (KOSTL) — from AUFK."""
-    d = _get_filtered(username, company, plant, matnr, bsart, ekgrp, lifnr, vendor,
-                      case_id, activity, month, year, quarter, lead_time, status, ernam)
+    d = _get_filtered(params)
     if COL_KOSTL not in d.columns or d[COL_KOSTL].isna().all():
         return []
     vc = d.dropna(subset=[COL_KOSTL]).groupby(COL_KOSTL)[COL_CASE].nunique().reset_index()
@@ -1696,21 +1522,9 @@ async def upload_aufk(
 
 
 @router.get("/charts/supervisor")
-def chart_supervisor(
-    username: str = Query("Unknown"), company: Optional[str] = Query(None),
-    plant: Optional[str] = Query(None), matnr: Optional[str] = Query(None),
-    bsart: Optional[str] = Query(None), ekgrp: Optional[str] = Query(None),
-    lifnr: Optional[str] = Query(None), vendor: Optional[str] = Query(None),
-    case_id: Optional[str] = Query(None), activity: Optional[str] = Query(None),
-    month: Optional[str] = Query(None), year: Optional[str] = Query(None),
-    quarter: Optional[str] = Query(None), lead_time: Optional[str] = Query(None),
-    status: Optional[str] = Query(None), ernam: Optional[str] = Query(None),
-    auart: Optional[str] = Query(None), kostl: Optional[str] = Query(None),
-    fevor: Optional[str] = Query(None),
-):
+def chart_supervisor(params: dict = Depends(get_filter_params)):
     """Production order count + avg lead time per Production Supervisor (FEVOR) — from AUFK."""
-    d = _get_filtered(username, company, plant, matnr, bsart, ekgrp, lifnr, vendor,
-                      case_id, activity, month, year, quarter, lead_time, status, ernam)
+    d = _get_filtered(params)
     if COL_FEVOR not in d.columns or d[COL_FEVOR].isna().all():
         return []
 
@@ -1749,18 +1563,7 @@ def chart_supervisor(
 
 
 @router.get("/charts/quantity_trend")
-def chart_quantity_trend(
-    username: str = Query("Unknown"), company: Optional[str] = Query(None),
-    plant: Optional[str] = Query(None), matnr: Optional[str] = Query(None),
-    bsart: Optional[str] = Query(None), ekgrp: Optional[str] = Query(None),
-    lifnr: Optional[str] = Query(None), vendor: Optional[str] = Query(None),
-    case_id: Optional[str] = Query(None), activity: Optional[str] = Query(None),
-    month: Optional[str] = Query(None), year: Optional[str] = Query(None),
-    quarter: Optional[str] = Query(None), lead_time: Optional[str] = Query(None),
-    status: Optional[str] = Query(None), ernam: Optional[str] = Query(None),
-    auart: Optional[str] = Query(None), kostl: Optional[str] = Query(None),
-    fevor: Optional[str] = Query(None),
-):
+def chart_quantity_trend(params: dict = Depends(get_filter_params)):
     """
     Monthly trend of:
       - GAMNG  (planned order qty)
@@ -1768,8 +1571,7 @@ def chart_quantity_trend(
       - RMNGA  (scrap qty)
     Only returned when AUFK has been joined (GAMNG column present).
     """
-    d = _get_filtered(username, company, plant, matnr, bsart, ekgrp, lifnr, vendor,
-                      case_id, activity, month, year, quarter, lead_time, status, ernam)
+    d = _get_filtered(params)
 
     if COL_GAMNG not in d.columns or d[COL_GAMNG].isna().all():
         return []
@@ -1805,24 +1607,12 @@ def chart_quantity_trend(
 
 
 @router.get("/charts/yield_analysis")
-def chart_yield_analysis(
-    username: str = Query("Unknown"), company: Optional[str] = Query(None),
-    plant: Optional[str] = Query(None), matnr: Optional[str] = Query(None),
-    bsart: Optional[str] = Query(None), ekgrp: Optional[str] = Query(None),
-    lifnr: Optional[str] = Query(None), vendor: Optional[str] = Query(None),
-    case_id: Optional[str] = Query(None), activity: Optional[str] = Query(None),
-    month: Optional[str] = Query(None), year: Optional[str] = Query(None),
-    quarter: Optional[str] = Query(None), lead_time: Optional[str] = Query(None),
-    status: Optional[str] = Query(None), ernam: Optional[str] = Query(None),
-    auart: Optional[str] = Query(None), kostl: Optional[str] = Query(None),
-    fevor: Optional[str] = Query(None),
-):
+def chart_yield_analysis(params: dict = Depends(get_filter_params)):
     """
     Yield vs Scrap analysis: top materials by planned qty with yield_rate and scrap_rate.
     Only returned when AUFK has been joined.
     """
-    d = _get_filtered(username, company, plant, matnr, bsart, ekgrp, lifnr, vendor,
-                      case_id, activity, month, year, quarter, lead_time, status, ernam)
+    d = _get_filtered(params)
 
     if COL_GAMNG not in d.columns or d[COL_GAMNG].isna().all():
         return []
@@ -1852,21 +1642,12 @@ def chart_yield_analysis(
 # ─── Process Map ──────────────────────────────────────────────────────────────
 
 @router.get("/process-map")
-def get_process_map(
-    username: str = Query("Unknown"), company: Optional[str] = Query(None),
-    plant: Optional[str] = Query(None), matnr: Optional[str] = Query(None),
-    bsart: Optional[str] = Query(None), ekgrp: Optional[str] = Query(None),
-    lifnr: Optional[str] = Query(None), vendor: Optional[str] = Query(None),
-    case_id: Optional[str] = Query(None), activity: Optional[str] = Query(None),
-    month: Optional[str] = Query(None), year: Optional[str] = Query(None),
-    quarter: Optional[str] = Query(None), lead_time: Optional[str] = Query(None),
-    status: Optional[str] = Query(None), ernam: Optional[str] = Query(None),
-):
-    df_raw = get_user_df(username)
+def get_process_map(params: dict = Depends(get_filter_params)):
+    df_raw = get_user_df(params.get("username", "Unknown"))
     if df_raw.empty:
         raise HTTPException(500, "Data not loaded")
-    d = filter_raw(df_raw.copy(), **fp(company, plant, matnr, bsart, ekgrp, lifnr, vendor,
-                                       case_id, activity, month, year, quarter, lead_time, status, ernam))
+    filter_args = {k: v for k, v in params.items() if k != "username"}
+    d = filter_raw(df_raw.copy(), **fp(**filter_args))
 
     # ── LAYOUT_H: LR mode — happy path left→right, deviations above, P2P continuing right
     LAYOUT_H = {
