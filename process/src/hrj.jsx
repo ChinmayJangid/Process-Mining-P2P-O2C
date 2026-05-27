@@ -13,13 +13,13 @@ import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
 import './App.css';
 
 const C = {
-  green: '#107C10', greenLight: '#EFF6EF', greenDark: '#0A4A0A',
+  green: '#2e0a4a', greenLight: '#f5edf7', greenDark: '#1f0632',
   slate: '#605E5C', bg: '#F0F2F5', card: '#FFFFFF', border: '#E1DFDD',
-  orange: '#10893E', purple: '#00B7C3', red: '#0D5C14',
-  headerBg: '#0A4A0A', jkBlue: '#0057B7'
+  orange: '#581c87', purple: '#7c3aed', red: '#a855f7',
+  headerBg: '#1f0632', jkBlue: '#2e0a4a'
 };
 
-const ACCENT = ['#107C10', '#10893E', '#00B7C3', '#00CC6A', '#0D5C14', '#0A4A0A', '#137E4A'];
+const ACCENT = ['#2e0a4a', '#4a157a', '#6b21a8', '#8b5cf6', '#a855f7', '#c084fc', '#d8b4fe'];
 
 /* ─── LOADING OVERLAY ───────────────────────────────────────────────────────── */
 const LoadingOverlay = ({ visible, progress, label }) => {
@@ -40,11 +40,11 @@ const LoadingOverlay = ({ visible, progress, label }) => {
         {phases.map((phase, index) => {
           const isActive = activeStep === phase.num;
           const isDone = activeStep > phase.num;
-          const color = isActive || isDone ? '#107C10' : 'rgba(255,255,255,0.25)';
+          const color = isActive || isDone ? '#2e0a4a' : 'rgba(255,255,255,0.25)';
           return (
             <div key={phase.num} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, position: 'relative' }}>
-              {index > 0 && (<div style={{ position: 'absolute', right: '100%', top: 16, width: 40, height: 2, background: isDone || isActive ? '#107C10' : 'rgba(255,255,255,0.15)', marginRight: 10, transition: 'all 0.4s ease' }} />)}
-              <div style={{ width: 32, height: 32, borderRadius: '50%', background: isDone ? '#107C10' : (isActive ? 'rgba(16,124,16,0.1)' : 'transparent'), border: `2px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: isDone ? '#fff' : color, fontWeight: 'bold', fontSize: 14, transition: 'all 0.3s ease', boxShadow: isActive ? '0 0 12px rgba(16,124,16,0.4)' : 'none' }}>
+              {index > 0 && (<div style={{ position: 'absolute', right: '100%', top: 16, width: 40, height: 2, background: isDone || isActive ? '#2e0a4a' : 'rgba(255,255,255,0.15)', marginRight: 10, transition: 'all 0.4s ease' }} />)}
+              <div style={{ width: 32, height: 32, borderRadius: '50%', background: isDone ? '#2e0a4a' : (isActive ? 'rgba(46,10,74,0.1)' : 'transparent'), border: `2px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: isDone ? '#fff' : color, fontWeight: 'bold', fontSize: 14, transition: 'all 0.3s ease', boxShadow: isActive ? '0 0 12px rgba(46,10,74,0.4)' : 'none' }}>
                 {isDone ? '✓' : phase.num}
               </div>
               <div style={{ color: isActive || isDone ? '#fff' : 'rgba(255,255,255,0.4)', fontSize: 13, fontWeight: isActive ? 700 : 500, transition: 'all 0.3s ease', letterSpacing: 0.5 }}>{phase.name}</div>
@@ -54,7 +54,7 @@ const LoadingOverlay = ({ visible, progress, label }) => {
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, width: 400 }}>
         <div style={{ width: '100%', background: 'rgba(255,255,255,.15)', borderRadius: 8, height: 6, overflow: 'hidden' }}>
-          <div style={{ height: '100%', borderRadius: 8, transition: 'width .4s ease', background: 'linear-gradient(90deg,#107C10,#4ade80)', width: `${progress}%`, boxShadow: '0 0 12px rgba(16,124,16,.6)' }} />
+          <div style={{ height: '100%', borderRadius: 8, transition: 'width .4s ease', background: 'linear-gradient(90deg,#2e0a4a,#c084fc)', width: `${progress}%`, boxShadow: '0 0 12px rgba(46,10,74,.6)' }} />
         </div>
         <div style={{ fontSize: 12, color: 'rgba(255,255,255,.6)' }}>{label}</div>
       </div>
@@ -66,7 +66,7 @@ const LoadingOverlay = ({ visible, progress, label }) => {
 const ProcessNode = React.memo(({ data }) => {
   const freq = data?.frequency || 0;
   const isHappy = data?.isHappy;
-  const accentColor = isHappy ? '#107C10' : '#0D5C14';
+  const accentColor = isHappy ? '#2e0a4a' : '#5c168c';
   return (
     <div style={{
       background: 'rgba(30, 41, 59, 0.85)',
@@ -186,7 +186,7 @@ const HRJ_LAYOUT = {
 /* ── FAQ Accordion Item ── */
 const FaqItem = ({ q, a, bullets, accentColor }) => {
   const [open, setOpen] = useState(false);
-  const accent = accentColor || '#107C10';
+  const accent = accentColor || '#2e0a4a';
   return (
     <div style={{ borderBottom: '1px solid #E2E8F0' }}>
       <button
@@ -340,6 +340,7 @@ export default function HRJDashboard({ currentUser, onSignOut, onBackHome }) {
   const [loadProg, setLoadProg] = useState(0);
   const [loadLabel, setLoadLabel] = useState('Initializing HR Joining module...');
   const [showAvailablePopup, setShowAvailablePopup] = useState(false);
+  const [hoveredSide, setHoveredSide] = useState(null);
   const [showFaqModal, setShowFaqModal] = useState(false);
 
   const [selected, setSelected] = useState({
@@ -473,7 +474,7 @@ export default function HRJDashboard({ currentUser, onSignOut, onBackHome }) {
 
       const isHappyEdge = !['Background Check Issue', 'Provisioning Delay'].includes(src) &&
         !['Background Check Issue', 'Provisioning Delay'].includes(tgt);
-      const color = isHappyEdge ? '#107C10' : '#0D5C14';
+      const color = isHappyEdge ? '#2e0a4a' : '#5c168c';
 
       return {
         id: key,
@@ -539,8 +540,8 @@ export default function HRJDashboard({ currentUser, onSignOut, onBackHome }) {
       }
     });
     return [
-      { name: 'Happy Path', value: happy, color: '#107C10' },
-      { name: 'Deviations', value: dev, color: '#0D5C14' }
+      { name: 'Happy Path', value: happy, color: '#2e0a4a' },
+      { name: 'Deviations', value: dev, color: '#5c168c' }
     ];
   }, [casesMap]);
 
@@ -618,7 +619,7 @@ export default function HRJDashboard({ currentUser, onSignOut, onBackHome }) {
     </div>
   );
   const HRJKeyMetricsAnimation = ({ metrics }) => {
-    const colors = ['#107C10', '#10893E', '#00B7C3', '#00CC6A', '#0D5C14', '#0A4A0A'];
+    const colors = ['#2e0a4a', '#4a157a', '#6b21a8', '#8b5cf6', '#a855f7', '#d8b4fe'];
     const subtitles = [
       'Percent of new hires completing all tasks',
       'Hours to setup email and hardware access',
@@ -755,7 +756,7 @@ export default function HRJDashboard({ currentUser, onSignOut, onBackHome }) {
     </motion.div>
   );
   const HRJProcessTreeFlow = ({ steps }) => {
-    const colors = [C.green, '#38a169', '#10893E', '#00B7C3', '#0D5C14', '#0A4A0A'];
+    const colors = [C.green, '#4a157a', '#6b21a8', '#8b5cf6', '#a855f7', '#d8b4fe'];
     return (
       <div style={{ position: 'relative', width: '100%', display: 'flex', flexDirection: 'column', gap: '10px', padding: '10px 0' }}>
         {steps.map((step, i) => {
@@ -847,9 +848,12 @@ export default function HRJDashboard({ currentUser, onSignOut, onBackHome }) {
               }}>
                 🔒
               </div>
-              <h3 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 2rem', letterSpacing: '-0.3px', color: '#fff' }}>
-                Available in Production
+              <h3 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 1rem', letterSpacing: '-0.3px', color: '#fff' }}>
+                Uploading Unavailable
               </h3>
+              <p style={{ fontSize: '14px', color: '#cbd5e1', lineHeight: '1.5', margin: '0 0 1.5rem' }}>
+                Uploading is not available in the current environment. It is available in the production environment. Kindly contact administrator to get access.
+              </p>
               <button
                 onClick={() => setShowAvailablePopup(false)}
                 style={{
@@ -862,13 +866,13 @@ export default function HRJDashboard({ currentUser, onSignOut, onBackHome }) {
                   fontSize: '14px',
                   cursor: 'pointer',
                   width: '100%',
-                  boxShadow: `0 4px 12px rgba(16,124,16,0.3)`,
+                  boxShadow: `0 4px 12px rgba(46,10,74,0.3)`,
                   transition: 'all 0.2s'
                 }}
                 onMouseOver={e => { e.currentTarget.style.filter = 'brightness(1.1)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
                 onMouseOut={e => { e.currentTarget.style.filter = 'none'; e.currentTarget.style.transform = 'none'; }}
               >
-                Got it
+                Contact Admin
               </button>
             </motion.div>
           </motion.div>
@@ -938,10 +942,10 @@ export default function HRJDashboard({ currentUser, onSignOut, onBackHome }) {
               <button
                 onClick={() => setShowFaqModal(true)}
                 style={{
-                  background: `linear-gradient(135deg, ${C.green} 0%, #38a169 100%)`,
+                  background: `linear-gradient(135deg, ${C.green} 0%, #6b21a8 100%)`,
                   color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '12px',
                   fontSize: '13px', fontWeight: 700, cursor: 'pointer', display: 'flex',
-                  alignItems: 'center', gap: '8px', boxShadow: `0 4px 12px rgba(16, 124, 16, 0.2)`,
+                  alignItems: 'center', gap: '8px', boxShadow: `0 4px 12px rgba(46, 10, 74, 0.2)`,
                   transition: 'all 0.2s', flexShrink: 0, marginTop: '10px'
                 }}
                 onMouseOver={e => e.currentTarget.style.transform = 'translateY(-2px)'}
@@ -966,7 +970,7 @@ export default function HRJDashboard({ currentUser, onSignOut, onBackHome }) {
               </div>
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 4 }}>
-              <button onClick={() => setStep('choose')} style={{ background: C.green, color: '#fff', border: 'none', padding: '12px 32px', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: `0 4px 12px rgba(16,124,16,0.25)`, transition: 'all 0.2s' }} onMouseOver={e => { e.currentTarget.style.filter = 'brightness(1.1)'; e.currentTarget.style.transform = 'translateY(-1px)'; }} onMouseOut={e => { e.currentTarget.style.filter = 'none'; e.currentTarget.style.transform = 'none'; }}>
+              <button onClick={() => setStep('choose')} style={{ background: C.green, color: '#fff', border: 'none', padding: '12px 32px', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: `0 4px 12px rgba(46, 10, 74, 0.25)`, transition: 'all 0.2s' }} onMouseOver={e => { e.currentTarget.style.filter = 'brightness(1.1)'; e.currentTarget.style.transform = 'translateY(-1px)'; }} onMouseOut={e => { e.currentTarget.style.filter = 'none'; e.currentTarget.style.transform = 'none'; }}>
                 Continue <span style={{ fontSize: 16 }}>→</span>
               </button>
             </div>
@@ -984,7 +988,7 @@ export default function HRJDashboard({ currentUser, onSignOut, onBackHome }) {
           justifyContent: 'center',
           alignItems: 'center',
           padding: '2rem',
-          background: 'radial-gradient(circle at top right, rgba(16,124,16,0.08), transparent 60%)',
+          background: 'radial-gradient(circle at top right, rgba(46,10,74,0.08), transparent 60%)',
           position: 'relative'
         }}>
           {/* Snapshot Button */}
@@ -1005,7 +1009,7 @@ export default function HRJDashboard({ currentUser, onSignOut, onBackHome }) {
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
-              boxShadow: '0 4px 12px rgba(16,124,16,0.3)',
+              boxShadow: '0 4px 12px rgba(46,10,74,0.3)',
               transition: 'all 0.2s'
             }}
             onMouseOver={e => { e.currentTarget.style.filter = 'brightness(1.1)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
@@ -1029,125 +1033,167 @@ export default function HRJDashboard({ currentUser, onSignOut, onBackHome }) {
           </motion.div>
 
           <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, 1fr)',
-            gap: '1.5rem',
+            display: 'flex',
             width: '100%',
+            height: 320,
+            gap: 16,
             maxWidth: '700px',
             alignItems: 'stretch'
           }}>
             {/* Card 1: Build Event Log */}
             <motion.div
+              layout
               whileHover={{ y: -4, boxShadow: '0 12px 30px rgba(0,0,0,0.08)' }}
               style={{
+                flex: hoveredSide === 'build' ? 1.7 : (hoveredSide === 'csv' ? 0.6 : 1),
                 background: 'rgba(255,255,255,0.7)',
                 backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255, 255, 255, 0.4)',
+                border: '2px solid rgba(255, 255, 255, 0.4)',
                 borderRadius: '12px',
-                padding: '2.25rem 2rem',
+                padding: '28px 24px',
                 display: 'flex',
                 flexDirection: 'column',
-                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 14,
                 textAlign: 'center',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                overflow: 'hidden'
               }}
               onClick={() => setShowAvailablePopup(true)}
+              onMouseEnter={() => setHoveredSide('build')}
+              onMouseLeave={() => setHoveredSide(null)}
+              animate={{ borderColor: hoveredSide === 'build' ? C.green : 'rgba(255, 255, 255, 0.4)' }}
             >
-              <div>
-                <div style={{
-                  width: '56px',
-                  height: '56px',
-                  background: `${C.green}10`,
-                  borderRadius: '10px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto 1.5rem',
-                  fontSize: '24px',
-                  border: `1.5px solid ${C.green}30`
-                }}>
-                  🔌
-                </div>
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#1B2A4A', margin: '0 0 0.75rem' }}>
+              <motion.div layout style={{
+                width: '56px',
+                height: '56px',
+                background: `${C.green}10`,
+                borderRadius: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '24px',
+                border: `1.5px solid ${C.green}30`,
+                flexShrink: 0
+              }}>
+                🔌
+              </motion.div>
+              <motion.div layout style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <motion.div layout style={{ fontSize: '1.15rem', fontWeight: 700, color: '#1B2A4A', marginBottom: '0.75rem', whiteSpace: hoveredSide === 'csv' ? 'nowrap' : 'normal' }}>
                   Build Event Log
-                </h3>
-                <p style={{ fontSize: '12.5px', color: '#605E5C', lineHeight: '1.5', margin: '0 0 2rem' }}>
-                  Connect directly to your HR database. Query and consolidate transaction tables such as <strong>HR_APPLICANTS</strong>, <strong>HR_OFFERS</strong>, and <strong>HR_PROVISIONING</strong> automatically.
-                </p>
-              </div>
-              <button style={{
-                background: 'transparent',
-                color: C.green,
-                border: `1.5px solid ${C.green}`,
-                padding: '10px 20px',
-                borderRadius: '6px',
-                fontWeight: 700,
-                fontSize: '12.5px',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
+                </motion.div>
+                <AnimatePresence>
+                  {hoveredSide !== 'csv' && (
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      style={{ fontSize: '12.5px', color: '#605E5C', lineHeight: '1.5', margin: 0 }}
+                    >
+                      Connect directly to your HR database. Query and consolidate transaction tables such as <strong>HR_APPLICANTS</strong>, <strong>HR_OFFERS</strong>, and <strong>HR_PROVISIONING</strong> automatically.
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+              <motion.button
+                layout
+                onClick={(e) => { e.stopPropagation(); setShowAvailablePopup(true); }}
+                style={{
+                  background: 'transparent',
+                  color: C.green,
+                  border: `1.5px solid ${C.green}`,
+                  padding: '10px 20px',
+                  borderRadius: '6px',
+                  fontWeight: 700,
+                  fontSize: '12.5px',
+                  cursor: 'pointer',
+                  width: '100%',
+                  marginTop: 'auto',
+                  transition: 'all 0.2s'
+                }}
                 onMouseOver={e => { e.currentTarget.style.background = `${C.green}10`; }}
                 onMouseOut={e => { e.currentTarget.style.background = 'transparent'; }}
               >
-                Connect Database
-              </button>
+                {hoveredSide === 'csv' ? 'Connect' : 'Connect Database'}
+              </motion.button>
             </motion.div>
 
             {/* Card 2: Upload Pre-built CSV */}
             <motion.div
+              layout
               whileHover={{ y: -4, boxShadow: '0 12px 30px rgba(0,0,0,0.08)' }}
               style={{
+                flex: hoveredSide === 'csv' ? 1.7 : (hoveredSide === 'build' ? 0.6 : 1),
                 background: 'rgba(255,255,255,0.7)',
                 backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255, 255, 255, 0.4)',
+                border: '2px solid rgba(255, 255, 255, 0.4)',
                 borderRadius: '12px',
-                padding: '2.25rem 2rem',
+                padding: '28px 24px',
                 display: 'flex',
                 flexDirection: 'column',
-                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 14,
                 textAlign: 'center',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                overflow: 'hidden'
               }}
               onClick={() => setShowAvailablePopup(true)}
+              onMouseEnter={() => setHoveredSide('csv')}
+              onMouseLeave={() => setHoveredSide(null)}
+              animate={{ borderColor: hoveredSide === 'csv' ? C.green : 'rgba(255, 255, 255, 0.4)' }}
             >
-              <div>
-                <div style={{
-                  width: '56px',
-                  height: '56px',
-                  background: `${C.green}10`,
-                  borderRadius: '10px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto 1.5rem',
-                  fontSize: '24px',
-                  border: `1.5px solid ${C.green}30`
-                }}>
-                  📁
-                </div>
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#1B2A4A', margin: '0 0 0.75rem' }}>
+              <motion.div layout style={{
+                width: '56px',
+                height: '56px',
+                background: `${C.green}10`,
+                borderRadius: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '24px',
+                border: `1.5px solid ${C.green}30`,
+                flexShrink: 0
+              }}>
+                📁
+              </motion.div>
+              <motion.div layout style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <motion.div layout style={{ fontSize: '1.15rem', fontWeight: 700, color: '#1B2A4A', marginBottom: '0.75rem', whiteSpace: hoveredSide === 'build' ? 'nowrap' : 'normal' }}>
                   Upload Pre-built CSV
-                </h3>
-                <p style={{ fontSize: '12.5px', color: '#605E5C', lineHeight: '1.5', margin: '0 0 2rem' }}>
-                  Import a local CSV file with event logs. Maps columns for Candidate ID, Activity Name, Timestamp, and Operator resources.
-                </p>
-              </div>
-              <button style={{
-                background: 'transparent',
-                color: C.green,
-                border: `1.5px solid ${C.green}`,
-                padding: '10px 20px',
-                borderRadius: '6px',
-                fontWeight: 700,
-                fontSize: '12.5px',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
+                </motion.div>
+                <AnimatePresence>
+                  {hoveredSide !== 'build' && (
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      style={{ fontSize: '12.5px', color: '#605E5C', lineHeight: '1.5', margin: 0 }}
+                    >
+                      Import a local CSV file with event logs. Maps columns for Candidate ID, Activity Name, Timestamp, and Operator resources.
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+              <motion.button
+                layout
+                onClick={(e) => { e.stopPropagation(); setShowAvailablePopup(true); }}
+                style={{
+                  background: 'transparent',
+                  color: C.green,
+                  border: `1.5px solid ${C.green}`,
+                  padding: '10px 20px',
+                  borderRadius: '6px',
+                  fontWeight: 700,
+                  fontSize: '12.5px',
+                  cursor: 'pointer',
+                  width: '100%',
+                  marginTop: 'auto',
+                  transition: 'all 0.2s'
+                }}
                 onMouseOver={e => { e.currentTarget.style.background = `${C.green}10`; }}
                 onMouseOut={e => { e.currentTarget.style.background = 'transparent'; }}
               >
-                Upload CSV File
-              </button>
+                {hoveredSide === 'build' ? 'Upload' : 'Upload CSV File'}
+              </motion.button>
             </motion.div>
           </div>
         </div>
