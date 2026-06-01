@@ -152,6 +152,10 @@ REQUIRED_COLS = {
         "BNFPO",    # PR item         — part of UniqueID_PR
         "LOEKZ",    # Deletion flag (EKPO) → PO Reversal Date
         "AEDAT",    # Item change date (EKPO)
+        "MENGE",    # Quantity
+        "NETPR",    # Net Price
+        "NETWR",    # Net Value
+        "BRTWR",    # Gross Value
     },
     "EBAN": {
         "BANFN",    # PR number — join key
@@ -173,6 +177,7 @@ REQUIRED_COLS = {
         "GJAHR",    # Fiscal year
         "MENGE",    # Quantity
         "DMBTR",    # Amount in local currency
+        "WRBTR",    # Amount in document currency
     },
     "LFA1": {
         "LIFNR",    # Vendor ID — join key
@@ -186,10 +191,15 @@ def _log(msg: str):
 
 
 def _read_csv(content: bytes, filename: str) -> pd.DataFrame:
+    fn = filename.lower()
+    if fn.endswith(".xlsx") or fn.endswith(".xls"):
+        df = pd.read_excel(io.BytesIO(content))
+        df = df.dropna(how="all")
+        return df
     for enc in ("utf-8", "latin-1", "windows-1252"):
         try:
             return pd.read_csv(io.BytesIO(content), encoding=enc, low_memory=False)
-        except (UnicodeDecodeError, pd.errors.ParserError):
+        except (UnicodeDecodeError, pd.errors.ParserError, Exception):
             continue
     raise ValueError(f"Cannot decode {filename}")
 
@@ -231,9 +241,9 @@ async def upload_raw_table(
     # ── 2. Store (Overwrite if exists) ───────────────────────────────────────
     # We no longer block uploads if the table already exists to allow updates.
 
-    # ── 3. Parse CSV ─────────────────────────────────────────────────────────
-    if not file.filename.lower().endswith(".csv"):
-        raise HTTPException(400, "Only CSV files are supported.")
+    fn = file.filename.lower()
+    if not (fn.endswith(".csv") or fn.endswith(".xlsx") or fn.endswith(".xls")):
+        raise HTTPException(400, "Only CSV and Excel files are supported.")
     raw = await file.read()
     try:
         df = _read_csv(raw, file.filename)
@@ -376,8 +386,9 @@ def build_event_log(username: str = Query("Unknown")):
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
 def _str(series: pd.Series) -> pd.Series:
-    """Cast to string and strip whitespace (preserves NaN as 'nan' — handled by callers)."""
-    return series.astype(str).str.strip()
+    """Cast to string, strip whitespace, and clean float representation (e.g. '123.0' -> '123')."""
+    s = series.astype(str).str.strip()
+    return s.str.replace(r'\.0$', '', regex=True)
 
 
 def _safe_join_key(s1: pd.Series, s2: pd.Series,
@@ -503,6 +514,10 @@ def _run_pipeline(tables: dict[str, pd.DataFrame], username: str) -> pd.DataFram
         "CREATIONDATE",     # EKPO
         "CREATIONTIME",     # EKPO
         "WERKS",            # EKPO (plant)
+        "MENGE",            # EKPO 
+        "NETPR",            # EKPO
+        "NETWR",            # EKPO
+        "BRTWR",            # EKPO    
     ]
     po = _keep(po, col14)
     _log(f"#14 Column Filter: kept {len(po.columns)} cols → {list(po.columns)}")
@@ -530,8 +545,14 @@ def _run_pipeline(tables: dict[str, pd.DataFrame], username: str) -> pd.DataFram
     _log(f"#17 PO Reversal Date: {po['PO Reversal Date'].notna().sum()} non-null")
 
     # ── Node #35: Column Renamer ───────────────────────────────────────────────
-    # AEDAT → "PO Creation",  BEDAT → "PO Date"
-    po = po.rename(columns={"AEDAT": "PO Creation", "BEDAT": "PO Date"})
+    # AEDAT → "PO Creation",  BEDAT → "PO Date", MENGE → "PO Qty", NETPR → "Netpr", NETWR → "Netwr"
+    po = po.rename(columns={
+        "AEDAT": "PO Creation",
+        "BEDAT": "PO Date",
+        "MENGE": "PO Qty",
+        "NETPR": "Netpr",
+        "NETWR": "Netwr"
+    })
     _log(f"#35 PO branch done: {len(po)} rows, cols: {list(po.columns)}")
 
     # ══════════════════════════════════════════════════════════════════════════
@@ -555,6 +576,9 @@ def _run_pipeline(tables: dict[str, pd.DataFrame], username: str) -> pd.DataFram
             "FRGDT",            # PR release date → renamed "PR Release Date"
             "CREATIONDATE",     # will get suffix "(EBAN)"
             "CREATIONTIME",     # will get suffix "(EBAN)"
+            "MENGE",            # PR quantity
+            "PREIS",            # PR price
+            "PEINH",            # PR price unit
         ]
         pr = _keep(eban, col12)
         _log(f"#12 Column Filter EBAN: {len(pr)} rows, {len(pr.columns)} cols")
@@ -616,11 +640,18 @@ def _run_pipeline(tables: dict[str, pd.DataFrame], username: str) -> pd.DataFram
         # ── Node #79: Column Filter — 12 cols ─────────────────────────────────────
         col79 = [
             "VGABE", "GJAHR", "BELNR", "BUDAT",
-            "MENGE", "BPMNG", "DMBTR", "SHKZG",
+            "MENGE", "BPMNG", "DMBTR","WRBTR", "SHKZG",
             "XBLNR", "WERKS", "ERNAM", "UniqueID_PO",
         ]
         gr = _keep(gr, col79)
         _log(f"#79 Column Filter GR: {len(gr.columns)} cols")
+
+        gr = gr.rename(columns={
+            "MENGE": "GR Quantity",
+            "BPMNG": "GR Cumulative Qty",
+            "DMBTR": "GR Local Amount",
+            "WRBTR": "GR Doc Amount",
+        })
 
         # ── Node #80: Column Expressions (legacy) — 4 new cols ────────────────────
         s_mask = _str(gr["SHKZG"]) == "S"
@@ -668,6 +699,12 @@ def _run_pipeline(tables: dict[str, pd.DataFrame], username: str) -> pd.DataFram
         # ── Node #82: Column Filter — same 12 cols as #79 ─────────────────────────
         inv = _keep(inv, col79)
         _log(f"#82 Column Filter Invoice: {len(inv.columns)} cols")
+        inv = inv.rename(columns={
+            "MENGE": "IR Quantity",
+            "BPMNG": "Quantity in purchase order price unit",
+            "DMBTR": "IR Local Amount",
+            "WRBTR": "IR Doc Amount",
+        })
 
         # ── Node #83: Column Expressions (legacy) — 4 new cols ────────────────────
         s_inv = _str(inv["SHKZG"]) == "S"
@@ -872,30 +909,55 @@ def _collapse_ekbe_branch(
     The output col names are the final names expected by the downstream joiners
     (#81 and #84) as declared in their rightColumnSelectionConfigV2.
     """
+    all_sum_cols = [
+        "GR Quantity", "GR Cumulative Qty", "GR Local Amount", "GR Doc Amount",
+        "IR Quantity", "Quantity in purchase order price unit", "IR Local Amount", "IR Doc Amount"
+    ]
     if df.empty:
         return pd.DataFrame(columns=[
             "UniqueID_PO", out_posting, out_reversal,
             out_posting_user, out_reversal_user,
-        ])
+        ] + [c for c in all_sum_cols if c in df.columns])
 
     # Convert date cols to datetime for proper min/max aggregation
     for col in [posting_col, reversal_col]:
         if col in df.columns:
             df[col] = pd.to_datetime(df[col], errors="coerce")
 
-    result = (
-        df.groupby("UniqueID_PO", sort=False)
-        .agg(
-            **{out_posting:       (posting_col,       "min")},
-            **{out_reversal:      (reversal_col,      "max")},
-            **{out_posting_user:  (posting_user_col,  "first")},
-            **{out_reversal_user: (reversal_user_col, "first")},
-        )
-        .reset_index()
-    )
+    # Define primary aggregations
+    primary_agg = {}
+    if posting_col in df.columns:
+        primary_agg[out_posting] = (posting_col, "min")
+    if reversal_col in df.columns:
+        primary_agg[out_reversal] = (reversal_col, "max")
+    if posting_user_col in df.columns:
+        primary_agg[out_posting_user] = (posting_user_col, "first")
+    if reversal_user_col in df.columns:
+        primary_agg[out_reversal_user] = (reversal_user_col, "first")
+
+    res_primary = df.groupby("UniqueID_PO", sort=False).agg(**primary_agg)
+
+    # Aggregate other columns in the dataframe
+    agg_funcs = {}
+    for col in df.columns:
+        if col in ["UniqueID_PO", posting_col, reversal_col, posting_user_col, reversal_user_col,
+                   out_posting, out_reversal, out_posting_user, out_reversal_user]:
+            continue
+        if col in all_sum_cols:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+            agg_funcs[col] = "sum"
+        else:
+            agg_funcs[col] = "first"
+
+    if agg_funcs:
+        res_other = df.groupby("UniqueID_PO", sort=False).agg(agg_funcs)
+        result = res_primary.join(res_other).reset_index()
+    else:
+        result = res_primary.reset_index()
 
     # Ensure date cols stay as datetime (NaT for missing)
     for c in [out_posting, out_reversal]:
-        result[c] = pd.to_datetime(result[c], errors="coerce")
+        if c in result.columns:
+            result[c] = pd.to_datetime(result[c], errors="coerce")
 
     return result
