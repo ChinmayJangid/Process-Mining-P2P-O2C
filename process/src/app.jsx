@@ -603,7 +603,7 @@ const MODULES = [
   },
   {
     id: 'fin',
-    title: 'Finance Budget',
+    title: ' Budget-to-Forecast',
     desc: 'Analyse departmental requests, committee approvals, and ERP allocations.',
     bg: '#FDF0F1',
     color: '#7A0016',
@@ -651,12 +651,13 @@ const ModuleSelector = ({ currentUser, onSelect, onSignOut }) => (
           />
           <div>
             <div style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>Process Mining</div>
-            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>AJALabs Select a module</div>
+            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>AJALabs
+            </div>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>
-            Signed in as <strong style={{ color: '#fff' }}>{currentUser}</strong>
+            User: <strong style={{ color: '#fff' }}>{currentUser}</strong>
           </span>
           <button
             onClick={onSignOut}
@@ -689,22 +690,45 @@ const ModuleSelector = ({ currentUser, onSelect, onSignOut }) => (
         {/* Core Process Section */}
         <div style={{
           width: '100%',
-          maxWidth: 1200,
-          textAlign: 'left',
-          marginBottom: '1rem',
-          fontSize: '1.2rem',
-          fontWeight: 700,
-          color: '#fff',
-          textTransform: 'uppercase',
-          letterSpacing: '0.8px',
-          borderBottom: '1px solid rgba(255,255,255,0.15)',
-          paddingBottom: '8px',
+          maxWidth: 900,
           display: 'flex',
           alignItems: 'center',
-          gap: '8px'
+          gap: '16px',
+          margin: '2rem 0 1.5rem',
         }}>
-          <span>Core Process</span>
+          <div style={{
+            flex: 1,
+            height: '1px',
+            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15))'
+          }} />
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            color: '#fff',
+            fontSize: '1.1rem',
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '1px',
+            background: 'rgba(255, 255, 255, 0.05)',
+            padding: '6px 16px',
+            borderRadius: '20px',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
+            backdropFilter: 'blur(5px)',
+          }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ filter: 'drop-shadow(0 0 4px rgba(96, 165, 250, 0.4))' }}>
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
+            <span>Core Process</span>
+          </div>
+          <div style={{
+            flex: 1,
+            height: '1px',
+            background: 'linear-gradient(90deg, rgba(255,255,255,0.15), transparent)'
+          }} />
         </div>
+
 
         {/* Row 1: P2P & O2C */}
         <motion.div
@@ -772,44 +796,47 @@ const ModuleSelector = ({ currentUser, onSelect, onSignOut }) => (
           ))}
         </motion.div>
 
-        {/* Modern Premium Separator */}
-        <div style={{
-          width: '100%',
-          maxWidth: 1200,
-          margin: '3rem 0 2rem',
-          position: 'relative',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '1.5px'
-        }}>
-          <div style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            height: '100%',
-            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15) 20%, rgba(255,255,255,0.15) 80%, transparent)'
-          }} />
-        </div>
-
         {/* Sub Process Section */}
         <div style={{
           width: '100%',
-          maxWidth: 1200,
-          textAlign: 'left',
-          marginBottom: '1rem',
-          fontSize: '1.2rem',
-          fontWeight: 700,
-          color: '#fff',
-          textTransform: 'uppercase',
-          letterSpacing: '0.8px',
-          borderBottom: '1px solid rgba(255,255,255,0.15)',
-          paddingBottom: '8px',
+          maxWidth: 900,
           display: 'flex',
           alignItems: 'center',
-          gap: '8px'
+          gap: '16px',
+          margin: '3rem 0 1.5rem',
         }}>
-          <span>🔧 Sub Process</span>
+          <div style={{
+            flex: 1,
+            height: '1px',
+            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.15))'
+          }} />
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            color: '#fff',
+            fontSize: '1.1rem',
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '1px',
+            background: 'rgba(255, 255, 255, 0.05)',
+            padding: '6px 16px',
+            borderRadius: '20px',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
+            backdropFilter: 'blur(5px)',
+          }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fb923c" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ filter: 'drop-shadow(0 0 4px rgba(251, 146, 60, 0.4))' }}>
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
+            <span>Supporting Processes</span>
+          </div>
+          <div style={{
+            flex: 1,
+            height: '1px',
+            background: 'linear-gradient(90deg, rgba(255,255,255,0.15), transparent)'
+          }} />
         </div>
 
         <motion.div
@@ -900,6 +927,41 @@ export default function App() {
   const handleSignOut = () => { setCurrentUser(null); setActiveModule(null); };
   const handleSelect = (mod) => setActiveModule(mod);
   const handleBackHome = () => setActiveModule(null);
+
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const current = window.history.state;
+    if (current && current.activeModule !== undefined) {
+      setActiveModule(current.activeModule);
+    } else {
+      window.history.replaceState({ activeModule: null }, '');
+    }
+
+    const handlePopState = (event) => {
+      if (event.state && event.state.activeModule !== undefined) {
+        setActiveModule(event.state.activeModule);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const current = window.history.state;
+    if (!current || current.activeModule !== activeModule) {
+      if (activeModule === 'p2p' || activeModule === 'o2c' || activeModule === 'p2i') {
+        window.history.pushState({ activeModule, dataLoaded: false, uploadStep: 'info', introStep: 'overview' }, '');
+      } else if (activeModule) {
+        window.history.pushState({ activeModule, step: 'info' }, '');
+      } else {
+        window.history.pushState({ activeModule: null }, '');
+      }
+    }
+  }, [activeModule, currentUser]);
 
   return (
     <>
