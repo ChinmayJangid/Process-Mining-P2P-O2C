@@ -203,16 +203,22 @@ def _log(msg: str):
 
 
 def _read_csv(content: bytes, filename: str) -> pd.DataFrame:
+    fn = filename.lower()
+    if fn.endswith(".xlsx") or fn.endswith(".xls"):
+        df = pd.read_excel(io.BytesIO(content))
+        df = df.dropna(how="all")
+        return df
     for enc in ("utf-8", "latin-1", "windows-1252"):
         try:
             return pd.read_csv(io.BytesIO(content), encoding=enc, low_memory=False)
-        except (UnicodeDecodeError, pd.errors.ParserError):
+        except (UnicodeDecodeError, pd.errors.ParserError, Exception):
             continue
     raise ValueError(f"Cannot decode {filename}")
 
 
 def _str(series: pd.Series) -> pd.Series:
-    return series.astype(str).str.strip()
+    s = series.astype(str).str.strip()
+    return s.str.replace(r'\.0$', '', regex=True)
 
 
 def _safe_join_key(s1: pd.Series, s2: pd.Series,
@@ -279,9 +285,9 @@ async def upload_raw_table(
     if table_name not in EXPECTED_TABLES:
         raise HTTPException(400, f"Unknown table '{table_name}'. Expected: {sorted(EXPECTED_TABLES)}")
 
-    if not file.filename.lower().endswith(".csv"):
-        raise HTTPException(400, "Only CSV files are supported.")
-
+    fn = file.filename.lower()
+    if not (fn.endswith(".csv") or fn.endswith(".xlsx") or fn.endswith(".xls")):
+        raise HTTPException(400, "Only CSV and Excel files are supported.")
     raw = await file.read()
     try:
         df = _read_csv(raw, file.filename)
