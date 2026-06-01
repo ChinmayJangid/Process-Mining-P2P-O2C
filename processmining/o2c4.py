@@ -3,16 +3,33 @@ import os
 import json
 import pandas as pd
 import numpy as np
-from fastapi import APIRouter, Query, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Query, HTTPException, UploadFile, File, Form, Request
+from fastapi.routing import APIRoute
 from pydantic import BaseModel
 from typing import Optional
 import warnings
 import re
 from datetime import datetime
+import contextvars
 
 warnings.filterwarnings("ignore")
 
-router = APIRouter(prefix="/o2c", tags=["Order-to-Cash"])
+current_query_params = contextvars.ContextVar("current_query_params", default={})
+
+class FilterInterceptRoute(APIRoute):
+    def get_route_handler(self):
+        original_route_handler = super().get_route_handler()
+        async def custom_route_handler(request: Request):
+            params = dict(request.query_params)
+            token = current_query_params.set(params)
+            try:
+                response = await original_route_handler(request)
+                return response
+            finally:
+                current_query_params.reset(token)
+        return custom_route_handler
+
+router = APIRouter(prefix="/o2c", tags=["Order-to-Cash"], route_class=FilterInterceptRoute)
 
 # ─── Server-side CSV Output Directory ────────────────────────────────────────
 O2C_OUTPUT_DIR = os.path.join("o2c_user_data", "o2c_outputs")
@@ -393,10 +410,73 @@ def o2c_root(username: str = Query("Unknown")):
     return {"status": "O2C Sub-module active", "rows": len(df), "data_loaded": not df.empty}
 
 
+def get_activity_combinations(df):
+    if df.empty:
+        return []
+    cols_to_melt = [c for c in ACTIVITY_COLUMNS if c in df.columns]
+    melted = df.melt(id_vars=[COL_CASE], value_vars=cols_to_melt, var_name="Activity", value_name="Activitytime")
+    melted = melted.dropna(subset=["Activitytime"])
+
+    act_order = {col: i for i, col in enumerate(ACTIVITY_COLUMNS)}
+    melted["Act_Idx"] = melted["Activity"].map(act_order).fillna(99)
+    melted = melted.sort_values(by=[COL_CASE,"Activitytime","Act_Idx"])
+
+    melted["Next_Activity"] = melted.groupby(COL_CASE)["Activity"].shift(-1)
+
+    transitions = melted.dropna(subset=["Next_Activity"]).copy()
+    edge_freqs = transitions.groupby(["Activity","Next_Activity"])[COL_CASE].nunique().reset_index(name="frequency")
+
+    combinations = []
+    for _, row in edge_freqs.iterrows():
+        combinations.append(f"{row['Activity']} -> {row['Next_Activity']}")
+    return sorted(combinations)
+
+
 # ─── Filtering helper ─────────────────────────────────────────────────────────
 def filter_raw(df, customer=None, vkorg=None, auart=None, matkl=None, werks=None,
                case_id=None, month=None, year=None, quarter=None, ernam=None,
-               status=None, lead_time=None):
+               status=None, lead_time=None, events=None, start_date=None, end_date=None):
+    
+    query_params = current_query_params.get() or {}
+    if not events:
+        events = query_params.get("events")
+    if not start_date:
+        start_date = query_params.get("start_date")
+    if not end_date:
+        end_date = query_params.get("end_date")
+
+    if events and events != "ALL":
+        try:
+            parts = events.split(" -> ")
+            if len(parts) == 2:
+                act_a, act_b = parts[0], parts[1]
+                cols_to_melt = [c for c in ACTIVITY_COLUMNS if c in df.columns]
+                melted = df.melt(id_vars=[COL_CASE], value_vars=cols_to_melt, var_name="Activity", value_name="Activitytime")
+                melted = melted.dropna(subset=["Activitytime"])
+                
+                act_order = {col: i for i, col in enumerate(ACTIVITY_COLUMNS)}
+                melted["Act_Idx"] = melted["Activity"].map(act_order).fillna(99)
+                melted = melted.sort_values(by=[COL_CASE,"Activitytime","Act_Idx"])
+                
+                melted["Next_Activity"] = melted.groupby(COL_CASE)["Activity"].shift(-1)
+                
+                matching_cases = melted[(melted["Activity"] == act_a) & (melted["Next_Activity"] == act_b)][COL_CASE].unique()
+                df = df[df[COL_CASE].isin(matching_cases)]
+        except Exception:
+            pass
+
+    if start_date or end_date:
+        try:
+            time_cols = [c for c in ACTIVITY_COLUMNS if c in df.columns]
+            if time_cols:
+                case_min = df[time_cols].min(axis=1)
+                if start_date:
+                    df = df[case_min >= pd.to_datetime(start_date)]
+                if end_date:
+                    df = df[case_min <= pd.to_datetime(end_date)]
+        except Exception:
+            pass
+
     if customer and customer != "ALL":
         # Prefer NAME1, fall back to KUNNR if NAME1 is missing or mostly null
         if COL_CUSTOMER in df.columns and df[COL_CUSTOMER].notna().any():
@@ -523,6 +603,25 @@ def get_filters(
         "sparts":    vals(COL_SPART),
         "years":     sorted([str(x) for x in d["Year"].dropna().unique()]) if "Year" in d.columns else [],
         "statuses":  ["ALL", "Happy Path", "Deviations"],
+        "events":    ["ALL"] + get_activity_combinations(df_raw),
+    }
+
+
+@router.get("/date_range")
+def get_date_range(username: str = Query("Unknown")):
+    """Return the min and max activity dates present in the dataset."""
+    df_raw = get_user_df(username)
+    if df_raw.empty:
+        return {"min_date": None, "max_date": None}
+    time_cols = [c for c in ACTIVITY_COLUMNS if c in df_raw.columns]
+    if not time_cols:
+        return {"min_date": None, "max_date": None}
+    all_dates = df_raw[time_cols].apply(pd.to_datetime, errors="coerce")
+    min_date = all_dates.min().min()
+    max_date = all_dates.max().max()
+    return {
+        "min_date": min_date.strftime("%Y-%m-%d") if pd.notna(min_date) else None,
+        "max_date": max_date.strftime("%Y-%m-%d") if pd.notna(max_date) else None,
     }
 
 
@@ -618,9 +717,24 @@ def get_cases(
         return []
     d["start_date"] = d[time_cols].min(axis=1).dt.strftime("%Y-%m-%d")
     d["end_date"]   = d[time_cols].max(axis=1).dt.strftime("%Y-%m-%d")
-    res = (d[[COL_CASE, "start_date", "end_date"]]
-.dropna(subset=[COL_CASE])
-           .rename(columns={COL_CASE: "case_id"}))
+    
+    cols_to_keep = [COL_CASE, "start_date", "end_date"]
+    extra_cols = [
+        "Net Value of the Order Item",
+        "Actual quantity delivered",
+        "Actual billed quantity",
+        "Net value of the billing item",
+        "Amount in Local Currency"
+    ]
+    for col in extra_cols:
+        if col in d.columns:
+            cols_to_keep.append(col)
+        else:
+            d[col] = None
+            cols_to_keep.append(col)
+            
+    res = d[cols_to_keep].dropna(subset=[COL_CASE]).rename(columns={COL_CASE: "case_id"})
+    res = res.astype(object).where(pd.notna(res), None)
     return res.sort_values("start_date", ascending=False).to_dict("records")
 
 
@@ -965,3 +1079,100 @@ def get_process_map(
     ]
 
     return {"nodes": nodes_out, "edges": edges_out}
+
+@router.get("/dashboard-batch")
+def get_dashboard_batch(
+    username: str = Query("Unknown"),
+    customer: Optional[str] = Query(None), vkorg: Optional[str] = Query(None),
+    auart: Optional[str] = Query(None),    matkl: Optional[str] = Query(None),
+    werks: Optional[str] = Query(None),    case_id: Optional[str] = Query(None),
+    month: Optional[str] = Query(None),    year: Optional[str] = Query(None),
+    quarter: Optional[str] = Query(None),  ernam: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),   lead_time: Optional[str] = Query(None),
+):
+    df_raw = get_user_df(username)
+    if df_raw.empty:
+        return {
+            "kpis": {
+                "total_cases": 0, "so_approved": 0, "deliveries_created": 0,
+                "deliveries_posted": 0, "goods_issues": 0, "invoices_created": 0,
+                "invoices_posted": 0, "invoices_cleared": 0, "unique_customers": 0,
+                "avg_cycle_days": 0, "so_reversals": 0, "so_rev_after_gi": 0,
+                "gi_reversals": 0, "invoice_reversals": 0, "credit_memos": 0,
+                "debit_memos": 0, "inv_no_del": 0, "inv_no_gi": 0,
+            },
+            "cases": [],
+            "process_map": {"nodes": [], "edges": []},
+            "activity": [],
+            "monthly": [],
+            "customer": [],
+            "auart": [],
+            "matkl": [],
+            "ernam": [],
+            "vkorg": [],
+            "leadtime": [],
+            "bottleneck": [],
+            "sod": [],
+            "inv_rev_ernam": [],
+            "inv_rev_timeline": [],
+            "customer_lead_time": [],
+            "seq_violation_ernam": [],
+            "happy_path": [],
+            "deviations_summary": [],
+        }
+
+    # Filter base once
+    d = filter_raw(df_raw.copy(),
+                   **cfp(customer, vkorg, auart, matkl, werks, case_id,
+                         month, year, quarter, ernam, status, lead_time))
+
+    temp_username = f"{username}__temp_batch"
+    USER_DFS[temp_username] = d
+
+    try:
+        kpis = get_kpis(username=temp_username, customer=customer, vkorg=vkorg, auart=auart, matkl=matkl, werks=werks, case_id=case_id, month=month, year=year, quarter=quarter, ernam=ernam, status=status, lead_time=lead_time)
+        cases = get_cases(username=temp_username, customer=customer, vkorg=vkorg, auart=auart, matkl=matkl, werks=werks, case_id=case_id, month=month, year=year, quarter=quarter, ernam=ernam, status=status, lead_time=lead_time)
+        process_map = get_process_map(username=temp_username, customer=customer, vkorg=vkorg, auart=auart, matkl=matkl, werks=werks, case_id=case_id, month=month, year=year, quarter=quarter, ernam=ernam, status=status, lead_time=lead_time)
+        
+        # Get charts
+        activity = get_chart("activity", username=temp_username, customer=customer, vkorg=vkorg, auart=auart, matkl=matkl, werks=werks, case_id=case_id, month=month, year=year, quarter=quarter, ernam=ernam, status=status, lead_time=lead_time)
+        monthly = get_chart("monthly", username=temp_username, customer=customer, vkorg=vkorg, auart=auart, matkl=matkl, werks=werks, case_id=case_id, month=month, year=year, quarter=quarter, ernam=ernam, status=status, lead_time=lead_time)
+        customer_chart = get_chart("customer", username=temp_username, customer=customer, vkorg=vkorg, auart=auart, matkl=matkl, werks=werks, case_id=case_id, month=month, year=year, quarter=quarter, ernam=ernam, status=status, lead_time=lead_time)
+        auart_chart = get_chart("auart", username=temp_username, customer=customer, vkorg=vkorg, auart=auart, matkl=matkl, werks=werks, case_id=case_id, month=month, year=year, quarter=quarter, ernam=ernam, status=status, lead_time=lead_time)
+        matkl_chart = get_chart("matkl", username=temp_username, customer=customer, vkorg=vkorg, auart=auart, matkl=matkl, werks=werks, case_id=case_id, month=month, year=year, quarter=quarter, ernam=ernam, status=status, lead_time=lead_time)
+        ernam_chart = get_chart("ernam", username=temp_username, customer=customer, vkorg=vkorg, auart=auart, matkl=matkl, werks=werks, case_id=case_id, month=month, year=year, quarter=quarter, ernam=ernam, status=status, lead_time=lead_time)
+        vkorg_chart = get_chart("vkorg", username=temp_username, customer=customer, vkorg=vkorg, auart=auart, matkl=matkl, werks=werks, case_id=case_id, month=month, year=year, quarter=quarter, ernam=ernam, status=status, lead_time=lead_time)
+        leadtime = get_chart("leadtime", username=temp_username, customer=customer, vkorg=vkorg, auart=auart, matkl=matkl, werks=werks, case_id=case_id, month=month, year=year, quarter=quarter, ernam=ernam, status=status, lead_time=lead_time)
+        bottleneck = get_chart("bottleneck", username=temp_username, customer=customer, vkorg=vkorg, auart=auart, matkl=matkl, werks=werks, case_id=case_id, month=month, year=year, quarter=quarter, ernam=ernam, status=status, lead_time=lead_time)
+        sod = get_chart("sod", username=temp_username, customer=customer, vkorg=vkorg, auart=auart, matkl=matkl, werks=werks, case_id=case_id, month=month, year=year, quarter=quarter, ernam=ernam, status=status, lead_time=lead_time)
+        inv_rev_ernam = get_chart("inv_rev_ernam", username=temp_username, customer=customer, vkorg=vkorg, auart=auart, matkl=matkl, werks=werks, case_id=case_id, month=month, year=year, quarter=quarter, ernam=ernam, status=status, lead_time=lead_time)
+        inv_rev_timeline = get_chart("inv_rev_timeline", username=temp_username, customer=customer, vkorg=vkorg, auart=auart, matkl=matkl, werks=werks, case_id=case_id, month=month, year=year, quarter=quarter, ernam=ernam, status=status, lead_time=lead_time)
+        customer_lead_time = get_chart("customer_lead_time", username=temp_username, customer=customer, vkorg=vkorg, auart=auart, matkl=matkl, werks=werks, case_id=case_id, month=month, year=year, quarter=quarter, ernam=ernam, status=status, lead_time=lead_time)
+        seq_violation_ernam = get_chart("seq_violation_ernam", username=temp_username, customer=customer, vkorg=vkorg, auart=auart, matkl=matkl, werks=werks, case_id=case_id, month=month, year=year, quarter=quarter, ernam=ernam, status=status, lead_time=lead_time)
+        happy_path = get_chart("happy_path", username=temp_username, customer=customer, vkorg=vkorg, auart=auart, matkl=matkl, werks=werks, case_id=case_id, month=month, year=year, quarter=quarter, ernam=ernam, status=status, lead_time=lead_time)
+        deviations_summary = get_chart("deviations_summary", username=temp_username, customer=customer, vkorg=vkorg, auart=auart, matkl=matkl, werks=werks, case_id=case_id, month=month, year=year, quarter=quarter, ernam=ernam, status=status, lead_time=lead_time)
+
+        return {
+            "kpis": kpis,
+            "cases": cases,
+            "process_map": process_map,
+            "activity": activity,
+            "monthly": monthly,
+            "customer": customer_chart,
+            "auart": auart_chart,
+            "matkl": matkl_chart,
+            "ernam": ernam_chart,
+            "vkorg": vkorg_chart,
+            "leadtime": leadtime,
+            "bottleneck": bottleneck,
+            "sod": sod,
+            "inv_rev_ernam": inv_rev_ernam,
+            "inv_rev_timeline": inv_rev_timeline,
+            "customer_lead_time": customer_lead_time,
+            "seq_violation_ernam": seq_violation_ernam,
+            "happy_path": happy_path,
+            "deviations_summary": deviations_summary,
+        }
+    finally:
+        if temp_username in USER_DFS:
+            del USER_DFS[temp_username]
