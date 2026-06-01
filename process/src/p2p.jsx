@@ -13,6 +13,7 @@ import {
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, Legend
 } from 'recharts';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
+import html2canvas from 'html2canvas';
 import './App.css';
 
 const API = 'http://localhost:8000';
@@ -239,7 +240,9 @@ const FreqEdge = React.memo(({ id, sourceX, sourceY, targetX, targetY, sourcePos
   const freq = data?.frequency || 0;
   const max = data?.maxFreq || 1;
   const width = 1 + (freq / max) * 4;
-  const arcColor = '#605E5C';
+  const isSkipped = data?.isSkipped;
+  const arcColor = isSkipped ? '#E81123' : '#605E5C';
+  const flowColor = isSkipped ? '#E81123' : '#0078D4';
 
   let edgePath, labelX, labelY;
 
@@ -304,7 +307,7 @@ const FreqEdge = React.memo(({ id, sourceX, sourceY, targetX, targetY, sourcePos
       <path
         d={edgePath}
         fill="none"
-        stroke="#0078D4"
+        stroke={flowColor}
         strokeWidth={Math.max(4, width / 1.5)}
         strokeDasharray="1 20"
         strokeLinecap="round"
@@ -321,7 +324,7 @@ const FreqEdge = React.memo(({ id, sourceX, sourceY, targetX, targetY, sourcePos
           <path
             key={i}
             d="M -8,-6 L 8,0 L -8,6 Z"
-            fill="#0078D4"
+            fill={flowColor}
             style={{
               opacity: 0,
             }}
@@ -488,13 +491,17 @@ const buildFlowMap = (bNodes, bEdges, setRfNodes, setRfEdges, dir) => {
       e.source, e.target, sN.position, tN.position, dir
     );
 
+    const sIdx = HAPPY_IDX[e.source];
+    const tIdx = HAPPY_IDX[e.target];
+    const isSkipped = sIdx !== undefined && tIdx !== undefined && (tIdx !== sIdx + 1);
+
     return {
       id: e.id || `${e.source}--${e.target}`,
       source: e.source, target: e.target,
       sourceHandle: sh, targetHandle: th,
       type: 'freqEdge',
-      markerEnd: { type: MarkerType.ArrowClosed, color: '#605E5C', width: 15, height: 15 },
-      data: { frequency: e.frequency, avg_days: e.avg_days, maxFreq: mxE, curvature, sweepSide, sweepDist },
+      markerEnd: { type: MarkerType.ArrowClosed, color: isSkipped ? '#E81123' : '#605E5C', width: 15, height: 15 },
+      data: { frequency: e.frequency, avg_days: e.avg_days, maxFreq: mxE, curvature, sweepSide, sweepDist, isSkipped },
     };
   }).filter(Boolean);
 
@@ -504,15 +511,15 @@ const buildFlowMap = (bNodes, bEdges, setRfNodes, setRfEdges, dir) => {
 
 /* ─── HELPERS ──────────────────────────────────────────────────── */
 const VALID_KEYS = new Set(['company', 'bsart', 'matkl', 'vendor', 'plant', 'purch_group',
-  'case_id', 'month', 'activity', 'year', 'quarter', 'lifnr', 'lead_time', 'ernam', 'status', 'sod']);
+  'case_id', 'month', 'activity', 'quarter', 'lead_time', 'events', 'ernam', 'status', 'sod', 'start_date', 'end_date']);
 const qs = (params) => {
   const p = Object.entries(params).filter(([k, v]) => VALID_KEYS.has(k) && v && v !== 'ALL');
   return p.length ? '?' + p.map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&') : '';
 }
 const CROSS_TO_PARAM = {
   company: 'company', bsart: 'bsart', matkl: 'matkl', vendor: 'vendor', plant: 'plant',
-  activity: 'activity', month: 'month', year: 'year', quarter: 'quarter',
-  case_id: 'case_id', lifnr: 'lifnr', purch_group: 'purch_group', lead_time: 'lead_time', ernam: 'ernam',
+  activity: 'activity', month: 'month', quarter: 'quarter',
+  case_id: 'case_id', purch_group: 'purch_group', lead_time: 'lead_time', events: 'events', ernam: 'ernam',
   status: 'status', sod: 'sod'
 };
 
@@ -653,7 +660,7 @@ const ConfKpiCard = React.memo(({ label, value, color, sub, tooltip, onClick, hi
 });
 
 /* ─── SEARCHABLE SELECT COMPONENT ─────────────────────────────── */
-const SearchableSelect = ({ label, value, options, onChange, wide }) => {
+const SearchableSelect = ({ label, value, options, onChange, style }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const dropdownRef = useRef(null);
@@ -678,7 +685,7 @@ const SearchableSelect = ({ label, value, options, onChange, wide }) => {
   const displayedOptions = filteredOptions.slice(0, 100);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1, minWidth: '150px', position: 'relative' }} ref={dropdownRef}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1, minWidth: '150px', position: 'relative', ...style }} ref={dropdownRef}>
       <label style={{
         fontSize: 10, fontWeight: 700, color: '#323130',
         textTransform: 'uppercase', letterSpacing: .4
@@ -750,8 +757,8 @@ const SearchableSelect = ({ label, value, options, onChange, wide }) => {
 };
 
 /* ─── STANDARD SELECT ──────────────────────────────────────────── */
-const FilterSelect = ({ label, value, options, onChange, wide }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1, minWidth: '150px' }}>
+const FilterSelect = ({ label, value, options, onChange, style }) => (
+  <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1, minWidth: '150px', ...style }}>
     <label style={{
       fontSize: 10, fontWeight: 700, color: '#323130',
       textTransform: 'uppercase', letterSpacing: .4
@@ -767,6 +774,46 @@ const FilterSelect = ({ label, value, options, onChange, wide }) => (
         <option key={o} value={o}>{o}</option>
       ))}
     </select>
+  </div>
+);
+
+const DateRangeFilter = ({ label, fromValue, toValue, onFromChange, onToChange, minDate, maxDate }) => (
+  <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1.5, minWidth: '220px' }}>
+    <label style={{
+      fontSize: 10, fontWeight: 700, color: '#323130',
+      textTransform: 'uppercase', letterSpacing: .4
+    }}>{label}</label>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <input
+        type="date"
+        value={fromValue || ''}
+        min={minDate || ''}
+        max={maxDate || ''}
+        onChange={e => onFromChange(e.target.value)}
+        style={{
+          fontSize: 11, padding: '4px 6px', borderRadius: 4, flex: 1,
+          border: fromValue ? `1.5px solid ${C.blue700}` : `1px solid ${C.border}`,
+          background: fromValue ? '#EFF6FF' : C.card,
+          color: '#323130', outline: 'none', cursor: 'pointer',
+          fontWeight: fromValue ? 700 : 'normal',
+        }}
+      />
+      <span style={{ fontSize: 11, color: '#605E5C' }}>to</span>
+      <input
+        type="date"
+        value={toValue || ''}
+        min={minDate || ''}
+        max={maxDate || ''}
+        onChange={e => onToChange(e.target.value)}
+        style={{
+          fontSize: 11, padding: '4px 6px', borderRadius: 4, flex: 1,
+          border: toValue ? `1.5px solid ${C.blue700}` : `1px solid ${C.border}`,
+          background: toValue ? '#EFF6FF' : C.card,
+          color: '#323130', outline: 'none', cursor: 'pointer',
+          fontWeight: toValue ? 700 : 'normal',
+        }}
+      />
+    </div>
   </div>
 );
 
@@ -815,7 +862,7 @@ const ChartCard = React.memo(({ title, subtitle, children, highlighted, onClear,
     background: C.card, borderRadius: 8, padding: '12px 14px',
     border: highlighted ? `1.5px solid ${C.selectedBorder}` : `1px solid ${C.border}`,
     boxShadow: '0 2px 8px rgba(0,0,0,.05)', transition: 'all .2s',
-    display: 'flex', flexDirection: 'column', ...style
+    display: 'flex', flexDirection: 'column', minWidth: 0, ...style
   }}>
 
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
@@ -924,6 +971,175 @@ const CaseTable = React.memo(({ data, events, onSelect, selectedId }) => {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+});
+
+const CaseTableEda = React.memo(({ data, events, onSelect, selectedId }) => {
+  const [limit, setLimit] = useState(100);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Reset limit when search query changes
+  useEffect(() => {
+    setLimit(100);
+  }, [searchQuery]);
+
+  // ── 1. Calculate non-blank/filled fields for custom sorting ─────────────────
+  const getFilledScore = React.useCallback((row) => {
+    let score = 0;
+    const targetCols = ["PO Qty", "Netpr", "Netwr", "GR Quantity", "GR Doc Amount", "IR Quantity", "IR Doc Amount"];
+    targetCols.forEach(col => {
+      const v = row[col];
+      if (v != null && v !== '' && v !== 0 && v !== '0') {
+        score += 1;
+      }
+    });
+    return score;
+  }, []);
+
+  // ── 2. Filter & Sort cases: filled first, blank after ────────────────────────
+  const processedData = React.useMemo(() => {
+    let list = [...data];
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(row => String(row.case_id).toLowerCase().includes(q));
+    }
+
+    // Sort logic: higher score (more filled columns) comes first
+    return list.sort((a, b) => {
+      const scoreA = getFilledScore(a);
+      const scoreB = getFilledScore(b);
+      if (scoreA !== scoreB) {
+        return scoreB - scoreA; // descending order of filled columns
+      }
+      // Stable sorting fallback on case_id
+      return String(b.case_id).localeCompare(String(a.case_id));
+    });
+  }, [data, searchQuery, getFilledScore]);
+
+  const visibleData = React.useMemo(() => {
+    return processedData.slice(0, limit);
+  }, [processedData, limit]);
+
+  const handleScroll = (e) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.target;
+    // Load 100 more rows when user scrolls near the bottom (within 100px)
+    if (scrollHeight - scrollTop - clientHeight < 100) {
+      if (limit < processedData.length) {
+        setLimit(prev => prev + 100);
+      }
+    }
+  };
+
+  const formatQty = (v) => (v != null && v !== '') ? Number(v).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 3 }) : '—';
+  const formatAmt = (v) => (v != null && v !== '') ? Number(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—';
+
+  // ── Conditional Return for Selected Case Event Log (placed at the bottom to avoid hook violation) ──
+  if (selectedId !== 'ALL' && selectedId != null) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: '360px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, paddingBottom: 8, borderBottom: `1px solid ${C.border}` }}>
+          <div>
+            <span style={{ fontSize: 11, color: C.slate }}>Event Log for Case: </span>
+            <strong style={{ fontSize: 13, color: '#323130' }}>{selectedId}</strong>
+          </div>
+          <button
+            onClick={() => onSelect('ALL')}
+            style={{ fontSize: 11, background: C.blue700, color: '#fff', border: 'none', padding: '4px 12px', borderRadius: 4, cursor: 'pointer', fontWeight: 600 }}>
+            Back to Case List
+          </button>
+        </div>
+        <div style={{ overflowY: 'auto', flex: 1 }}>
+          {(!events || events.length === 0) ? <Empty /> : (
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
+              <thead style={{ position: 'sticky', top: 0, background: '#F0F2F5', zIndex: 1 }}>
+                <tr>
+                  <th style={{ padding: '8px', textAlign: 'left', borderBottom: `1px solid ${C.border}`, color: C.slate }}>Activity</th>
+                  <th style={{ padding: '8px', textAlign: 'left', borderBottom: `1px solid ${C.border}`, color: C.slate }}>Timestamp</th>
+                  <th style={{ padding: '8px', textAlign: 'left', borderBottom: `1px solid ${C.border}`, color: C.slate }}>User (ERNAM)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {events.map((e, i) => (
+                  <tr key={i} style={{ borderBottom: `1px solid ${C.border}`, background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                    <td style={{ padding: '6px 8px', color: '#323130', fontWeight: 600 }}>{e.Activity}</td>
+                    <td style={{ padding: '6px 8px', color: '#605E5C' }}>{e.Timestamp}</td>
+                    <td style={{ padding: '6px 8px', color: '#605E5C' }}>{e.User}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (!Array.isArray(data) || !data.length) return <Empty />;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {/* Search and stats bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fff', border: `1px solid ${C.border}`, borderRadius: 4, padding: '4px 8px', width: '260px' }}>
+          <span style={{ fontSize: 12, opacity: 0.6 }}>🔍</span>
+          <input
+            type="text"
+            placeholder="Search Case ID..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ border: 'none', outline: 'none', fontSize: 11, width: '100%' }}
+          />
+        </div>
+        <div style={{ fontSize: 11, color: C.slate }}>
+          Showing top <strong>{Math.min(processedData.length, limit)}</strong> of <strong>{processedData.length}</strong> cases (Scroll down to load more)
+        </div>
+      </div>
+
+      {/* Scrollable Container with handleScroll */}
+      <div
+        onScroll={handleScroll}
+        style={{ overflowX: 'auto', maxHeight: '360px', overflowY: 'auto', border: `1px solid ${C.border}`, borderRadius: '6px' }}
+      >
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
+          <thead style={{ position: 'sticky', top: 0, background: '#F0F2F5', zIndex: 2 }}>
+            <tr>
+              <th style={{ padding: '8px', textAlign: 'left', borderBottom: `1px solid ${C.border}`, color: C.slate }}>Case ID</th>
+              <th style={{ padding: '8px', textAlign: 'right', borderBottom: `1px solid ${C.border}`, color: C.slate }}>PO Qty</th>
+              <th style={{ padding: '8px', textAlign: 'right', borderBottom: `1px solid ${C.border}`, color: C.slate }}>Netpr</th>
+              <th style={{ padding: '8px', textAlign: 'right', borderBottom: `1px solid ${C.border}`, color: C.slate }}>Netwr</th>
+              <th style={{ padding: '8px', textAlign: 'right', borderBottom: `1px solid ${C.border}`, color: C.slate }}>GR Qty</th>
+              <th style={{ padding: '8px', textAlign: 'right', borderBottom: `1px solid ${C.border}`, color: C.slate }}>GR Amount</th>
+              <th style={{ padding: '8px', textAlign: 'right', borderBottom: `1px solid ${C.border}`, color: C.slate }}>Invoice Qty</th>
+              <th style={{ padding: '8px', textAlign: 'right', borderBottom: `1px solid ${C.border}`, color: C.slate }}>Invoice Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {visibleData.map((row, i) => (
+              <tr
+                key={i}
+                onClick={() => onSelect(row.case_id)}
+                style={{
+                  borderBottom: `1px solid ${C.border}`,
+                  background: row.case_id === selectedId ? '#EFF6FF' : (i % 2 === 0 ? '#fff' : '#fafafa'),
+                  cursor: 'pointer',
+                  transition: 'background 0.2s',
+                  borderLeft: row.case_id === selectedId ? `4px solid ${C.blue700}` : '4px solid transparent'
+                }}
+              >
+                <td style={{ padding: '6px 8px', color: '#323130', fontWeight: 600, textAlign: 'left' }}>{row.case_id}</td>
+                <td style={{ padding: '6px 8px', color: '#605E5C', textAlign: 'right' }}>{formatQty(row["PO Qty"])}</td>
+                <td style={{ padding: '6px 8px', color: '#605E5C', textAlign: 'right' }}>{formatAmt(row["Netpr"])}</td>
+                <td style={{ padding: '6px 8px', color: '#605E5C', textAlign: 'right' }}>{formatAmt(row["Netwr"])}</td>
+                <td style={{ padding: '6px 8px', color: '#605E5C', textAlign: 'right' }}>{formatQty(row["GR Quantity"])}</td>
+                <td style={{ padding: '6px 8px', color: '#605E5C', textAlign: 'right' }}>{formatAmt(row["GR Doc Amount"])}</td>
+                <td style={{ padding: '6px 8px', color: '#605E5C', textAlign: 'right' }}>{formatQty(row["IR Quantity"])}</td>
+                <td style={{ padding: '6px 8px', color: '#605E5C', textAlign: 'right' }}>{formatAmt(row["IR Doc Amount"])}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 });
@@ -1542,7 +1758,7 @@ const P2P_FAQS = [
   },
   {
     q: 'What is Process Mining, and how does it apply to P2P?',
-    a: 'Process Mining analyzes real event log data from ERP systems (SAP, Oracle) to reconstruct and visualize how the P2P process actually runs — not just how it was designed. In P2P it creates a "digital twin" of procurement activities, revealing:',
+    a: 'Process Mining analyzes real event log data from any ERP systems (SAP, Oracle, D365) to reconstruct and visualize how the P2P process actually runs — not just how it was designed. In P2P it creates a "digital twin" of procurement activities, revealing:',
     bullets: [
       'The true process flow with all variants and deviations',
       'Bottlenecks causing delays in approvals or goods receipt',
@@ -1562,14 +1778,13 @@ const P2P_FAQS = [
     ],
   },
   {
-    q: 'What are the most common pain points Process Mining uncovers in P2P?',
-    a: 'Typical discoveries include:',
+    q: 'What makes ALTeX Hub process mining different?',
+    a: 'The process mining done under ALTeX Hub is different from traditional process mining tools because:',
     bullets: [
-      'High number of process variants ("spaghetti processes")',
-      'Maverick buying — purchases bypassing approved channels',
-      'Long approval or PO cycle times',
-      'Low PO compliance or three-way matching rates',
-      'Missed cash and early-payment discounts',
+      'Runs in parallel to the CompliBear ACM engine',
+      'It uses machine learning to analyze and interpret process data',
+      'CoSaas: Each run is customised to the business, rather than relying on the data or standard happy path guidelines for the processes',
+      'Interconnected to other processes and systems to bring all the touchpoints as a single source of truth.',
     ],
   },
   {
@@ -1582,6 +1797,7 @@ const P2P_FAQS = [
       { bold: 'Three-Way Match Rate:', rest: ' PO vs Goods Receipt vs Invoice alignment' },
       { bold: 'Supplier Lead Time Variability:', rest: ' Consistency of vendor delivery performance' },
       { bold: 'Maverick Spend %:', rest: ' Purchases made outside approved procurement channels' },
+      { bold: 'Spaghetti Processes:', rest: ' High number of process variants across the normal purchasing channels' },
     ],
   },
   {
@@ -1694,8 +1910,7 @@ const KpiWheel = ({ colors, label, height = 302, width = 140 }) => {
   );
 };
 
-const P2PIntroScreen = ({ onGoTableBuild, onGoCsvUpload, currentUser }) => {
-  const [introStep, setIntroStep] = useState('overview'); // 'overview' | 'choose'
+const P2PIntroScreen = ({ onGoTableBuild, onGoCsvUpload, currentUser, introStep, setIntroStep }) => {
   const [hoveredSide, setHoveredSide] = useState(null);
   const [showFaqModal, setShowFaqModal] = useState(false);
 
@@ -1758,9 +1973,10 @@ const P2PIntroScreen = ({ onGoTableBuild, onGoCsvUpload, currentUser }) => {
 
   const shortSteps = [
     { icon: icons.file, text: 'PR' },
-    { icon: icons.check, text: 'Approved' },
-    { icon: icons.cart, text: 'PO' },
-    { icon: icons.truck, text: 'GR' },
+    { icon: icons.check, text: 'PR Release' },
+    { icon: icons.check, text: 'PO Created' },
+    { icon: icons.check, text: 'PO Release' },
+    { icon: icons.check, text: 'GR' },
     { icon: icons.receipt, text: 'Invoice' },
     { icon: icons.creditCard, text: 'Payment' },
   ];
@@ -1941,15 +2157,23 @@ const P2PIntroScreen = ({ onGoTableBuild, onGoCsvUpload, currentUser }) => {
         <div className="process-ribbon-container">
           <div className="process-ribbon-content">
             {/* Render twice for seamless looping */}
-            {[...shortSteps, ...shortSteps, ...shortSteps, ...shortSteps].map((s, i) => (
-              <React.Fragment key={i}>
-                <div className="process-ribbon-item">
-                  {s.icon}
-                  <span style={{ marginLeft: 4 }}>{s.text}</span>
-                </div>
-                {i < shortSteps.length * 4 - 1 && <div className="process-ribbon-arrow">→</div>}
-              </React.Fragment>
-            ))}
+            {[...shortSteps, ...shortSteps, ...shortSteps, ...shortSteps].map((s, i) => {
+              const isFirst = i % shortSteps.length === 0;
+              return (
+                <React.Fragment key={i}>
+                  <div
+                    className="process-ribbon-item"
+                    style={isFirst ? { background: C.headerBg, color: '#fff', borderColor: C.headerBg, boxShadow: `0 4px 12px ${C.headerBg}33` } : {}}
+                  >
+                    <span style={{ display: 'inline-flex', alignItems: 'center', color: isFirst ? '#fff' : 'inherit' }}>
+                      {s.icon}
+                    </span>
+                    <span style={{ marginLeft: 4 }}>{s.text}</span>
+                  </div>
+                  {i < shortSteps.length * 4 - 1 && <div className="process-ribbon-arrow">→</div>}
+                </React.Fragment>
+              );
+            })}
           </div>
         </div>
 
@@ -2023,36 +2247,30 @@ const P2PIntroScreen = ({ onGoTableBuild, onGoCsvUpload, currentUser }) => {
 
   /* ── Choose your path ── */
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '36px 24px 48px', overflowY: 'auto' }}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem', overflowY: 'auto', position: 'relative' }}>
+      {/* Snapshot Button */}
+      <button
+        onClick={() => window.open('/snapshot p2p.pdf', '_blank')}
+        style={{
+          position: 'absolute',
+          top: '24px',
+          right: '24px',
+          background: '#0057B7', color: '#fff', border: 'none',
+          padding: '9px 18px', borderRadius: '8px', fontSize: '12px',
+          fontWeight: 700, cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: '6px',
+          boxShadow: '0 4px 12px rgba(0,87,183,0.3)',
+          transition: 'all 0.2s',
+          zIndex: 10
+        }}
+        onMouseOver={e => { e.currentTarget.style.filter = 'brightness(1.1)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+        onMouseOut={e => { e.currentTarget.style.filter = 'none'; e.currentTarget.style.transform = 'none'; }}
+      >
+        📸 Snapshot
+      </button>
+
       <div style={{ maxWidth: 880, width: '100%', display: 'flex', flexDirection: 'column', gap: 24 }}>
 
-        {/* Back link */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <button
-            onClick={() => setIntroStep('overview')}
-            style={{
-              background: 'none', border: '1px solid #E2E8F0', padding: '6px 14px', borderRadius: 6,
-              fontSize: 12, cursor: 'pointer', color: '#64748b', fontWeight: 600
-            }}
-            onMouseOver={e => e.currentTarget.style.background = '#F8FAFC'}
-            onMouseOut={e => e.currentTarget.style.background = 'none'}>
-            ← Back to Overview
-          </button>
-
-          <button
-            onClick={() => window.open('/snapshot p2p.pdf', '_blank')}
-            style={{
-              background: '#0057B7', color: '#fff', border: 'none',
-              padding: '7px 18px', borderRadius: 7, fontSize: 12,
-              fontWeight: 700, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: 6,
-              boxShadow: '0 2px 8px rgba(0,87,183,0.25)'
-            }}
-            onMouseOver={e => e.currentTarget.style.background = '#004090'}
-            onMouseOut={e => e.currentTarget.style.background = '#0057B7'}>
-            📸 Snapshot
-          </button>
-        </div>
 
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 }}>Get Started</div>
@@ -2073,13 +2291,19 @@ const P2PIntroScreen = ({ onGoTableBuild, onGoCsvUpload, currentUser }) => {
             onClick={onGoTableBuild}
             onMouseEnter={() => setHoveredSide('build')}
             onMouseLeave={() => setHoveredSide(null)}
-            animate={{ borderColor: hoveredSide === 'build' ? '#006B3C' : '#E2E8F0' }}
+            animate={{ borderColor: hoveredSide === 'build' ? '#0078D4' : '#E2E8F0' }}
           >
             <motion.div layout style={{
-              width: 60, height: 60, borderRadius: 14, background: '#EDFAF4',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, flexShrink: 0
+              width: 60, height: 60, borderRadius: 14, background: '#eff6ff',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
             }}>
-              🔨
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0078D4" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="3" width="6" height="6" rx="1" />
+                <rect x="16" y="3" width="6" height="6" rx="1" />
+                <rect x="16" y="15" width="6" height="6" rx="1" />
+                <rect x="2" y="15" width="6" height="6" rx="1" />
+                <path d="M8 6h8M19 9v6M16 18H8M5 15V9" />
+              </svg>
             </motion.div>
             <motion.div layout style={{ flex: 1 }}>
               <motion.div layout style={{ fontSize: 18, fontWeight: 700, color: '#1e293b', marginBottom: 8, whiteSpace: hoveredSide === 'csv' ? 'nowrap' : 'normal' }}>Build Event Log</motion.div>
@@ -2088,7 +2312,7 @@ const P2PIntroScreen = ({ onGoTableBuild, onGoCsvUpload, currentUser }) => {
                   <motion.div
                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                     style={{ fontSize: 13, color: '#64748b', lineHeight: 1.65 }}>
-                    Upload raw SAP tables (EKKO, EKPO, EBAN, EKBE, LFA1) and let the system
+                    Upload raw ERP tables  and let the system
                     automatically build the process event log.
                   </motion.div>
                 )}
@@ -2122,18 +2346,22 @@ const P2PIntroScreen = ({ onGoTableBuild, onGoCsvUpload, currentUser }) => {
           >
             <motion.div layout style={{
               width: 60, height: 60, borderRadius: 14, background: '#EFF6FF',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, flexShrink: 0
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
             }}>
-              📂
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0078D4" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                <polyline points="14 2 14 8 20 8" />
+                <path d="M8 13h8M8 17h8" />
+              </svg>
             </motion.div>
             <motion.div layout style={{ flex: 1 }}>
-              <motion.div layout style={{ fontSize: 18, fontWeight: 700, color: '#1e293b', marginBottom: 8, whiteSpace: hoveredSide === 'build' ? 'nowrap' : 'normal' }}>Pre-built CSV</motion.div>
+              <motion.div layout style={{ fontSize: 18, fontWeight: 700, color: '#1e293b', marginBottom: 8, whiteSpace: hoveredSide === 'build' ? 'nowrap' : 'normal' }}>Upload Pre-built CSV or Excel</motion.div>
               <AnimatePresence>
                 {hoveredSide !== 'build' && (
                   <motion.div
                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                     style={{ fontSize: 13, color: '#64748b', lineHeight: 1.65 }}>
-                    Already have a formatted event log? Upload your pre-built CSV file directly to launch the dashboard.
+                    Already have a formatted event log? Upload your pre-built wide-format CSV or Excel directly to launch the dashboard.
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -2146,7 +2374,7 @@ const P2PIntroScreen = ({ onGoTableBuild, onGoCsvUpload, currentUser }) => {
               }}
               onMouseOver={e => e.currentTarget.style.background = '#005A9E'}
               onMouseOut={e => e.currentTarget.style.background = '#0078D4'}>
-              {hoveredSide === 'build' ? 'Upload' : 'Upload Pre-built CSV'}
+              {hoveredSide === 'build' ? 'Upload' : 'Upload Pre-built CSV or Excel'}
             </motion.button>
           </motion.div>
         </div>
@@ -2157,7 +2385,7 @@ const P2PIntroScreen = ({ onGoTableBuild, onGoCsvUpload, currentUser }) => {
 
 /* ── Table Upload Screen (Build Event Log path) ────────────────────────── */
 const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFiles, fetchingFiles, handleLoadOldFile }) => {
-  const tables = [
+  const sapTables = [
     {
       name: 'EKKO', desc: 'Purchasing Document Header', isMandatory: true, required: [
         { col: 'EBELN', note: 'PO number — join key' },
@@ -2182,6 +2410,10 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
         { col: 'BNFPO', note: 'PR item — part of UniqueID_PR' },
         { col: 'LOEKZ', note: 'Deletion flag — PO Reversal Date' },
         { col: 'AEDAT', note: 'Item change date' },
+        { col: 'MENGE', note: 'Quantity' },
+        { col: 'NETPR', note: 'Net Price' },
+        { col: 'NETWR', note: 'Net Value' },
+        { col: 'BRTWR', note: 'Gross Value' },
       ]
     },
     {
@@ -2207,6 +2439,7 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
         { col: 'GJAHR', note: 'Fiscal year' },
         { col: 'MENGE', note: 'Quantity' },
         { col: 'DMBTR', note: 'Amount in local currency' },
+        { col: 'WRBTR', note: 'Amount in document currency' },
       ]
     },
     {
@@ -2216,8 +2449,132 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
       ]
     },
   ];
-  const [tableStatus, setTableStatus] = useState(Object.fromEntries(tables.map(t => [t.name, 'idle'])));
-  const [tableMsg, setTableMsg] = useState(Object.fromEntries(tables.map(t => [t.name, ''])));
+
+  const oracleTables = [
+    {
+      name: 'POR_REQUISITION_ALL', desc: 'Purchase Requisitions', isMandatory: true, required: [
+        { col: 'REQUISITION_HEADER_ID', note: 'Requisition header identifier' },
+        { col: 'REQUISITION_LINE_ID', note: 'Requisition line identifier' },
+        { col: 'CREATION_DATE', note: 'PR creation date' },
+        { col: 'PREPARER_ID', note: 'PR creator' }
+      ]
+    },
+    {
+      name: 'PO_HEADER_ALL / PO_LINES_ALL', desc: 'Purchase Order Headers & Lines', isMandatory: true, required: [
+        { col: 'PO_HEADER_ID', note: 'PO header identifier — join key' },
+        { col: 'PO_LINE_ID', note: 'PO line identifier' },
+        { col: 'SEGMENT1', note: 'PO number' },
+        { col: 'CREATION_DATE', note: 'PO creation date' },
+        { col: 'VENDOR_ID', note: 'Vendor ID' },
+        { col: 'QUANTITY', note: 'Ordered quantity' },
+        { col: 'UNIT_PRICE', note: 'Unit price' }
+      ]
+    },
+    {
+      name: 'RCV_TRANSACTIONS / RCV_SHIPMENT_HEADERS', desc: 'Receipt Headers & Transactions', required: [
+        { col: 'TRANSACTION_ID', note: 'Transaction identifier' },
+        { col: 'SHIPMENT_HEADER_ID', note: 'Shipment header identifier' },
+        { col: 'PO_HEADER_ID', note: 'PO header identifier' },
+        { col: 'TRANSACTION_TYPE', note: 'Movement type (Receive/Deliver)' },
+        { col: 'TRANSACTION_DATE', note: 'Transaction posting date' },
+        { col: 'QUANTITY', note: 'Received quantity' }
+      ]
+    },
+    {
+      name: 'AP_INVOICES_ALL', desc: 'Invoice Headers', required: [
+        { col: 'INVOICE_ID', note: 'Invoice identifier' },
+        { col: 'INVOICE_NUM', note: 'Invoice number' },
+        { col: 'INVOICE_DATE', note: 'Invoice date' },
+        { col: 'INVOICE_AMOUNT', note: 'Invoice amount' }
+      ]
+    },
+    {
+      name: 'AP_INVOICE_PAUMENTS_ALL', desc: 'Invoice Payments', required: [
+        { col: 'INVOICE_PAYMENT_ID', note: 'Payment identifier' },
+        { col: 'INVOICE_ID', note: 'Invoice identifier' },
+        { col: 'PAYMENT_DATE', note: 'Payment date' },
+        { col: 'PAYMENT_AMOUNT', note: 'Payment amount' }
+      ]
+    },
+    {
+      name: 'XLA_AE_HEADERS', desc: 'Subledger Journal Entries', required: [
+        { col: 'AE_HEADER_ID', note: 'Accounting entry header ID' },
+        { col: 'ACCOUNTING_DATE', note: 'Accounting date' }
+      ]
+    },
+    {
+      name: 'POZ_SUPPLIERS', desc: 'Suppliers Master', required: [
+        { col: 'VENDOR_ID', note: 'Vendor ID — join key' },
+        { col: 'VENDOR_NAME', note: 'Vendor name' }
+      ]
+    }
+  ];
+
+  const d365Tables = [
+    {
+      name: 'PurchReqTable', desc: 'Purchase Requisitions', isMandatory: true, required: [
+        { col: 'PurchReqId', note: 'Requisition identifier' },
+        { col: 'CreatedDateTime', note: 'PR creation date' },
+        { col: 'CreatedBy', note: 'PR creator' }
+      ]
+    },
+    {
+      name: 'PurchTable / PurchLine', desc: 'Purchase Order Headers & Lines', isMandatory: true, required: [
+        { col: 'PurchId', note: 'PO number — join key' },
+        { col: 'LineNum', note: 'Line number' },
+        { col: 'ItemId', note: 'Material identifier' },
+        { col: 'Qty', note: 'PO quantity' },
+        { col: 'PurchPrice', note: 'Purch price' }
+      ]
+    },
+    {
+      name: 'VendPackingSlipJour / VendPackingSlipTrans', desc: 'Vendor Product Receipts', required: [
+        { col: 'PackingSlipId', note: 'Packing slip identifier' },
+        { col: 'DeliveryDate', note: 'Receipt posting date' },
+        { col: 'Qty', note: 'Received quantity' }
+      ]
+    },
+    {
+      name: 'VendInvoiceJour / VendInvoiceTrans', desc: 'Vendor Invoices', required: [
+        { col: 'InvoiceId', note: 'Invoice identifier' },
+        { col: 'InvoiceDate', note: 'Invoice date' },
+        { col: 'LineAmount', note: 'Invoice amount' }
+      ]
+    },
+    {
+      name: 'VendTrans', desc: 'Vendor Ledger Transactions', required: [
+        { col: 'AccountNum', note: 'Vendor account ID' },
+        { col: 'TransDate', note: 'Payment Date' },
+        { col: 'AmountMST', note: 'Transaction amount' }
+      ]
+    },
+    {
+      name: 'LedgerJournalTrans', desc: 'General Ledger Journal Lines', required: [
+        { col: 'JournalNum', note: 'Journal identifier' },
+        { col: 'TransDate', note: 'Clearing date' }
+      ]
+    },
+    {
+      name: 'VendTable', desc: 'Vendors Master', required: [
+        { col: 'AccountNum', note: 'Vendor account ID — join key' },
+        { col: 'Party', note: 'Vendor organization name' }
+      ]
+    }
+  ];
+
+  const [erpSystem, setErpSystem] = useState('');
+
+  const getTablesForSystem = (sys) => {
+    if (sys === 'Oracle') return oracleTables;
+    if (sys === 'Microsoft Dynamic 365') return d365Tables;
+    return sapTables;
+  };
+
+  const tables = getTablesForSystem(erpSystem);
+  const allPossibleTables = sapTables.concat(oracleTables).concat(d365Tables);
+
+  const [tableStatus, setTableStatus] = useState(Object.fromEntries(allPossibleTables.map(t => [t.name, 'idle'])));
+  const [tableMsg, setTableMsg] = useState(Object.fromEntries(allPossibleTables.map(t => [t.name, ''])));
   const [building, setBuilding] = useState(false);
   const [buildMsg, setBuildMsg] = useState('');
   const [colMapping, setColMapping] = useState(null); // {tableName, file, tableDef, uploadedCols:[], mapping:{}}
@@ -2225,9 +2582,9 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
   const [selectedFiles, setSelectedFiles] = useState({});
   const [appliedMappings, setAppliedMappings] = useState({});
 
-  const fileRefs = useRef(Object.fromEntries(tables.map(t => [t.name, React.createRef()])));
+  const fileRefs = useRef(Object.fromEntries(allPossibleTables.map(t => [t.name, React.createRef()])));
 
-  const allDone = tables.filter(t => t.isMandatory).some(t => tableStatus[t.name] === 'done');
+  const allDone = tables.filter(t => t.isMandatory).every(t => tableStatus[t.name] === 'done');
   const anyUploading = tables.some(t => tableStatus[t.name] === 'uploading') || building;
 
   // ── Clear server-side tables on mount so user always starts fresh ──────────
@@ -2246,9 +2603,10 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
 
   const uploadTable = async (tableName, file) => {
     if (!file) return;
-    if (!file.name.toLowerCase().endsWith('.csv')) {
+    const ext = file.name.toLowerCase();
+    if (!ext.endsWith('.csv') && !ext.endsWith('.xlsx') && !ext.endsWith('.xls')) {
       setTableStatus(p => ({ ...p, [tableName]: 'error' }));
-      setTableMsg(p => ({ ...p, [tableName]: 'Only .csv accepted.' }));
+      setTableMsg(p => ({ ...p, [tableName]: 'Only .csv or Excel files accepted.' }));
       return;
     }
     setSelectedFiles(p => ({ ...p, [tableName]: file }));
@@ -2446,146 +2804,186 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
       <div style={{ maxWidth: 820, width: '100%', display: 'flex', flexDirection: 'column', gap: 20 }}>
         {/* Back + header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button onClick={onBack}
-            style={{
-              background: 'none', border: '1px solid #E2E8F0', padding: '6px 14px', borderRadius: 6,
-              fontSize: 12, cursor: 'pointer', color: '#64748b', fontWeight: 600
-            }}
-            onMouseOver={e => e.currentTarget.style.background = '#F8FAFC'}
-            onMouseOut={e => e.currentTarget.style.background = 'none'}>
-            ← Back
-          </button>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: '#0078D4', textTransform: 'uppercase', letterSpacing: 0.8 }}>Build Event Log</div>
-            <div style={{ fontSize: 13, color: '#64748b' }}>Upload SAP tables below, then click Build. Only EKKO and EKPO are mandatory.</div>
+            <div style={{ fontSize: 13, color: '#64748b' }}>Upload ERP tables below, then click Build.</div>
           </div>
         </div>
 
         {/* Table upload panel */}
         <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 10, padding: '20px 22px', boxShadow: '0 2px 6px rgba(0,0,0,0.04)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.8 }}>SAP Tables</div>
-            <div style={{ fontSize: 11, color: '#94a3b8' }}>Upload each as <strong style={{ color: '#475569' }}>.csv</strong></div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.8 }}>
+              {erpSystem ? `${erpSystem} Tables` : 'ERP Tables'}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <select
+                value={erpSystem}
+                onChange={e => setErpSystem(e.target.value)}
+                style={{
+                  padding: '5px 12px',
+                  borderRadius: 6,
+                  border: '1.5px solid #E2E8F0',
+                  background: '#fff',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: '#334155',
+                  cursor: 'pointer',
+                  outline: 'none',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                }}
+              >
+                <option value="">Select ERP System</option>
+                <option value="SAP">SAP</option>
+                <option value="Oracle">Oracle</option>
+                <option value="Microsoft Dynamic 365">Microsoft Dynamic 365</option>
+                <option value="Zoho">Zoho</option>
+                <option value="Others">Others</option>
+              </select>
+              <div style={{ fontSize: 11, color: '#94a3b8' }}>Upload each as <strong style={{ color: '#475569' }}>.csv or Excel</strong></div>
+            </div>
           </div>
-          <motion.div
-            variants={{
-              visible: { transition: { staggerChildren: 0.05 } }
-            }}
-            initial="hidden"
-            animate="visible"
-            style={{ display: 'flex', flexDirection: 'column', border: '1px solid #E2E8F0', borderRadius: 8, overflow: 'hidden' }}
-          >
-            {tables.map((t, i) => {
-              const s = si(tableStatus[t.name]);
-              const ref = fileRefs.current[t.name];
-              const isUp = tableStatus[t.name] === 'uploading';
-              return (
-                <motion.div
-                  key={t.name}
-                  variants={{
-                    hidden: { opacity: 0, x: -10 },
-                    visible: { opacity: 1, x: 0 }
-                  }}
-                  animate={isUp ? {
-                    backgroundColor: ['#F8FAFC', '#EFF6FF', '#F8FAFC'],
-                    transition: { duration: 1.5, repeat: Infinity }
-                  } : {}}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
-                    background: tableStatus[t.name] === 'done' ? '#F0FAF0' : tableStatus[t.name] === 'error' ? '#FDE7E9' : i % 2 === 0 ? '#F8FAFC' : '#fff',
-                    borderBottom: i < tables.length - 1 ? '1px solid #E2E8F0' : 'none', transition: 'background 0.2s'
-                  }}>
-                  <input ref={ref} type="file" accept=".csv" style={{ display: 'none' }}
-                    onChange={e => {
-                      const f = e.target.files[0]; e.target.value = '';
-                      if (f) uploadTable(t.name, f);
-                    }} />
-                  <button onClick={() => { if (!isUp && ref.current) { ref.current.value = ''; ref.current.click(); } }}
-                    disabled={isUp}
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28,
-                      borderRadius: 6, border: `1.5px solid ${s.border}`, background: s.bg, color: s.color,
-                      cursor: isUp ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 13, flexShrink: 0
+          {['SAP', 'Oracle', 'Microsoft Dynamic 365'].includes(erpSystem) ? (
+            <motion.div
+              variants={{
+                visible: { transition: { staggerChildren: 0.05 } }
+              }}
+              initial="visible"
+              animate="visible"
+              style={{ display: 'flex', flexDirection: 'column', border: '1px solid #E2E8F0', borderRadius: 8, overflow: 'hidden' }}
+            >
+              {tables.map((t, i) => {
+                const s = si(tableStatus[t.name]);
+                const ref = fileRefs.current[t.name];
+                const isUp = tableStatus[t.name] === 'uploading';
+                return (
+                  <motion.div
+                    key={t.name}
+                    variants={{
+                      hidden: { opacity: 0, x: -10 },
+                      visible: { opacity: 1, x: 0 }
                     }}
-                    onMouseOver={e => { if (!isUp) e.currentTarget.style.background = '#DBEAFE'; }}
-                    onMouseOut={e => { e.currentTarget.style.background = s.bg; }}>
-                    {isUp ? <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }}>↻</span> : s.icon}
-                  </button>
-                  <div style={{
-                    minWidth: 52, fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: '#0078D4',
-                    background: '#EFF6FF', padding: '3px 8px', borderRadius: 4, textAlign: 'center', flexShrink: 0
-                  }}>{t.name}</div>
-                  <div style={{ fontSize: 13, color: '#475569', flex: 1 }}>
-                    {t.desc}
-                    {appliedMappings[t.name] && Object.keys(appliedMappings[t.name]).length > 0 && (
-                      <div style={{ fontSize: 11, color: '#006B3C', marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                        {Object.entries(appliedMappings[t.name]).map(([k, v]) => (
-                          <span key={k} style={{ background: '#E6F4EA', padding: '2px 6px', borderRadius: 4 }}><strong>{k}</strong> → {v}</span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  {/* Server-returned message (error or success) + clear button */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginLeft: 'auto', flexShrink: 0 }}>
-                    {tableMsg[t.name] && (
-                      <div style={{
-                        fontSize: 11, fontWeight: 600, maxWidth: 260, lineHeight: 1.3,
-                        color: tableStatus[t.name] === 'error' ? '#DC2626' : '#15803D',
-                        background: tableStatus[t.name] === 'error' ? '#FEF2F2' : 'transparent',
-                        padding: tableStatus[t.name] === 'error' ? '3px 6px' : '0',
-                        borderRadius: 4, border: tableStatus[t.name] === 'error' ? '1px solid #FECACA' : 'none'
-                      }}>
-                        {tableMsg[t.name]}
-                      </div>
-                    )}
-                    {(tableStatus[t.name] === 'done' || tableStatus[t.name] === 'error') && (
-                      <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                        {selectedFiles[t.name] && (
+                    animate={isUp ? {
+                      backgroundColor: ['#F8FAFC', '#EFF6FF', '#F8FAFC'],
+                      transition: { duration: 1.5, repeat: Infinity }
+                    } : undefined}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
+                      background: tableStatus[t.name] === 'done' ? '#F0FAF0' : tableStatus[t.name] === 'error' ? '#FDE7E9' : i % 2 === 0 ? '#F8FAFC' : '#fff',
+                      borderBottom: i < tables.length - 1 ? '1px solid #E2E8F0' : 'none', transition: 'background 0.2s'
+                    }}>
+                    <input ref={ref} type="file" accept=".csv,.xlsx,.xls" style={{ display: 'none' }}
+                      onChange={e => {
+                        const f = e.target.files[0]; e.target.value = '';
+                        if (f) uploadTable(t.name, f);
+                      }} />
+                    <button onClick={() => { if (!isUp && ref.current) { ref.current.value = ''; ref.current.click(); } }}
+                      disabled={isUp}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28,
+                        borderRadius: 6, border: `1.5px solid ${s.border}`, background: s.bg, color: s.color,
+                        cursor: isUp ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 13, flexShrink: 0
+                      }}
+                      onMouseOver={e => { if (!isUp) e.currentTarget.style.background = '#DBEAFE'; }}
+                      onMouseOut={e => { e.currentTarget.style.background = s.bg; }}>
+                      {isUp ? <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }}>↻</span> : s.icon}
+                    </button>
+                    <div style={{
+                      minWidth: 52, fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: '#0078D4',
+                      background: '#EFF6FF', padding: '3px 8px', borderRadius: 4, textAlign: 'center', flexShrink: 0
+                    }}>{t.isMandatory ? '* ' : ''}{t.name}</div>
+                    <div style={{ fontSize: 13, color: '#475569', flex: 1 }}>
+                      {t.desc}
+
+                      {appliedMappings[t.name] && Object.keys(appliedMappings[t.name]).length > 0 && (
+                        <div style={{ fontSize: 11, color: '#006B3C', marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                          {Object.entries(appliedMappings[t.name]).map(([k, v]) => (
+                            <span key={k} style={{ background: '#E6F4EA', padding: '2px 6px', borderRadius: 4 }}><strong>{k}</strong> → {v}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {/* Server-returned message (error or success) + clear button */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginLeft: 'auto', flexShrink: 0 }}>
+                      {tableMsg[t.name] && (
+                        <div style={{
+                          fontSize: 11, fontWeight: 600, maxWidth: 260, lineHeight: 1.3,
+                          color: tableStatus[t.name] === 'error' ? '#DC2626' : '#15803D',
+                          background: tableStatus[t.name] === 'error' ? '#FEF2F2' : 'transparent',
+                          padding: tableStatus[t.name] === 'error' ? '3px 6px' : '0',
+                          borderRadius: 4, border: tableStatus[t.name] === 'error' ? '1px solid #FECACA' : 'none'
+                        }}>
+                          {tableMsg[t.name]}
+                        </div>
+                      )}
+                      {(tableStatus[t.name] === 'done' || tableStatus[t.name] === 'error') && (
+                        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                          {selectedFiles[t.name] && (
+                            <button
+                              onClick={() => handleMapColumns(t.name)}
+                              title='Map columns'
+                              style={{
+                                fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4,
+                                background: tableStatus[t.name] === 'error' ? '#FEF2F2' : '#EFF6FF',
+                                color: tableStatus[t.name] === 'error' ? '#DC2626' : '#1D4ED8',
+                                border: tableStatus[t.name] === 'error' ? '1px solid #FCA5A5' : '1px solid #93C5FD',
+                                cursor: 'pointer'
+                              }}
+                              onMouseOver={e => e.currentTarget.style.background = tableStatus[t.name] === 'error' ? '#FECACA' : '#DBEAFE'}
+                              onMouseOut={e => e.currentTarget.style.background = tableStatus[t.name] === 'error' ? '#FEF2F2' : '#EFF6FF'}>
+                              Map Columns
+                            </button>
+                          )}
                           <button
-                            onClick={() => handleMapColumns(t.name)}
-                            title='Map columns'
-                            style={{
-                              fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4,
-                              background: tableStatus[t.name] === 'error' ? '#FEF2F2' : '#EFF6FF',
-                              color: tableStatus[t.name] === 'error' ? '#DC2626' : '#1D4ED8',
-                              border: tableStatus[t.name] === 'error' ? '1px solid #FCA5A5' : '1px solid #93C5FD',
-                              cursor: 'pointer'
+                            onClick={() => {
+                              fetch(`${API}/p2p/transform/clear_table?table_name=${t.name}&username=${encodeURIComponent(currentUser || 'Unknown')}`, { method: 'DELETE' }).catch(console.error);
+                              setTableStatus(p => ({ ...p, [t.name]: 'idle' }));
+                              setTableMsg(p => ({ ...p, [t.name]: '' }));
+                              setSelectedFiles(p => { const copy = { ...p }; delete copy[t.name]; return copy; });
+                              setAppliedMappings(p => { const copy = { ...p }; delete copy[t.name]; return copy; });
+                              if (fileRefs.current[t.name]?.current) fileRefs.current[t.name].current.value = '';
                             }}
-                            onMouseOver={e => e.currentTarget.style.background = tableStatus[t.name] === 'error' ? '#FECACA' : '#DBEAFE'}
-                            onMouseOut={e => e.currentTarget.style.background = tableStatus[t.name] === 'error' ? '#FEF2F2' : '#EFF6FF'}>
-                            Map Columns
+                            title='Clear to re-upload'
+                            style={{
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              width: 18, height: 18, borderRadius: '50%', border: '1.5px solid #FCA5A5',
+                              background: '#FEE2E2', color: '#DC2626', cursor: 'pointer',
+                              fontWeight: 800, fontSize: 10, padding: 0, lineHeight: 1, flexShrink: 0
+                            }}
+                            onMouseOver={e => e.currentTarget.style.background = '#FECACA'}
+                            onMouseOut={e => e.currentTarget.style.background = '#FEE2E2'}>
+                            ✕
                           </button>
-                        )}
-                        <button
-                          onClick={() => {
-                            fetch(`${API}/p2p/transform/clear_table?table_name=${t.name}&username=${encodeURIComponent(currentUser || 'Unknown')}`, { method: 'DELETE' }).catch(console.error);
-                            setTableStatus(p => ({ ...p, [t.name]: 'idle' }));
-                            setTableMsg(p => ({ ...p, [t.name]: '' }));
-                            setSelectedFiles(p => { const copy = { ...p }; delete copy[t.name]; return copy; });
-                            setAppliedMappings(p => { const copy = { ...p }; delete copy[t.name]; return copy; });
-                            if (fileRefs.current[t.name]?.current) fileRefs.current[t.name].current.value = '';
-                          }}
-                          title='Clear to re-upload'
-                          style={{
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            width: 18, height: 18, borderRadius: '50%', border: '1.5px solid #FCA5A5',
-                            background: '#FEE2E2', color: '#DC2626', cursor: 'pointer',
-                            fontWeight: 800, fontSize: 10, padding: 0, lineHeight: 1, flexShrink: 0
-                          }}
-                          onMouseOver={e => e.currentTarget.style.background = '#FECACA'}
-                          onMouseOut={e => e.currentTarget.style.background = '#FEE2E2'}>
-                          ✕
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              );
-            })}
-          </motion.div>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </motion.div>
+          ) : (
+            <div style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              padding: '40px 20px', border: '1px dashed #E2E8F0', borderRadius: 8, background: '#F8FAFC',
+              color: '#64748b', gap: 10
+            }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.6 }}>
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <line x1="9" y1="3" x2="9" y2="21" />
+                <line x1="15" y1="3" x2="15" y2="21" />
+                <line x1="3" y1="9" x2="21" y2="9" />
+                <line x1="3" y1="15" x2="21" y2="15" />
+              </svg>
+              <div style={{ fontSize: 13, fontWeight: 600 }}>
+                {erpSystem ? `No tables configured for ${erpSystem} yet.` : 'Select an ERP System to load required tables'}
+              </div>
+              <div style={{ fontSize: 11, color: '#94a3b8' }}>
+              </div>
+            </div>
+          )}
           <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'space-between', flexWrap: 'wrap' }}>
-            <div style={{ fontSize: 12, color: allDone ? '#107C10' : '#94a3b8', fontWeight: allDone ? 700 : 400 }}>
-              {allDone ? `✓ ${tables.filter(t => tableStatus[t.name] === 'done').length} table(s) uploaded — ready to build` : `${tables.filter(t => tableStatus[t.name] === 'done').length} / ${tables.length} tables uploaded (need at least EKKO or EKPO)`}
+            <div style={{ fontSize: 11, color: '#64748b' }}>
+              <span style={{ fontWeight: 700, color: '#DC2626' }}>*</span> Mandatory table
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
               {buildMsg && <div style={{ fontSize: 12, color: buildMsg.startsWith('Error') ? '#D13438' : '#107C10', fontWeight: 600 }}>{buildMsg}</div>}
@@ -2676,9 +3074,8 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
 };
 
 
-const UploadBanner = React.memo(({ onUploaded, serverOk, onLoadingChange, currentUser, myFiles, fetchingFiles, handleLoadOldFile, defaultStep }) => {
+const UploadBanner = React.memo(({ onUploaded, serverOk, onLoadingChange, currentUser, myFiles, fetchingFiles, handleLoadOldFile, step, setStep, introStep, setIntroStep }) => {
   // 'info' = landing info page, 'table' = SAP table upload, 'upload' = pre-built CSV
-  const [step, setStep] = useState(defaultStep || 'info');
   const [dragging, setDragging] = useState(false);
   const [status, setStatus] = useState('idle');
   const [msg, setMsg] = useState('');
@@ -2686,9 +3083,50 @@ const UploadBanner = React.memo(({ onUploaded, serverOk, onLoadingChange, curren
   const [colMapping, setColMapping] = useState(null);
   const inputRef = useRef();
 
+  const findBestMatch = (reqCol, uploadedCols) => {
+    const clean = (s) => s.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const reqClean = clean(reqCol);
+    
+    let match = uploadedCols.find(c => c.toUpperCase() === reqCol.toUpperCase());
+    if (match) return match;
+    
+    match = uploadedCols.find(c => clean(c) === reqClean);
+    if (match) return match;
+
+    const aliases = {
+      'UniqueID_PO': ['UNIQUEID_PO', 'UNIQUEID', 'EBELN'],
+      'PO Qty': ['MENGE', 'PO_QTY', 'POQTY', 'QUANTITY'],
+      'Netpr': ['NETPR', 'PRICE', 'NET_PRICE'],
+      'Netwr': ['NETWR', 'NET_VALUE', 'NETVALUE'],
+      'GR Quantity': ['MENGE (GRN)', 'GR_QTY', 'GRN_QTY', 'GRQTY', 'GRNQuantity', 'GR Quantity'],
+      'GR Doc Amount': ['DMBTR', 'GR_AMOUNT', 'GRN_AMOUNT', 'GRAMOUNT', 'GRDocAmount', 'GR Doc Amount'],
+      'IR Quantity': ['MENGE (Right)', 'IR_QTY', 'IRQTY', 'Invoice Qty', 'Invoice Quantity', 'IR Quantity'],
+      'IR Doc Amount': ['DMBTR (Right)', 'IR_AMOUNT', 'IRAMOUNT', 'Invoice Amount', 'IR Doc Amount'],
+      'LIFNR': ['VENDOR', 'VENDOR_ID', 'LIFNR'],
+      'NAME1': ['NAME1', 'VENDOR_NAME', 'NAME'],
+      'BUKRS': ['BUKRS', 'COMPANY', 'COMPANY_CODE'],
+      'BSART': ['BSART', 'DOC_TYPE', 'DOCUMENT_TYPE'],
+      'MATKL': ['MATKL', 'MATERIAL_GROUP'],
+      'EKGRP': ['EKGRP', 'PURCHASING_GROUP'],
+      'WERKS': ['WERKS', 'PLANT'],
+      'ERNAM': ['ERNAM', 'PO_CREATOR', 'CREATED_BY']
+    };
+
+    const list = aliases[reqCol];
+    if (list) {
+      for (const alias of list) {
+        const aliasClean = clean(alias);
+        const found = uploadedCols.find(c => clean(c) === aliasClean || c.toUpperCase().includes(alias.toUpperCase()));
+        if (found) return found;
+      }
+    }
+    return '';
+  };
+
   const doUpload = async (file, mapping = {}) => {
     if (!file) return;
-    if (!file.name.toLowerCase().endsWith('.csv')) { setStatus('error'); setMsg('Only .csv files accepted.'); return; }
+    const ext = file.name.toLowerCase();
+    if (!ext.endsWith('.csv') && !ext.endsWith('.xlsx') && !ext.endsWith('.xls')) { setStatus('error'); setMsg('Only .csv or Excel files accepted.'); return; }
     setStatus('uploading'); setMsg('');
     setSelectedFile(file);
     onLoadingChange(true, 10, 'Processing Data...');
@@ -2726,6 +3164,8 @@ const UploadBanner = React.memo(({ onUploaded, serverOk, onLoadingChange, curren
       onGoTableBuild={() => setStep('table')}
       onGoCsvUpload={() => setStep('upload')}
       currentUser={currentUser}
+      introStep={introStep}
+      setIntroStep={setIntroStep}
     />
   );
 
@@ -2769,6 +3209,13 @@ const UploadBanner = React.memo(({ onUploaded, serverOk, onLoadingChange, curren
       { col: 'ERNAM (EBAN)', desc: 'PR creator (ERNAM from EBAN)', req: false },
       { col: 'GR Creation User', desc: 'GR posting user', req: false },
       { col: 'Invoice Creation User', desc: 'Invoice posting user', req: false },
+      { col: 'PO Qty', desc: 'Purchase Order Quantity (MENGE from EKPO)', req: false },
+      { col: 'Netpr', desc: 'Net Price (NETPR from EKPO)', req: false },
+      { col: 'Netwr', desc: 'Net Value (NETWR from EKPO)', req: false },
+      { col: 'GR Quantity', desc: 'Goods Receipt Quantity (MENGE from EKBE/GRN)', req: false },
+      { col: 'GR Doc Amount', desc: 'Goods Receipt Amount (DMBTR from EKBE/GRN)', req: false },
+      { col: 'IR Quantity', desc: 'Invoice Receipt Quantity (MENGE from EKBE/IR)', req: false },
+      { col: 'IR Doc Amount', desc: 'Invoice Receipt Amount (DMBTR from EKBE/IR)', req: false },
     ];
     const csvUploads = (myFiles || []).filter(f => !f.source || f.source === 'csv_upload');
 
@@ -2820,7 +3267,7 @@ const UploadBanner = React.memo(({ onUploaded, serverOk, onLoadingChange, curren
                   <tbody>
                     {colMapping.tableDef.required.map((r, i) => {
                       const reqCol = r.col;
-                      const autoMatch = colMapping.uploadedCols.find(c => c.toUpperCase() === reqCol.toUpperCase());
+                      const autoMatch = findBestMatch(reqCol, colMapping.uploadedCols);
                       const selected = colMapping.mapping[reqCol] !== undefined ? colMapping.mapping[reqCol] : (autoMatch || '');
                       return (
                         <tr key={reqCol} style={{ borderBottom: '1px solid #F1F5F9' }}>
@@ -2854,7 +3301,7 @@ const UploadBanner = React.memo(({ onUploaded, serverOk, onLoadingChange, curren
                   onClick={() => {
                     const finalMapping = {};
                     colMapping.tableDef.required.forEach(r => {
-                      const autoMatch = colMapping.uploadedCols.find(c => c.toUpperCase() === r.col.toUpperCase());
+                      const autoMatch = findBestMatch(r.col, colMapping.uploadedCols);
                       const sel = colMapping.mapping[r.col] !== undefined ? colMapping.mapping[r.col] : (autoMatch || '');
                       if (sel && sel !== r.col) {
                         finalMapping[sel] = r.col;
@@ -2882,7 +3329,7 @@ const UploadBanner = React.memo(({ onUploaded, serverOk, onLoadingChange, curren
             ← Back
           </button>
           <div style={{ fontSize: 11, fontWeight: 700, color: '#0078D4', textTransform: 'uppercase', letterSpacing: 0.8 }}>
-            Upload Pre-built CSV
+            Upload Pre-built CSV or Excel
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: C.slate, marginLeft: 'auto' }}>
             <div style={{
@@ -2904,7 +3351,7 @@ const UploadBanner = React.memo(({ onUploaded, serverOk, onLoadingChange, curren
             cursor: 'pointer', textAlign: 'center', transition: 'all .2s',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, flexDirection: selectedFile ? 'column' : 'row'
           }}>
-          <input ref={inputRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={e => { const f = e.target.files[0]; if (f) { setSelectedFile(f); setStatus('idle'); setMsg(''); } }} />
+          <input ref={inputRef} type="file" accept=".csv,.xlsx,.xls" style={{ display: 'none' }} onChange={e => { const f = e.target.files[0]; if (f) { setSelectedFile(f); setStatus('idle'); setMsg(''); } }} />
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <div style={{ fontSize: 22, fontWeight: 'bold', color: status === 'done' ? '#107C10' : status === 'error' ? '#D13438' : '#0078D4' }}>
@@ -2912,9 +3359,9 @@ const UploadBanner = React.memo(({ onUploaded, serverOk, onLoadingChange, curren
             </div>
             <div style={{ textAlign: 'left' }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: '#323130' }}>
-                {selectedFile ? selectedFile.name : status === 'idle' ? 'Click or drag & drop a CSV file here' : status === 'done' ? 'File loaded!' : 'Upload failed'}
+                {selectedFile ? selectedFile.name : status === 'idle' ? 'Click or drag & drop a CSV or Excel file here' : status === 'done' ? 'File loaded!' : 'Upload failed'}
               </div>
-              <div style={{ fontSize: 11, color: C.slate, marginTop: 2 }}>{msg || 'Wide-format or KNIME long-format CSV accepted'}</div>
+              <div style={{ fontSize: 11, color: C.slate, marginTop: 2 }}>{msg || 'Wide-format or KNIME long-format CSV/Excel accepted'}</div>
             </div>
           </div>
 
@@ -3025,12 +3472,205 @@ export default function P2PDashboard({ currentUser, onSignOut, onBackHome }) {
   const [dataLoaded, setDataLoaded] = useState(false);
   const [mappingError, setMappingError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [dashboardLoading, setDashboardLoading] = useState(false);
+  const [dashboardLoading, setDashboardLoading] = useState(true);
 
   const [chartsReady, setChartsReady] = useState(false);
   const [pmReady, setPmReady] = useState(false);
 
   const intentToUpload = useRef(true);
+  const screenshotRef = useRef(null);
+  const [screenshotting, setScreenshotting] = useState(false);
+
+  const handleScreenshot = async () => {
+    if (!screenshotRef.current || screenshotting) return;
+    setScreenshotting(true);
+    const el = screenshotRef.current;
+
+    const originalRootStyle = {
+      height: el.style.height,
+      overflowX: el.style.overflowX,
+      overflowY: el.style.overflowY,
+      maxHeight: el.style.maxHeight,
+    };
+
+    el.style.setProperty('height', 'auto', 'important');
+    el.style.setProperty('overflow-x', 'visible', 'important');
+    el.style.setProperty('overflow-y', 'visible', 'important');
+    el.style.setProperty('max-height', 'none', 'important');
+
+    const scrollContainers = [];
+    const allElements = el.querySelectorAll('*');
+    allElements.forEach((node) => {
+      const style = window.getComputedStyle(node);
+      if (
+        style.overflowY === 'auto' ||
+        style.overflowY === 'scroll' ||
+        style.overflowX === 'auto' ||
+        style.overflowX === 'scroll' ||
+        style.overflow === 'auto' ||
+        style.overflow === 'scroll'
+      ) {
+        scrollContainers.push({
+          node,
+          overflowX: node.style.overflowX,
+          overflowY: node.style.overflowY,
+          height: node.style.height,
+          maxHeight: node.style.maxHeight,
+        });
+        node.style.setProperty('overflow-x', 'visible', 'important');
+        node.style.setProperty('overflow-y', 'visible', 'important');
+        node.style.setProperty('height', 'auto', 'important');
+        node.style.setProperty('max-height', 'none', 'important');
+      }
+    });
+
+    try {
+      await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 800)));
+
+      const canvas = await html2canvas(el, {
+        scale: window.devicePixelRatio || 2,
+        foreignObjectRendering: false,
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: '#F0F2F5',
+        logging: false,
+        scrollX: -window.scrollX,
+        scrollY: -window.scrollY,
+        windowWidth: el.scrollWidth,
+        windowHeight: el.scrollHeight,
+        width: el.scrollWidth,
+        height: el.scrollHeight,
+        ignoreElements: (node) => {
+          if (node.id && node.id.includes('screenshot-btn')) return true;
+          if (node.id === 'screenshot-loading-overlay') return true;
+          if (node.classList && (node.classList.contains('no-screenshot') || node.classList.contains('screenshot-btn'))) return true;
+          if (node.style?.position === 'fixed' || window.getComputedStyle(node).position === 'fixed') return true;
+          return false;
+        },
+        onclone: (clonedDoc, clonedEl) => {
+          const overlay = clonedDoc.getElementById('screenshot-loading-overlay');
+          if (overlay && overlay.parentNode) {
+            overlay.parentNode.removeChild(overlay);
+          }
+          const anims = clonedDoc.querySelectorAll('animateMotion, animate');
+          for (let i = 0; i < anims.length; i++) {
+            const node = anims[i];
+            if (node && node.parentNode) {
+              node.parentNode.removeChild(node);
+            }
+          }
+
+          // Traverse up to clear layout boundaries in the clone
+          let curr = clonedEl;
+          while (curr && curr.style) {
+            curr.style.setProperty('height', 'auto', 'important');
+            curr.style.setProperty('overflow', 'visible', 'important');
+            curr.style.setProperty('max-height', 'none', 'important');
+            curr = curr.parentNode;
+          }
+
+          const copyStyles = (selector) => {
+            const originalEls = el.querySelectorAll(selector);
+            const clonedEls = clonedDoc.querySelectorAll(selector);
+            for (let i = 0; i < originalEls.length && i < clonedEls.length; i++) {
+              const oEl = originalEls[i];
+              const cEl = clonedEls[i];
+              const oStyle = window.getComputedStyle(oEl);
+
+              // Copy layout & positioning styles
+              cEl.style.position = oStyle.position;
+              cEl.style.width = oStyle.width;
+              cEl.style.height = oStyle.height;
+              cEl.style.top = oStyle.top;
+              cEl.style.left = oStyle.left;
+              cEl.style.transform = oStyle.transform;
+              cEl.style.transformOrigin = oStyle.transformOrigin;
+              cEl.style.display = oStyle.display;
+              cEl.style.opacity = oStyle.opacity;
+              cEl.style.overflow = oStyle.overflow;
+
+              // SVG specific styles
+              if (oStyle.stroke) cEl.style.stroke = oStyle.stroke;
+              if (oStyle.strokeWidth) cEl.style.strokeWidth = oStyle.strokeWidth;
+              if (oStyle.fill) cEl.style.fill = oStyle.fill;
+
+              // Styling details
+              cEl.style.background = oStyle.background;
+              cEl.style.backgroundColor = oStyle.backgroundColor;
+              cEl.style.color = oStyle.color;
+              cEl.style.border = oStyle.border;
+              cEl.style.borderRadius = oStyle.borderRadius;
+              cEl.style.boxShadow = oStyle.boxShadow;
+              cEl.style.padding = oStyle.padding;
+            }
+          };
+
+          copyStyles('.react-flow__renderer');
+          copyStyles('.react-flow__viewport');
+          copyStyles('.react-flow__edges');
+          copyStyles('.react-flow__nodes');
+          copyStyles('.react-flow__edge');
+          copyStyles('.react-flow__edge-path');
+          copyStyles('.react-flow__node');
+          copyStyles('.react-flow__background');
+          copyStyles('.react-flow__container');
+        }
+      });
+
+      await new Promise((resolve, reject) => {
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            reject(new Error('Canvas toBlob returned null'));
+            return;
+          }
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.download = `P2P_Dashboard_Report_${new Date().toISOString().slice(0, 10)}.png`;
+          link.href = url;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setTimeout(() => {
+            URL.revokeObjectURL(url);
+          }, 1000);
+          resolve();
+        }, 'image/png');
+      });
+    } catch (err) {
+      console.error('Screenshot failed:', err);
+      alert('Screenshot failed: ' + err.message);
+    } finally {
+      // Restore root element style
+      if (originalRootStyle.height) el.style.setProperty('height', originalRootStyle.height);
+      else el.style.removeProperty('height');
+
+      if (originalRootStyle.overflowX) el.style.setProperty('overflow-x', originalRootStyle.overflowX);
+      else el.style.removeProperty('overflow-x');
+
+      if (originalRootStyle.overflowY) el.style.setProperty('overflow-y', originalRootStyle.overflowY);
+      else el.style.removeProperty('overflow-y');
+
+      if (originalRootStyle.maxHeight) el.style.setProperty('max-height', originalRootStyle.maxHeight);
+      else el.style.removeProperty('max-height');
+
+      // Restore scroll containers style
+      scrollContainers.forEach(({ node, overflowX, overflowY, height, maxHeight }) => {
+        if (overflowX) node.style.setProperty('overflow-x', overflowX);
+        else node.style.removeProperty('overflow-x');
+
+        if (overflowY) node.style.setProperty('overflow-y', overflowY);
+        else node.style.removeProperty('overflow-y');
+
+        if (height) node.style.setProperty('height', height);
+        else node.style.removeProperty('height');
+
+        if (maxHeight) node.style.setProperty('max-height', maxHeight);
+        else node.style.removeProperty('max-height');
+      });
+
+      setScreenshotting(false);
+    }
+  };
 
   const [loadProg, setLoadProg] = useState(0);
   const [loadLabel, setLoadLabel] = useState('');
@@ -3043,12 +3683,15 @@ export default function P2PDashboard({ currentUser, onSignOut, onBackHome }) {
   const [selected, setSelected] = useState({
     company: 'ALL', bsart: 'ALL', matkl: 'ALL', vendor: 'ALL',
     purch_group: 'ALL', case_id: 'ALL',
-    month: 'ALL', year: 'ALL', quarter: 'ALL', lifnr: 'ALL', lead_time: 'ALL', ernam: 'ALL', status: 'ALL'
+    month: 'ALL', quarter: 'ALL', lead_time: 'ALL', events: 'ALL', ernam: 'ALL', status: 'ALL',
+    start_date: '', end_date: ''
   });
   const [crossFilter, setCrossFilter] = useState(null);
   const [hoverInfo, setHoverInfo] = useState(null);
+  const hasActiveFilters = Object.entries(selected).some(([k, v]) => (k === 'start_date' || k === 'end_date') ? v !== '' : v !== 'ALL') || !!crossFilter;
 
   const [kpis, setKpis] = useState(null);
+  const [dateRange, setDateRange] = useState({ min_date: null, max_date: null });
   const [actData, setActData] = useState([]);
   const [monData, setMonData] = useState([]);
   const [compData, setCompData] = useState([]);
@@ -3084,6 +3727,41 @@ export default function P2PDashboard({ currentUser, onSignOut, onBackHome }) {
   const [myFiles, setMyFiles] = useState([]);
   const [fetchingFiles, setFetchingFiles] = useState(false);
   const [uploadStepOverride, setUploadStepOverride] = useState(null);
+  const [uploadStep, setUploadStep] = useState(uploadStepOverride || 'info');
+  const [introStep, setIntroStep] = useState('overview');
+
+  useEffect(() => {
+    if (uploadStepOverride) {
+      setUploadStep(uploadStepOverride);
+    }
+  }, [uploadStepOverride]);
+
+  useEffect(() => {
+    const current = window.history.state;
+    if (current && current.activeModule === 'p2p') {
+      if (current.dataLoaded !== undefined) setDataLoaded(current.dataLoaded);
+      if (current.uploadStep !== undefined) setUploadStep(current.uploadStep);
+      if (current.introStep !== undefined) setIntroStep(current.introStep);
+    }
+
+    const handlePopState = (event) => {
+      if (event.state && event.state.activeModule === 'p2p') {
+        if (event.state.dataLoaded !== undefined) setDataLoaded(event.state.dataLoaded);
+        if (event.state.uploadStep !== undefined) setUploadStep(event.state.uploadStep);
+        if (event.state.introStep !== undefined) setIntroStep(event.state.introStep);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  useEffect(() => {
+    const current = window.history.state;
+    if (!current || current.activeModule !== 'p2p' || current.dataLoaded !== dataLoaded || current.uploadStep !== uploadStep || current.introStep !== introStep) {
+      window.history.pushState({ activeModule: 'p2p', dataLoaded, uploadStep, introStep }, '');
+    }
+  }, [dataLoaded, uploadStep, introStep]);
 
   useEffect(() => {
     if (currentUser && !dataLoaded) {
@@ -3097,6 +3775,8 @@ export default function P2PDashboard({ currentUser, onSignOut, onBackHome }) {
   }, [currentUser, dataLoaded, refreshTrigger]);
 
   const handleLoadOldFile = async (file_id) => {
+    setChartsReady(false);
+    setPmReady(false);
     handleLoadingChange(true, 50, 'Loading previous dashboard...');
     try {
       const res = await fetch(`${API}/p2p/load_file`, {
@@ -3110,10 +3790,22 @@ export default function P2PDashboard({ currentUser, onSignOut, onBackHome }) {
       handleRefresh();
     } catch (e) {
       alert("Error loading dashboard: " + e.message);
-    } finally {
-      setTimeout(() => handleLoadingChange(false, 100, ''), 500);
+      handleLoadingChange(false, 100, '');
     }
   };
+
+  const getTabStyle = (isActive) => ({
+    padding: '6px 16px',
+    borderRadius: '20px',
+    border: 'none',
+    cursor: 'pointer',
+    fontSize: '12px',
+    fontWeight: isActive ? '700' : '600',
+    background: isActive ? '#ffffff' : 'transparent',
+    color: isActive ? C.headerBg : 'rgba(255,255,255,0.85)',
+    boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
+    transition: 'all 0.2s',
+  });
 
   const logAction = useCallback((action, details) => {
     if (!currentUser) return;
@@ -3132,6 +3824,12 @@ export default function P2PDashboard({ currentUser, onSignOut, onBackHome }) {
     if (source) setUploadStepOverride(source);
     setMappingError(err || null);
     intentToUpload.current = false;
+    if (err) {
+      handleLoadingChange(false, 100, '');
+    } else {
+      setChartsReady(false);
+      setPmReady(false);
+    }
     setDataLoaded(true);
     handleRefresh();
   };
@@ -3155,6 +3853,7 @@ export default function P2PDashboard({ currentUser, onSignOut, onBackHome }) {
     setPmReady(false);
     // Navigate to the appropriate upload screen based on how data was loaded
     setUploadStepOverride(sourceType || 'table');
+    setUploadStep(sourceType || 'table');
   };
 
   const handleResetData = () => {
@@ -3165,6 +3864,7 @@ export default function P2PDashboard({ currentUser, onSignOut, onBackHome }) {
     setChartsReady(false);
     setPmReady(false);
     setUploadStepOverride(null);
+    setUploadStep('info');
     setKpis(null);
     setActData([]);
     setCaseTableData([]);
@@ -3173,7 +3873,8 @@ export default function P2PDashboard({ currentUser, onSignOut, onBackHome }) {
     setSelected({
       company: 'ALL', bsart: 'ALL', matkl: 'ALL', vendor: 'ALL',
       purch_group: 'ALL', case_id: 'ALL',
-      month: 'ALL', year: 'ALL', quarter: 'ALL', lifnr: 'ALL', lead_time: 'ALL', ernam: 'ALL', status: 'ALL'
+      month: 'ALL', quarter: 'ALL', lead_time: 'ALL', events: 'ALL', ernam: 'ALL', status: 'ALL',
+      start_date: '', end_date: ''
     });
     setCrossFilter(null);
   };
@@ -3246,6 +3947,14 @@ export default function P2PDashboard({ currentUser, onSignOut, onBackHome }) {
 
   useEffect(() => {
     if (!dataLoaded) return;
+    fetch(`${API}/p2p/date_range?username=${encodeURIComponent(currentUser || 'Unknown')}`)
+      .then(r => r.ok ? r.json() : {})
+      .then(d => setDateRange(d && d.min_date ? d : { min_date: null, max_date: null }))
+      .catch(() => setDateRange({ min_date: null, max_date: null }));
+  }, [dataLoaded, refreshTrigger, currentUser]);
+
+  useEffect(() => {
+    if (!dataLoaded) return;
     if (selected.case_id !== 'ALL' && selected.case_id != null) {
       fetch(`${API}/p2p/case_events?case_id=${encodeURIComponent(selected.case_id)}&username=${encodeURIComponent(currentUser || 'Unknown')}`)
         .then(r => r.ok ? r.json() : [])
@@ -3258,62 +3967,60 @@ export default function P2PDashboard({ currentUser, onSignOut, onBackHome }) {
 
   useEffect(() => {
     if (!dataLoaded) return;
-    if (chartsReady) setDashboardLoading(true);
+    setDashboardLoading(true);
+    if (pmReady) setPmLoading(true);
+    setPmError('');
+    const startTime = Date.now();
 
     const cq = effectiveQStr();
 
-    const arr = (u, s) => fetch(u).then(r => r.ok ? r.json() : []).then(d => s(Array.isArray(d) ? d : [])).catch(() => s([]));
-    const obj = (u, s) => fetch(u).then(r => r.ok ? r.json() : null).then(d => s(d && typeof d === 'object' && !Array.isArray(d) ? d : null)).catch(() => s(null));
-
-    const promises = [
-      fetch(`${API}/p2p/kpis${cq}`).then(r => { if (!r.ok) return { total_cases: 0 }; return r.json(); }).then(d => setKpis(d)).catch(() => setKpis({ total_cases: 0 })),
-      arr(`${API}/p2p/charts/activity${cq}`, setActData),
-      arr(`${API}/p2p/charts/monthly${cq}`, setMonData),
-      arr(`${API}/p2p/charts/company${cq}`, setCompData),
-      arr(`${API}/p2p/charts/bsart${cq}`, setBsData),
-      arr(`${API}/p2p/charts/matkl${cq}`, setMkData),
-      arr(`${API}/p2p/charts/vendors${cq}`, setVendData),
-      arr(`${API}/p2p/charts/leadtime${cq}`, setLtData),
-      arr(`${API}/p2p/charts/ernam${cq}`, setErnamData),
-      arr(`${API}/p2p/cases${cq}`, setCaseTableData),
-
-      arr(`${API}/p2p/charts/po_rev_ernam${cq}`, setPoRevErnam),
-      arr(`${API}/p2p/charts/po_rev_timeline${cq}`, setPoRevTimeline),
-      arr(`${API}/p2p/charts/pr_rev_after_po_ernam${cq}`, setPrRevAfterPo),
-      arr(`${API}/p2p/charts/seq_violation_ernam${cq}`, setSeqViolation),
-      arr(`${API}/p2p/charts/happy_path${cq}`, setHappyPathData),
-      arr(`${API}/p2p/charts/sod_violations${cq}`, setSodData),
-      arr(`${API}/p2p/charts/bottleneck${cq}`, setBottleneckData),
-      arr(`${API}/p2p/charts/rev_by_purch_group${cq}`, setRevByPurchGroup),
-      arr(`${API}/p2p/charts/purch_group_workload${cq}`, setPurchGroupWorkload),
-      arr(`${API}/p2p/charts/vendor_lead_time${cq}`, setVendorLeadTime),
-    ];
-
-    Promise.all(promises).finally(() => {
-      setDashboardLoading(false);
-      setChartsReady(true);
-    });
-
-  }, [effectiveQStr, dataLoaded, refreshTrigger]);
-
-  useEffect(() => {
-    if (!dataLoaded) return;
-    const qStr = effectiveQStr();
-
-    if (pmReady) setPmLoading(true);
-    setPmError('');
-
-    fetch(`${API}/p2p/process-map${qStr}`)
+    fetch(`${API}/p2p/dashboard-batch${cq}`)
       .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
       .then(d => {
-        setRawGraphData(d);
-        buildFlowMap(d.nodes, d.edges, setRfNodes, setRfEdges, layoutDir);
+        setKpis(d.kpis || { total_cases: 0 });
+        setActData(d.activity || []);
+        setMonData(d.monthly || []);
+        setCompData(d.company || []);
+        setBsData(d.bsart || []);
+        setMkData(d.matkl || []);
+        setVendData(d.vendors || []);
+        setLtData(d.leadtime || []);
+        setErnamData(d.ernam || []);
+        setCaseTableData(d.cases || []);
+
+        setPoRevErnam(d.po_rev_ernam || []);
+        setPoRevTimeline(d.po_rev_timeline || []);
+        setPrRevAfterPo(d.pr_rev_after_po_ernam || []);
+        setSeqViolation(d.seq_violation_ernam || []);
+        setHappyPathData(d.happy_path || []);
+        setSodData(d.sod_violations || []);
+        setBottleneckData(d.bottleneck || []);
+        setRevByPurchGroup(d.rev_by_purch_group || []);
+        setPurchGroupWorkload(d.purch_group_workload || []);
+        setVendorLeadTime(d.vendor_lead_time || []);
+
+        if (d.process_map) {
+          setRawGraphData(d.process_map);
+        }
       })
-      .catch(err => { setPmError(`Failed: ${err.message}`); })
+      .catch(err => {
+        console.error("Failed to load dashboard batch:", err);
+        setKpis({ total_cases: 0 });
+        setActData([]);
+        setPmError(`Failed: ${err.message}`);
+      })
       .finally(() => {
-        setPmLoading(false);
-        setPmReady(true);
+        const elapsed = Date.now() - startTime;
+        const minDelay = 1200;
+        const remaining = Math.max(0, minDelay - elapsed);
+        setTimeout(() => {
+          setDashboardLoading(false);
+          setChartsReady(true);
+          setPmLoading(false);
+          setPmReady(true);
+        }, remaining);
       });
+
   }, [effectiveQStr, dataLoaded, refreshTrigger]);
 
   useEffect(() => {
@@ -3328,7 +4035,7 @@ export default function P2PDashboard({ currentUser, onSignOut, onBackHome }) {
     }
   }, [layoutDir, rawGraphData]);
 
-  const slicer = (key, label, filterKey, wide = false) => {
+  const slicer = (key, label, filterKey, style = {}) => {
     const raw = filters[filterKey];
     const opts = Array.isArray(raw) ? raw : ['ALL'];
     const deduped = opts[0] === 'ALL' ? opts : ['ALL', ...opts];
@@ -3339,17 +4046,17 @@ export default function P2PDashboard({ currentUser, onSignOut, onBackHome }) {
       setCrossFilter(null);
     };
 
-    if (key === 'case_id' || key === 'vendor' || key === 'lifnr') {
+    if (key === 'case_id' || key === 'vendor' || key === 'lifnr' || key === 'events') {
       return (
         <SearchableSelect key={key} label={label} value={selected[key] || 'ALL'}
-          options={deduped} wide={wide}
+          options={deduped} style={style}
           onChange={handleSlicerChange} />
       );
     }
 
     return (
       <FilterSelect key={key} label={label} value={selected[key] || 'ALL'}
-        options={deduped} wide={wide}
+        options={deduped} style={style}
         onChange={handleSlicerChange} />
     );
   };
@@ -3359,7 +4066,8 @@ export default function P2PDashboard({ currentUser, onSignOut, onBackHome }) {
     setSelected({
       company: 'ALL', bsart: 'ALL', matkl: 'ALL', vendor: 'ALL',
       purch_group: 'ALL', case_id: 'ALL',
-      month: 'ALL', year: 'ALL', quarter: 'ALL', lifnr: 'ALL', lead_time: 'ALL', ernam: 'ALL', status: 'ALL'
+      month: 'ALL', quarter: 'ALL', lead_time: 'ALL', events: 'ALL', ernam: 'ALL', status: 'ALL',
+      start_date: '', end_date: ''
     });
     setCrossFilter(null);
   };
@@ -3381,10 +4089,11 @@ export default function P2PDashboard({ currentUser, onSignOut, onBackHome }) {
   return (
     <div style={{
       fontFamily: "'Segoe UI',-apple-system,sans-serif",
-      background: C.bg, height: '100vh', display: 'flex', flexDirection: 'column'
+      background: C.bg, height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden'
     }}>
+      <div ref={screenshotRef} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflowY: 'auto' }}>
 
-      <style>{`
+        <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
         *{box-sizing:border-box}
         ::-webkit-scrollbar{width:5px;height:5px}
@@ -3393,565 +4102,723 @@ export default function P2PDashboard({ currentUser, onSignOut, onBackHome }) {
         ::-webkit-scrollbar-thumb:hover{background:#A19F9D}
       `}</style>
 
-      <LoadingOverlay visible={loading} progress={loadProg} label={loadLabel} />
+        <LoadingOverlay visible={loading} progress={loadProg} label={loadLabel} />
 
-      <div style={{
-        background: C.headerBg, padding: '10px 20px', flexShrink: 0,
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        boxShadow: '0 2px 8px rgba(0,0,0,.2)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <img
-            src="/logo.png"
-            alt="AJALabs Logo"
-            onClick={() => onBackHome && onBackHome()}
-            title="Back to Home"
-            style={{ height: '36px', objectFit: 'contain', cursor: 'pointer', borderRadius: 4, transition: 'opacity 0.2s' }}
-            onMouseOver={e => { e.currentTarget.style.opacity = '0.7'; }}
-            onMouseOut={e => { e.currentTarget.style.opacity = '1'; }}
-          />
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 16, color: '#fff' }}>P2P Process Explorer</div>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,.5)' }}>Procure-to-Pay Process Mining</div>
-          </div>
-          {crossFilter && (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 6, marginLeft: 16,
-              background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.2)',
-              borderRadius: 6, padding: '4px 12px', fontSize: 12
-            }}>
-              <span style={{ color: '#fff', fontWeight: 600 }}>Filter: {crossFilter.type}: <strong>{crossFilter.value}</strong></span>
-              <button onClick={clearCF} style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: 'rgba(255,255,255,.8)', fontWeight: 700, fontSize: 14, padding: '0 2px'
-              }}>X</button>
+        <div style={{
+          background: C.headerBg, padding: '10px 20px', flexShrink: 0,
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          boxShadow: '0 2px 8px rgba(0,0,0,.2)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <img
+              src="/logo.png"
+              alt="AJALabs Logo"
+              onClick={() => onBackHome && onBackHome()}
+              title="Back to Home"
+              style={{ height: '36px', objectFit: 'contain', cursor: 'pointer', borderRadius: 4, transition: 'opacity 0.2s' }}
+              onMouseOver={e => { e.currentTarget.style.opacity = '0.7'; }}
+              onMouseOut={e => { e.currentTarget.style.opacity = '1'; }}
+            />
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 16, color: '#fff' }}>P2P Process Explorer</div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,.5)' }}>Procure-to-Pay Process Mining</div>
             </div>
-          )}
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {dataLoaded && kpis && (
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,.5)' }}>
-              {Number(kpis.total_cases).toLocaleString()} cases loaded
-            </div>
-          )}
-
-          {dataLoaded && (
-            <div style={{
-              display: 'flex', alignItems: 'stretch', gap: 0,
-              background: 'rgba(255,255,255,0.08)', borderRadius: 6,
-              border: '1px solid rgba(255,255,255,0.15)', overflow: 'hidden'
-            }}>
-              <button
-                className={`tab-button ${activeTab === 'process' ? 'active' : ''}`}
-                onClick={() => {
-                  if (activeTab !== 'process') {
-                    logAction('TAB', 'Viewed Process Mining');
-                    setActiveTab('process');
-                    setTabSkeleton(true);
-                    setTimeout(() => setTabSkeleton(false), 500);
-                  }
-                }}
-              >
-                Process Mining
-              </button>
-              <button
-                className={`tab-button ${activeTab === 'dimensions' ? 'active' : ''}`}
-                onClick={() => {
-                  if (activeTab !== 'dimensions') {
-                    logAction('TAB', 'Viewed Dimensions');
-                    setActiveTab('dimensions');
-                    setTabSkeleton(true);
-                    setTimeout(() => setTabSkeleton(false), 500);
-                  }
-                }}
-              >
-                EDA
-              </button>
-              <button
-                onClick={handleResetData}
-                style={{
-                  fontSize: 11, fontWeight: 600,
-                  background: 'transparent',
-                  color: 'rgba(255,255,255,0.75)', border: 'none',
-                  borderLeft: '1px solid rgba(255,255,255,0.15)',
-                  padding: '8px 14px', cursor: 'pointer',
-                  transition: 'all 0.2s', whiteSpace: 'nowrap'
-                }}
-                onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = '#fff'; }}
-                onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.75)'; }}
-              >
-                📂 Upload New File
-              </button>
-            </div>
-          )}
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 16 }}>
-            <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.2)' }}></div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>
-              User: <strong style={{ color: '#fff' }}>{currentUser}</strong>
-            </div>
-            <button onClick={handleSignOut} style={{
-              background: 'rgba(209, 52, 56, 0.85)', color: '#fff', border: 'none',
-              padding: '6px 12px', borderRadius: 4, cursor: 'pointer', fontSize: 11, fontWeight: 700,
-              transition: 'all 0.2s'
-            }}
-              onMouseOver={e => e.currentTarget.style.background = '#D13438'}
-              onMouseOut={e => e.currentTarget.style.background = 'rgba(209, 52, 56, 0.85)'}
-            >
-              Sign Out
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div style={{
-        flex: 1, overflowY: 'auto', padding: '12px 14px 40px',
-        display: 'flex', flexDirection: 'column', gap: 10
-      }}>
-
-        {!dataLoaded && (
-          <UploadBanner
-            currentUser={currentUser}
-            onUploaded={onUploaded}
-            serverOk={serverOk}
-            onLoadingChange={handleLoadingChange}
-            myFiles={myFiles}
-            fetchingFiles={fetchingFiles}
-            handleLoadOldFile={handleLoadOldFile}
-            defaultStep={uploadStepOverride} />
-        )}
-
-        {dataLoaded && (mappingError || (kpis && kpis.total_cases === 0)) && (
-          <div style={{
-            background: '#FFF4CE', border: '1px solid #FDE7E9', borderRadius: 8, padding: '12px 20px',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
-            boxShadow: '0 2px 4px rgba(0,0,0,0.05)', marginBottom: 2
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontSize: 20 }}>⚠️</span>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 13, color: '#323130' }}>Column mapping might be wrong</div>
-                <div style={{ fontSize: 12, color: '#605E5C', marginTop: 2 }}>{mappingError || "No cases found. Please check your column mappings."}</div>
+            {crossFilter && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 6, marginLeft: 16,
+                background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.2)',
+                borderRadius: 6, padding: '4px 12px', fontSize: 12
+              }}>
+                <span style={{ color: '#fff', fontWeight: 600 }}>Filter: {crossFilter.type}: <strong>{crossFilter.value}</strong></span>
+                <button onClick={clearCF} style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: 'rgba(255,255,255,.8)', fontWeight: 700, fontSize: 14, padding: '0 2px'
+                }}>X</button>
               </div>
-            </div>
-            <button onClick={() => handleFixMapping(uploadStepOverride || 'table')}
-              style={{ padding: '8px 20px', background: '#0078D4', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 700, cursor: 'pointer', fontSize: 12, transition: 'all 0.2s' }}
-              onMouseOver={e => e.currentTarget.style.background = '#005A9E'}
-              onMouseOut={e => e.currentTarget.style.background = '#0078D4'}>
-              Fix Mapping
-            </button>
+            )}
           </div>
-        )}
-        {dataLoaded && (<>
-          <div style={{
-            background: C.card, borderRadius: 8, padding: '10px 14px',
-            border: `1px solid ${C.border}`, boxShadow: '0 2px 6px rgba(0,0,0,.04)'
-          }}>
 
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-              gap: '12px',
-              alignItems: 'end'
-            }}>
-              {slicer('case_id', 'Case ID', 'case_ids', true)}
-              {slicer('company', 'Company', 'companies')}
-              {slicer('matkl', 'Material Group', 'matkls')}
-              {slicer('vendor', 'Vendor', 'vendors', true)}
-              {slicer('purch_group', 'Purchasing Group', 'purch_groups')}
-              {slicer('lifnr', 'Vendor ID', 'lifnrs')}
-              {slicer('year', 'Year', 'years')}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {dataLoaded && kpis && (
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,.5)' }}>
+                {Number(kpis.total_cases).toLocaleString()} cases loaded
+              </div>
+            )}
 
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={resetAll} style={{
-                  padding: '6px 12px', fontSize: 12, fontWeight: 700,
-                  background: '#F3F2F1', color: '#323130', border: `1px solid #D2D0CE`,
-                  borderRadius: 4, cursor: 'pointer', height: '28px', flex: 1
-                }}>
-                  Reset
-                </button>
-                <button onClick={handleRefresh} style={{
-                  padding: '6px 12px', fontSize: 12, fontWeight: 700,
-                  background: '#0078D4', color: '#fff', border: 'none',
-                  borderRadius: 4, cursor: 'pointer', height: '28px', flex: 1,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center'
-                }}>
-                  🔄
+            {dataLoaded && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                background: 'rgba(255,255,255,0.08)', borderRadius: '24px',
+                padding: '4px', border: '1px solid rgba(255,255,255,0.1)'
+              }}>
+                <button
+                  style={getTabStyle(activeTab === 'process')}
+                  onClick={() => {
+                    if (activeTab !== 'process') {
+                      logAction('TAB', 'Viewed Process Mining');
+                      setActiveTab('process');
+                      setTabSkeleton(true);
+                      setTimeout(() => setTabSkeleton(false), 500);
+                    }
+                  }}
+                >
+                  Process Mining
                 </button>
                 <button
+                  style={getTabStyle(activeTab === 'dimensions')}
                   onClick={() => {
-                    const url = `${API}/p2p/download_output?username=${encodeURIComponent(currentUser || 'Unknown')}`;
-                    const a = document.createElement('a');
-                    a.href = url; a.download = ''; a.click();
-                    logAction('DOWNLOAD', 'Downloaded output CSV from dashboard');
+                    if (activeTab !== 'dimensions') {
+                      logAction('TAB', 'Viewed Dimensions');
+                      setActiveTab('dimensions');
+                      setTabSkeleton(true);
+                      setTimeout(() => setTabSkeleton(false), 500);
+                    }
                   }}
-                  title="Download current dataset as CSV (also saved to P2P_Output folder)"
-                  style={{
-                    padding: '6px 10px', fontSize: 12, fontWeight: 700,
-                    background: '#006B3C', color: '#fff', border: 'none',
-                    borderRadius: 4, cursor: 'pointer', height: '28px', flex: 1,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-                    whiteSpace: 'nowrap'
-                  }}
-                  onMouseOver={e => e.currentTarget.style.background = '#004d2c'}
-                  onMouseOut={e => e.currentTarget.style.background = '#006B3C'}
                 >
-                  ⬇ CSV
+                  EDA
+                </button>
+                <button
+                  style={{ ...getTabStyle(false), color: '#A8D4FF' }}
+                  onClick={handleResetData}
+                  onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
+                  onMouseOut={e => { e.currentTarget.style.background = 'transparent'; }}
+                >
+                  Upload New File
                 </button>
               </div>
+            )}
+
+            {dataLoaded && (
+              <button
+                id="p2p-screenshot-btn"
+                onClick={handleScreenshot}
+                title="Download full report screenshot"
+                style={{
+                  width: 36, height: 36, borderRadius: '50%',
+                  background: screenshotting
+                    ? 'rgba(0,120,212,0.5)'
+                    : 'linear-gradient(135deg, rgba(0,120,212,0.9) 0%, rgba(0,80,160,0.95) 100%)',
+                  border: '1.5px solid rgba(255,255,255,0.25)',
+                  boxShadow: screenshotting
+                    ? '0 0 0 3px rgba(0,120,212,0.4)'
+                    : '0 2px 12px rgba(0,120,212,0.45), 0 0 0 1px rgba(255,255,255,0.08)',
+                  cursor: screenshotting ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0, transition: 'all 0.22s ease',
+                  marginLeft: 8,
+                }}
+                onMouseOver={e => { if (!screenshotting) { e.currentTarget.style.transform = 'scale(1.12)'; e.currentTarget.style.boxShadow = '0 4px 18px rgba(0,120,212,0.7), 0 0 0 1px rgba(255,255,255,0.15)'; } }}
+                onMouseOut={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,120,212,0.45), 0 0 0 1px rgba(255,255,255,0.08)'; }}
+              >
+                {screenshotting ? (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1s linear infinite' }}>
+                    <path d="M21 12a9 9 0 11-6.219-8.56" />
+                  </svg>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+                    <circle cx="12" cy="13" r="4" />
+                  </svg>
+                )}
+              </button>
+            )}
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 16 }}>
+              <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.2)' }}></div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>
+                User: <strong style={{ color: '#fff' }}>{currentUser}</strong>
+              </div>
+              <button onClick={handleSignOut} style={{
+                background: 'rgba(209, 52, 56, 0.85)', color: '#fff', border: 'none',
+                padding: '6px 12px', borderRadius: 4, cursor: 'pointer', fontSize: 11, fontWeight: 700,
+                transition: 'all 0.2s'
+              }}
+                onMouseOver={e => e.currentTarget.style.background = '#D13438'}
+                onMouseOut={e => e.currentTarget.style.background = 'rgba(209, 52, 56, 0.85)'}
+              >
+                Sign Out
+              </button>
             </div>
           </div>
+        </div>
 
-          <AnimatePresence mode="wait">
-            {kpis && (
-              <motion.div
-                key={activeTab + "-kpis"}
-                initial="hidden" animate="visible" exit="exit"
-                variants={{
-                  hidden: { opacity: 0 },
-                  visible: { opacity: 1, transition: { duration: 0.4 } },
-                  exit: { opacity: 0, transition: { duration: 0.4 } }
-                }}
-              >
-                <EmptyState condition={kpis.total_cases === 0} message="No valid cases found. The column mapping may be incorrect. Please check your mapping and rebuild the event log.">
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 8 }}>
-                    <div>
-                      <KpiCard label="Cases" value={kpis.total_cases} color="#6a3382" tooltip={kpiTooltips.total_cases} />
-                    </div>
-                    <div>
-                      <KpiCard label="PO Created" value={kpis.po_created} color="#6a3382" tooltip={kpiTooltips.po_created} />
-                    </div>
-                    <div>
-                      <KpiCard label="GR Postings" value={kpis.gr_postings} color="#6a3382" tooltip={kpiTooltips.gr_postings} />
-                    </div>
-                    <div>
-                      <KpiCard label="Invoices Posted" value={kpis.invoices_posted} color="#6a3382" tooltip={kpiTooltips.invoices_posted} />
-                    </div>
-                    <div>
-                      <KpiCard label="Total Reversals" value={kpis.reversals} color="#6a3382" tooltip={kpiTooltips.reversals} />
-                    </div>
-                    <div>
-                      <KpiCard label="Vendors" value={kpis.unique_vendors} color="#6a3382" tooltip={kpiTooltips.unique_vendors} />
-                    </div>
-                    <div>
-                      <KpiCard label="Avg Completion (Days)" value={kpis.avg_completion_days} color="#6a3382" tooltip="Average end-to-end process duration in days" />
-                    </div>
-                  </div>
+        <div style={{
+          flex: 1, overflowY: 'auto', padding: '12px 14px 40px',
+          display: 'flex', flexDirection: 'column', gap: 10
+        }}>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 8, marginTop: 8 }}>
-                    <div>
-                      <ConfKpiCard label="PO Without PR" value={kpis.po_without_pr} color="#6a3382" sub="PO raised without PR" tooltip={kpiTooltips.po_without_pr} />
-                    </div>
-                    <div>
-                      <ConfKpiCard label="PR Rev. After PO Date" value={kpis.pr_rev_after_po} color="#6a3382" sub="Late PR reversals" tooltip={kpiTooltips.pr_rev_after_po} />
-                    </div>
-                    <div>
-                      <ConfKpiCard label="PO Rev. After GR" value={kpis.po_rev_after_gr} color="#6a3382" sub="Late PO reversals" tooltip={kpiTooltips.po_rev_after_gr} />
-                    </div>
-                    <div>
-                      <ConfKpiCard label="GR Without Invoice" value={kpis.gr_no_invoice} color="#6a3382" sub="GR not yet invoiced" tooltip={kpiTooltips.gr_no_invoice} />
-                    </div>
-                    <div>
-                      <ConfKpiCard label="Invoice Without GR" value={kpis.inv_no_gr} color="#6a3382" sub="Invoice before GR" tooltip={kpiTooltips.inv_no_gr} />
-                    </div>
-                  </div>
-                </EmptyState>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {activeTab === 'process' ? (
-            <div
-              key="process"
-              style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1, paddingBottom: '20px' }}
-            >
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 10 }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-
-                  <div style={{
-                    background: C.card, borderRadius: 8, border: `1px solid ${C.border}`,
-                    boxShadow: '0 2px 8px rgba(0,0,0,.05)', overflow: 'hidden',
-                    display: 'flex', flexDirection: 'column', height: 915
-                  }}>
-
-                    <div style={{
-                      padding: '12px 14px 8px', borderBottom: `1px solid ${C.border}`,
-                      background: C.jkBlue,
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0
-                    }}>
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Process Map</div>
-                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)' }}>Flow & Frequency Analysis</div>
-                      </div>
-                      <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.2)', padding: 2, borderRadius: 4 }}>
-                        <button
-                          onClick={() => setLayoutDir('LR')}
-                          style={{
-                            fontSize: 11, padding: '4px 8px', border: 'none', cursor: 'pointer', borderRadius: 3,
-                            background: layoutDir === 'LR' ? '#fff' : 'transparent',
-                            color: layoutDir === 'LR' ? C.jkBlue : '#fff',
-                            fontWeight: layoutDir === 'LR' ? 700 : 400
-                          }}>Horizontal</button>
-                        <button
-                          onClick={() => setLayoutDir('TB')}
-                          style={{
-                            fontSize: 11, padding: '4px 8px', border: 'none', cursor: 'pointer', borderRadius: 3,
-                            background: layoutDir === 'TB' ? '#fff' : 'transparent',
-                            color: layoutDir === 'TB' ? C.jkBlue : '#fff',
-                            fontWeight: layoutDir === 'TB' ? 700 : 400
-                          }}>Vertical</button>
-                      </div>
-                    </div>
-
-                    <div style={{ flex: 1, position: 'relative' }}>
-                      {pmError && (
-                        <div style={{
-                          position: 'absolute', top: 8, left: 8, right: 8, zIndex: 10,
-                          fontSize: 11, color: '#A4262C', background: '#FDE7E9',
-                          border: '1px solid #FBC5C9', borderRadius: 4, padding: '6px 12px'
-                        }}>
-                          Error: {pmError}
-                        </div>
-                      )}
-
-                      {(pmLoading || tabSkeleton) && (
-                        <div style={{
-                          position: 'absolute', inset: 0, zIndex: 20,
-                          background: 'rgba(248,250,255,0.88)', backdropFilter: 'blur(4px)',
-                          display: 'flex', flexDirection: 'column',
-                          alignItems: 'center', justifyContent: 'center', gap: 14, borderRadius: 6
-                        }}>
-                          <div style={{ textAlign: 'center' }}>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: '#323130', marginBottom: 4 }}>
-                              Building Process Map
-                            </div>
-                            <div style={{ fontSize: 11, color: C.slate }}>
-                              Analysing transitions and paths…
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      <div style={{ position: 'absolute', inset: 0, background: '#FAFAFA' }}>
-                        <ReactFlow
-                          nodes={rfNodes} edges={rfEdges}
-                          onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
-                          nodeTypes={nodeTypes} edgeTypes={edgeTypes}
-                          fitView fitViewOptions={{ padding: .18 }}
-                          minZoom={0.1} maxZoom={4}
-                          proOptions={{ hideAttribution: true }}
-                          onNodeMouseEnter={(e, n) => setHoverInfo({
-                            x: e.clientX, y: e.clientY,
-                            title: n.data?.label || '', value: n.data?.frequency || 0
-                          })}
-                          onNodeMouseLeave={() => setHoverInfo(null)}
-                          onEdgeMouseEnter={(e, ed) => setHoverInfo({
-                            x: e.clientX, y: e.clientY,
-                            title: `${ed.source} → ${ed.target}`,
-                            value: ed.data?.frequency || 0, isEdge: true, avgDays: ed.data?.avg_days
-                          })}
-                          onEdgeMouseLeave={() => setHoverInfo(null)}
-                          defaultEdgeOptions={{ type: 'freqEdge' }}>
-                          <Background color="#C8D3E8" gap={24} size={1.5} variant="dots" />
-                          <Controls showInteractive={false}
-                            style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 6 }} />
-                          <MiniMap zoomable pannable
-                            nodeColor={C.mapNodeBg}
-                            maskColor="rgba(240,244,250,.85)"
-                            style={{ border: `1px solid ${C.border}`, borderRadius: 6 }} />
-                        </ReactFlow>
-                      </div>
-
-                      {hoverInfo && (
-                        <div style={{
-                          position: 'fixed', left: hoverInfo.x + 16, top: hoverInfo.y + 16,
-                          zIndex: 99999, pointerEvents: 'none',
-                          background: 'rgba(255,255,255,.98)', border: `1px solid ${C.border}`,
-                          borderRadius: 6, padding: '10px 14px',
-                          boxShadow: '0 4px 12px rgba(0,0,0,.15)', fontSize: 12, color: '#323130', minWidth: 160
-                        }}>
-                          <div style={{ fontWeight: 700, color: '#0078D4', marginBottom: 6 }}>{hoverInfo.title}</div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
-                            <span style={{ color: C.slate }}>{hoverInfo.isEdge ? 'Transitions:' : 'Unique Cases:'}</span>
-                            <strong>{Number(hoverInfo.value).toLocaleString()}</strong>
-                          </div>
-                          {hoverInfo.avgDays != null && (
-                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginTop: 4 }}>
-                              <span style={{ color: C.slate }}>Avg Duration:</span>
-                              <strong>{hoverInfo.avgDays}d</strong>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, height: '100%' }}>
-
-                  <ChartCard title="Happy Path vs Deviations" loading={dashboardLoading || tabSkeleton} highlighted={crossFilter?.type === 'status'} onClear={clearCF} skeletonType="pie">
-                    <StatusDonutChart data={happyPathData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
-                  </ChartCard>
-
-                  <ChartCard title="Activity Frequency"
-                    loading={dashboardLoading || tabSkeleton}
-                    highlighted={crossFilter?.type === 'activity'} onClear={clearCF} skeletonType="bar-horizontal">
-                    <ActivityChart data={actData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
-                  </ChartCard>
-
-                  <ChartCard title="Lead Time Distribution"
-                    loading={dashboardLoading || tabSkeleton}
-                    highlighted={crossFilter?.type === 'lead_time'} onClear={clearCF} skeletonType="bar-vertical">
-                    <LeadTimeChart data={ltData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
-                  </ChartCard>
-
-                </div>
-              </div>
-
-              <div style={{ marginTop: '2px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
-
-                  <ChartCard title="PO Reversals by ERNAM" subtitle="Users reversing the most POs" loading={dashboardLoading || tabSkeleton} highlighted={crossFilter?.type === 'ernam'} onClear={clearCF} skeletonType="bar-horizontal">
-                    <EmptyState condition={!dashboardLoading && poRevErnam.length === 0} message="No PO reversals found.">
-                      <ScrollableHBarChart data={poRevErnam} dataKey="count" labelKey="ernam" color="#5aabee" crossFilter={crossFilter} crossKey="ernam" isAnimationActive={false} onSelect={handleSelect} />
-                    </EmptyState>
-                  </ChartCard>
-
-                  <ChartCard title="PO Reversals Timeline" subtitle="Trend of PO reversals over time" loading={dashboardLoading || tabSkeleton} highlighted={crossFilter?.type === 'month'} onClear={clearCF} skeletonType="bar-vertical">
-                    <EmptyState condition={!dashboardLoading && poRevTimeline.length === 0} message="No PO reversals found.">
-                      <MonthlyChart data={poRevTimeline} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
-                    </EmptyState>
-                  </ChartCard>
-
-                  <ChartCard title="Late PR Reversals (By ERNAM)" subtitle="PRs reversed AFTER PO creation" loading={dashboardLoading || tabSkeleton} highlighted={crossFilter?.type === 'ernam'} onClear={clearCF} skeletonType="bar-horizontal">
-                    <EmptyState condition={!dashboardLoading && prRevAfterPo.length === 0} message="No late PR reversals found (or Requisition data is not uploaded).">
-                      <ScrollableHBarChart data={prRevAfterPo} dataKey="count" labelKey="ernam" color="#CA5010" crossFilter={crossFilter} crossKey="ernam" isAnimationActive={false} onSelect={handleSelect} />
-                    </EmptyState>
-                  </ChartCard>
-
-                  <ChartCard title="PO created AFTER GR or Invoice (By ERNAM)" loading={dashboardLoading || tabSkeleton} highlighted={crossFilter?.type === 'ernam'} onClear={clearCF} skeletonType="bar-horizontal">
-                    <EmptyState condition={!dashboardLoading && seqViolation.length === 0} message="No sequence violations found (or GR/Invoice data is not uploaded).">
-                      <ScrollableHBarChart data={seqViolation} dataKey="count" labelKey="ernam" color="#1aca60" crossFilter={crossFilter} crossKey="ernam" isAnimationActive={false} onSelect={handleSelect} />
-                    </EmptyState>
-                  </ChartCard>
-
-                </div>
-              </div>
-
-              <div style={{ marginTop: '2px' }}>
-                <ChartCard title="PO Reversals by Purchasing Group" subtitle="Purchasing groups with the most PO reversal activity — click a bar to filter" loading={dashboardLoading || tabSkeleton} highlighted={crossFilter?.type === 'purch_group'} onClear={clearCF} skeletonType="bar-vertical">
-                  <EmptyState condition={!dashboardLoading && revByPurchGroup.length === 0} message="No PO reversals found.">
-                    <RevByPurchGroupVBarChart data={revByPurchGroup} crossFilter={crossFilter} onSelect={handleSelect} />
-                  </EmptyState>
-                </ChartCard>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10, marginTop: '10px' }}>
-                <ChartCard title="Case Details" subtitle="Click a Case ID to view its chronological event log" loading={dashboardLoading || tabSkeleton} skeletonType="timeline">
-                  <CaseTable
-                    data={caseTableData}
-                    events={caseEvents}
-                    selectedId={selected.case_id}
-                    onSelect={(id) => {
-                      const newId = selected.case_id === id ? 'ALL' : id;
-                      setSelected(prev => ({ ...prev, case_id: newId }));
-                      setCrossFilter(null);
-                      logAction('FILTER', `Clicked case row: ${newId}`);
-                    }}
-                  />
-                </ChartCard>
-              </div>
-            </div>
-          ) : (
-            <div
-              key="dimensions"
-              style={{
-                display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10,
-                gridAutoRows: 'minmax(280px, auto)', alignItems: 'stretch', paddingBottom: '24px'
-              }}
-            >
-              <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, height: '100%' }}>
-                <ChartCard title="Monthly Trend (Unique Cases)" subtitle="Unique active cases per month" skeletonType="line"
-                  loading={dashboardLoading || tabSkeleton}
-                  highlighted={crossFilter?.type === 'month'} onClear={clearCF}>
-                  <MonthlyChart data={monData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
-                </ChartCard>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, height: '100%' }}>
-                <ChartCard title="User Activity (ERNAM)" subtitle="Who performed activities (Unique Cases)" skeletonType="bar-horizontal"
-                  loading={dashboardLoading || tabSkeleton}
-                  highlighted={crossFilter?.type === 'ernam'} onClear={clearCF}>
-                  <ErnamChart data={ernamData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
-                </ChartCard>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, height: '100%' }}>
-                <ChartCard title="Company Distribution" subtitle="Cases per company code" skeletonType="pie"
-                  loading={dashboardLoading || tabSkeleton}
-                  highlighted={crossFilter?.type === 'company'} onClear={clearCF}>
-                  <CompanyDonutChart data={compData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
-                </ChartCard>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, height: '100%' }}>
-                <ChartCard title="PO Type (BSART)" subtitle="Distribution by document type" skeletonType="bar-vertical"
-                  loading={dashboardLoading || tabSkeleton}
-                  highlighted={crossFilter?.type === 'bsart'} onClear={clearCF}>
-                  <ScrollableVBarChart data={bsData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
-                </ChartCard>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, height: '100%' }}>
-                <ChartCard title="Material Group" subtitle="Purchasing activity by material category" skeletonType="bar-horizontal"
-                  loading={dashboardLoading || tabSkeleton}
-                  highlighted={crossFilter?.type === 'matkl'} onClear={clearCF}>
-                  <ScrollableHBarChart data={mkData} dataKey="count" labelKey="matkl"
-                    color="#0078D4" crossFilter={crossFilter} crossKey="matkl" onSelect={handleSelect} isAnimationActive={false} />
-                </ChartCard>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, height: '100%' }}>
-                <ChartCard title="Vendors by Cases" subtitle="Top suppliers by volume" skeletonType="bar-horizontal"
-                  loading={dashboardLoading || tabSkeleton}
-                  highlighted={crossFilter?.type === 'vendor'} onClear={clearCF}>
-                  <ScrollableHBarChart data={vendData} dataKey="count" labelKey="vendor"
-                    color="#005A9E" crossFilter={crossFilter} crossKey="vendor" onSelect={handleSelect} isAnimationActive={false} />
-                </ChartCard>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, height: '100%' }}>
-                <ChartCard title="Purchasing Group Workload (EKGRP)" subtitle="Cases handled per purchasing group — click a bar to filter" skeletonType="bar-horizontal"
-                  loading={dashboardLoading || tabSkeleton}
-                  highlighted={crossFilter?.type === 'purch_group'} onClear={clearCF}>
-                  <EmptyState condition={!dashboardLoading && purchGroupWorkload.length === 0} message="No workload data found.">
-                    <PurchGroupWorkloadChart data={purchGroupWorkload} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
-                  </EmptyState>
-                </ChartCard>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <ChartCard title="Avg Days PO → GR by Vendor" skeletonType="bar-horizontal"
-                  loading={dashboardLoading || tabSkeleton}
-                  highlighted={crossFilter?.type === 'vendor'} onClear={clearCF}>
-                  <EmptyState condition={!dashboardLoading && vendorLeadTime.length === 0} message="No GR data found to calculate lead time.">
-                    <VendorAvgDaysChart data={vendorLeadTime} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
-                  </EmptyState>
-                </ChartCard>
-              </div>
-            </div>
+          {!dataLoaded && (
+            <UploadBanner
+              currentUser={currentUser}
+              onUploaded={onUploaded}
+              serverOk={serverOk}
+              onLoadingChange={handleLoadingChange}
+              myFiles={myFiles}
+              fetchingFiles={fetchingFiles}
+              handleLoadOldFile={handleLoadOldFile}
+              step={uploadStep}
+              setStep={setUploadStep}
+              introStep={introStep}
+              setIntroStep={setIntroStep} />
           )}
 
-        </>)}
+          {dataLoaded && (mappingError || (kpis && kpis.total_cases === 0 && !hasActiveFilters)) && (
+            <div style={{
+              background: '#FFF4CE', border: '1px solid #FDE7E9', borderRadius: 8, padding: '12px 20px',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
+              boxShadow: '0 2px 4px rgba(0,0,0,0.05)', marginBottom: 2
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ fontSize: 20 }}>⚠️</span>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: '#323130' }}>Column mapping might be wrong</div>
+                  <div style={{ fontSize: 12, color: '#605E5C', marginTop: 2 }}>{mappingError || "No cases found. Please check your column mappings."}</div>
+                </div>
+              </div>
+              <button onClick={() => handleFixMapping(uploadStepOverride || 'table')}
+                style={{ padding: '8px 20px', background: '#0078D4', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 700, cursor: 'pointer', fontSize: 12, transition: 'all 0.2s' }}
+                onMouseOver={e => e.currentTarget.style.background = '#005A9E'}
+                onMouseOut={e => e.currentTarget.style.background = '#0078D4'}>
+                Fix Mapping
+              </button>
+            </div>
+          )}
+          {dataLoaded && (<>
+            <div style={{
+              background: C.card, borderRadius: 8, padding: '10px 14px',
+              border: `1px solid ${C.border}`, boxShadow: '0 2px 6px rgba(0,0,0,.04)'
+            }}>
 
-        {/* --- NEW FILE HUB UI INSTEAD OF "NO DATA LOADED" --- */}
+              <div style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '12px',
+                alignItems: 'end'
+              }}>
+                {slicer('case_id', 'Case ID', 'case_ids', { flex: '1.5 1 180px' })}
+                {slicer('company', 'Company', 'companies', { flex: '0.4 1 80px', minWidth: '80px' })}
+                {slicer('matkl', 'Material Group', 'matkls', { flex: '1 1 140px' })}
+                {slicer('vendor', 'Vendor', 'vendors', { flex: '1.5 1 180px' })}
+                {slicer('purch_group', 'Purchasing Group', 'purch_groups', { flex: '1 1 140px' })}
+                <FilterSelect
+                  key="lead_time"
+                  label="Lead Time"
+                  value={selected.lead_time || 'ALL'}
+                  options={["ALL", "0-5 Days", "5-10 Days", "10-20 Days", "20-50 Days", "50+ Days"]}
+                  style={{ flex: '1 1 140px' }}
+                  onChange={(val) => {
+                    logAction('FILTER', `Changed slicer lead_time to ${val}`);
+                    setSelected(prev => ({ ...prev, lead_time: val }));
+                    setCrossFilter(null);
+                  }}
+                />
+                {slicer('events', 'Events', 'events', { flex: '1 1 140px' })}
+                <DateRangeFilter
+                  label="Date Range"
+                  fromValue={selected.start_date}
+                  toValue={selected.end_date}
+                  minDate={dateRange.min_date}
+                  maxDate={dateRange.max_date}
+                  onFromChange={(val) => {
+                    logAction('FILTER', `Changed start_date to ${val}`);
+                    setSelected(prev => ({ ...prev, start_date: val }));
+                  }}
+                  onToChange={(val) => {
+                    logAction('FILTER', `Changed end_date to ${val}`);
+                    setSelected(prev => ({ ...prev, end_date: val }));
+                  }}
+                />
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, justifyContent: 'flex-end' }}>
+                  <div style={{ fontSize: 11, color: 'transparent', fontWeight: 600, userSelect: 'none' }}>.</div>
+                  <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                    {/* Reset Button – blue P2P theme */}
+                    <button
+                      onClick={resetAll}
+                      title="Reset all filters"
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        width: 28, height: 26, padding: 0,
+                        background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)',
+                        border: '1px solid #93C5FD', borderRadius: 5, cursor: 'pointer',
+                        boxShadow: '0 1px 3px rgba(0,120,212,0.15)', transition: 'all 0.2s',
+                        flexShrink: 0,
+                      }}
+                      onMouseOver={e => { e.currentTarget.style.background = 'linear-gradient(135deg,#DBEAFE 0%,#BFDBFE 100%)'; e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,120,212,0.25)'; }}
+                      onMouseOut={e => { e.currentTarget.style.background = 'linear-gradient(135deg,#EFF6FF 0%,#DBEAFE 100%)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,120,212,0.15)'; }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0078D4" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                        <path d="M3 3v5h5" />
+                      </svg>
+                    </button>
+                    {/* Refresh Button – blue P2P theme */}
+                    <button
+                      onClick={handleRefresh}
+                      title="Refresh data"
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        width: 28, height: 26, padding: 0,
+                        background: 'linear-gradient(135deg, #0078D4 0%, #005A9E 100%)',
+                        border: 'none', borderRadius: 5, cursor: 'pointer',
+                        boxShadow: '0 1px 3px rgba(0,120,212,0.35)', transition: 'all 0.2s',
+                        flexShrink: 0,
+                      }}
+                      onMouseOver={e => { e.currentTarget.style.background = 'linear-gradient(135deg,#005A9E 0%,#004578 100%)'; e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,120,212,0.5)'; }}
+                      onMouseOut={e => { e.currentTarget.style.background = 'linear-gradient(135deg,#0078D4 0%,#005A9E 100%)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,120,212,0.35)'; }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="23 4 23 10 17 10" />
+                        <polyline points="1 20 1 14 7 14" />
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                      </svg>
+                    </button>
+                    {/* Download CSV Button */}
+                    <button
+                      onClick={() => {
+                        const url = `${API}/p2p/download_output?username=${encodeURIComponent(currentUser || 'Unknown')}`;
+                        const a = document.createElement('a');
+                        a.href = url; a.download = ''; a.click();
+                        logAction('DOWNLOAD', 'Downloaded output CSV from dashboard');
+                      }}
+                      title="Download current dataset as CSV"
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                        padding: '0 8px', height: 26,
+                        background: 'linear-gradient(135deg, #005A9E 0%, #003E6B 100%)',
+                        color: '#fff', border: 'none', borderRadius: 5, cursor: 'pointer',
+                        fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap',
+                        boxShadow: '0 1px 3px rgba(0,90,158,0.35)', transition: 'all 0.2s',
+                        flexShrink: 0,
+                      }}
+                      onMouseOver={e => { e.currentTarget.style.background = 'linear-gradient(135deg,#003E6B 0%,#002D50 100%)'; e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,90,158,0.5)'; }}
+                      onMouseOut={e => { e.currentTarget.style.background = 'linear-gradient(135deg,#005A9E 0%,#003E6B 100%)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,90,158,0.35)'; }}
+                    >
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                      </svg>
+                      CSV
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <AnimatePresence mode="wait">
+              {kpis && (
+                <motion.div
+                  key={activeTab + "-kpis"}
+                  initial="hidden" animate="visible" exit="exit"
+                  variants={{
+                    hidden: { opacity: 0 },
+                    visible: { opacity: 1, transition: { duration: 0.4 } },
+                    exit: { opacity: 0, transition: { duration: 0.4 } }
+                  }}
+                >
+                  <EmptyState condition={kpis.total_cases === 0} message="No valid cases found. The column mapping may be incorrect. Please check your mapping and rebuild the event log.">
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 8 }}>
+                      <div>
+                        <KpiCard label="Cases" value={kpis.total_cases} color="#6a3382" tooltip={kpiTooltips.total_cases} />
+                      </div>
+                      <div>
+                        <KpiCard label="PO Created" value={kpis.po_created} color="#6a3382" tooltip={kpiTooltips.po_created} />
+                      </div>
+                      <div>
+                        <KpiCard label="GR Postings" value={kpis.gr_postings} color="#6a3382" tooltip={kpiTooltips.gr_postings} />
+                      </div>
+                      <div>
+                        <KpiCard label="Invoices Posted" value={kpis.invoices_posted} color="#6a3382" tooltip={kpiTooltips.invoices_posted} />
+                      </div>
+                      <div>
+                        <KpiCard label="Total Reversals" value={kpis.reversals} color="#6a3382" tooltip={kpiTooltips.reversals} />
+                      </div>
+                      <div>
+                        <KpiCard label="Vendors" value={kpis.unique_vendors} color="#6a3382" tooltip={kpiTooltips.unique_vendors} />
+                      </div>
+                      <div>
+                        <KpiCard label="Avg Completion (Days)" value={kpis.avg_completion_days} color="#6a3382" tooltip="Average end-to-end process duration in days" />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 8, marginTop: 8 }}>
+                      <div>
+                        <ConfKpiCard label="PO Without PR" value={kpis.po_without_pr} color="#6a3382" sub="PO raised without PR" tooltip={kpiTooltips.po_without_pr} />
+                      </div>
+                      <div>
+                        <ConfKpiCard label="PR Rev. After PO Date" value={kpis.pr_rev_after_po} color="#6a3382" sub="Late PR reversals" tooltip={kpiTooltips.pr_rev_after_po} />
+                      </div>
+                      <div>
+                        <ConfKpiCard label="PO Rev. After GR" value={kpis.po_rev_after_gr} color="#6a3382" sub="Late PO reversals" tooltip={kpiTooltips.po_rev_after_gr} />
+                      </div>
+                      <div>
+                        <ConfKpiCard label="GR Without Invoice" value={kpis.gr_no_invoice} color="#6a3382" sub="GR not yet invoiced" tooltip={kpiTooltips.gr_no_invoice} />
+                      </div>
+                      <div>
+                        <ConfKpiCard label="Invoice Without GR" value={kpis.inv_no_gr} color="#6a3382" sub="Invoice before GR" tooltip={kpiTooltips.inv_no_gr} />
+                      </div>
+                    </div>
+                  </EmptyState>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {activeTab === 'process' ? (
+              <div
+                key="process"
+                style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1, paddingBottom: '20px' }}
+              >
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 10 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+                    <div style={{
+                      background: C.card, borderRadius: 8, border: `1px solid ${C.border}`,
+                      boxShadow: '0 2px 8px rgba(0,0,0,.05)', overflow: 'hidden',
+                      display: 'flex', flexDirection: 'column', height: 915
+                    }}>
+
+                      <div style={{
+                        padding: '12px 14px 8px', borderBottom: `1px solid ${C.border}`,
+                        background: C.jkBlue,
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0
+                      }}>
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Process Map</div>
+                          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)' }}>Flow & Frequency Analysis</div>
+                        </div>
+                        <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.2)', padding: 2, borderRadius: 4 }}>
+                          <button
+                            onClick={() => setLayoutDir('LR')}
+                            style={{
+                              fontSize: 11, padding: '4px 8px', border: 'none', cursor: 'pointer', borderRadius: 3,
+                              background: layoutDir === 'LR' ? '#fff' : 'transparent',
+                              color: layoutDir === 'LR' ? C.jkBlue : '#fff',
+                              fontWeight: layoutDir === 'LR' ? 700 : 400
+                            }}>Horizontal</button>
+                          <button
+                            onClick={() => setLayoutDir('TB')}
+                            style={{
+                              fontSize: 11, padding: '4px 8px', border: 'none', cursor: 'pointer', borderRadius: 3,
+                              background: layoutDir === 'TB' ? '#fff' : 'transparent',
+                              color: layoutDir === 'TB' ? C.jkBlue : '#fff',
+                              fontWeight: layoutDir === 'TB' ? 700 : 400
+                            }}>Vertical</button>
+                        </div>
+                      </div>
+
+                      <div style={{ flex: 1, position: 'relative' }}>
+                        {pmError && (
+                          <div style={{
+                            position: 'absolute', top: 8, left: 8, right: 8, zIndex: 10,
+                            fontSize: 11, color: '#A4262C', background: '#FDE7E9',
+                            border: '1px solid #FBC5C9', borderRadius: 4, padding: '6px 12px'
+                          }}>
+                            Error: {pmError}
+                          </div>
+                        )}
+
+                        {(pmLoading || tabSkeleton) && (
+                          <div style={{
+                            position: 'absolute', inset: 0, zIndex: 20,
+                            background: 'rgba(248,250,255,0.88)', backdropFilter: 'blur(4px)',
+                            display: 'flex', flexDirection: 'column',
+                            alignItems: 'center', justifyContent: 'center', gap: 14, borderRadius: 6
+                          }}>
+                            <div style={{ textAlign: 'center' }}>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: '#323130', marginBottom: 4 }}>
+                                Building Process Map
+                              </div>
+                              <div style={{ fontSize: 11, color: C.slate }}>
+                                Analysing transitions and paths…
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        <div style={{ position: 'absolute', inset: 0, background: '#FAFAFA' }}>
+                          <ReactFlow
+                            nodes={rfNodes} edges={rfEdges}
+                            onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
+                            nodeTypes={nodeTypes} edgeTypes={edgeTypes}
+                            fitView fitViewOptions={{ padding: .18 }}
+                            minZoom={0.1} maxZoom={4}
+                            proOptions={{ hideAttribution: true }}
+                            onNodeMouseEnter={(e, n) => setHoverInfo({
+                              x: e.clientX, y: e.clientY,
+                              title: n.data?.label || '', value: n.data?.frequency || 0
+                            })}
+                            onNodeMouseLeave={() => setHoverInfo(null)}
+                            onEdgeMouseEnter={(e, ed) => setHoverInfo({
+                              x: e.clientX, y: e.clientY,
+                              title: `${ed.source} → ${ed.target}`,
+                              value: ed.data?.frequency || 0, isEdge: true, avgDays: ed.data?.avg_days
+                            })}
+                            onEdgeMouseLeave={() => setHoverInfo(null)}
+                            defaultEdgeOptions={{ type: 'freqEdge' }}>
+                            <Background color="#C8D3E8" gap={24} size={1.5} variant="dots" />
+                            <Controls showInteractive={false}
+                              style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 6 }} />
+                            <MiniMap zoomable pannable
+                              nodeColor={C.mapNodeBg}
+                              maskColor="rgba(240,244,250,.85)"
+                              style={{ border: `1px solid ${C.border}`, borderRadius: 6 }} />
+                          </ReactFlow>
+                        </div>
+
+                        {hoverInfo && (
+                          <div style={{
+                            position: 'fixed', left: hoverInfo.x + 16, top: hoverInfo.y + 16,
+                            zIndex: 99999, pointerEvents: 'none',
+                            background: 'rgba(255,255,255,.98)', border: `1px solid ${C.border}`,
+                            borderRadius: 6, padding: '10px 14px',
+                            boxShadow: '0 4px 12px rgba(0,0,0,.15)', fontSize: 12, color: '#323130', minWidth: 160
+                          }}>
+                            <div style={{ fontWeight: 700, color: '#0078D4', marginBottom: 6 }}>{hoverInfo.title}</div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+                              <span style={{ color: C.slate }}>{hoverInfo.isEdge ? 'Transitions:' : 'Unique Cases:'}</span>
+                              <strong>{Number(hoverInfo.value).toLocaleString()}</strong>
+                            </div>
+                            {hoverInfo.avgDays != null && (
+                              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginTop: 4 }}>
+                                <span style={{ color: C.slate }}>Avg Duration:</span>
+                                <strong>{hoverInfo.avgDays}d</strong>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, height: '100%' }}>
+
+                    <ChartCard title="Happy Path vs Deviations" loading={dashboardLoading || tabSkeleton} highlighted={crossFilter?.type === 'status'} onClear={clearCF} skeletonType="pie">
+                      <StatusDonutChart data={happyPathData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
+                    </ChartCard>
+
+                    <ChartCard title="Activity Frequency"
+                      loading={dashboardLoading || tabSkeleton}
+                      highlighted={crossFilter?.type === 'activity'} onClear={clearCF} skeletonType="bar-horizontal">
+                      <ActivityChart data={actData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
+                    </ChartCard>
+
+                    <ChartCard title="Lead Time Distribution"
+                      loading={dashboardLoading || tabSkeleton}
+                      highlighted={crossFilter?.type === 'lead_time'} onClear={clearCF} skeletonType="bar-vertical">
+                      <LeadTimeChart data={ltData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
+                    </ChartCard>
+
+                  </div>
+                </div>
+
+                <div style={{ marginTop: '2px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+
+                    <ChartCard title="SoD Violations" subtitle="Cases with segregation of duties violations" loading={dashboardLoading || tabSkeleton} highlighted={crossFilter?.type === 'sod'} onClear={clearCF} skeletonType="bar-vertical">
+                      <EmptyState condition={!dashboardLoading && sodData.length === 0} message="No SoD violations found.">
+                        <SodViolationsChart data={sodData} crossFilter={crossFilter} onSelect={handleSelect} />
+                      </EmptyState>
+                    </ChartCard>
+
+                    <ChartCard title="PO Reversals Timeline" subtitle="Trend of PO reversals over time" loading={dashboardLoading || tabSkeleton} highlighted={crossFilter?.type === 'month'} onClear={clearCF} skeletonType="bar-vertical">
+                      <EmptyState condition={!dashboardLoading && poRevTimeline.length === 0} message="No PO reversals found.">
+                        <MonthlyChart data={poRevTimeline} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
+                      </EmptyState>
+                    </ChartCard>
+
+                    <ChartCard title="PO Reversals by Purchasing Group" subtitle="Purchasing groups with the most PO reversal activity — click a bar to filter" loading={dashboardLoading || tabSkeleton} highlighted={crossFilter?.type === 'purch_group'} onClear={clearCF} skeletonType="bar-vertical">
+                      <EmptyState condition={!dashboardLoading && revByPurchGroup.length === 0} message="No PO reversals found.">
+                        <RevByPurchGroupVBarChart data={revByPurchGroup} crossFilter={crossFilter} onSelect={handleSelect} />
+                      </EmptyState>
+                    </ChartCard>
+
+                    <ChartCard title="PO Reversals by Username" subtitle="Users reversing the most POs" loading={dashboardLoading || tabSkeleton} highlighted={crossFilter?.type === 'ernam'} onClear={clearCF} skeletonType="bar-horizontal">
+                      <EmptyState condition={!dashboardLoading && poRevErnam.length === 0} message="No PO reversals found.">
+                        <ScrollableHBarChart data={poRevErnam} dataKey="count" labelKey="ernam" color="#5aabee" crossFilter={crossFilter} crossKey="ernam" isAnimationActive={false} onSelect={handleSelect} />
+                      </EmptyState>
+                    </ChartCard>
+
+                    <ChartCard title="Late PR Reversals (By Username)" subtitle="PRs reversed AFTER PO creation" loading={dashboardLoading || tabSkeleton} highlighted={crossFilter?.type === 'ernam'} onClear={clearCF} skeletonType="bar-horizontal">
+                      <EmptyState condition={!dashboardLoading && prRevAfterPo.length === 0} message="No late PR reversals found (or Requisition data is not uploaded).">
+                        <ScrollableHBarChart data={prRevAfterPo} dataKey="count" labelKey="ernam" color="#CA5010" crossFilter={crossFilter} crossKey="ernam" isAnimationActive={false} onSelect={handleSelect} />
+                      </EmptyState>
+                    </ChartCard>
+
+                    <ChartCard title="PO created AFTER GR or Invoice (By Username)" loading={dashboardLoading || tabSkeleton} highlighted={crossFilter?.type === 'ernam'} onClear={clearCF} skeletonType="bar-horizontal">
+                      <EmptyState condition={!dashboardLoading && seqViolation.length === 0} message="No sequence violations found (or GR/Invoice data is not uploaded).">
+                        <ScrollableHBarChart data={seqViolation} dataKey="count" labelKey="ernam" color="#1aca60" crossFilter={crossFilter} crossKey="ernam" isAnimationActive={false} onSelect={handleSelect} />
+                      </EmptyState>
+                    </ChartCard>
+
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10, marginTop: '10px' }}>
+                  <ChartCard title="Case Details" subtitle="Click a Case ID to view its chronological event log" loading={dashboardLoading || tabSkeleton} skeletonType="timeline">
+                    <CaseTable
+                      data={caseTableData}
+                      events={caseEvents}
+                      selectedId={selected.case_id}
+                      onSelect={(id) => {
+                        const newId = selected.case_id === id ? 'ALL' : id;
+                        setSelected(prev => ({ ...prev, case_id: newId }));
+                        setCrossFilter(null);
+                        logAction('FILTER', `Clicked case row: ${newId}`);
+                      }}
+                    />
+                  </ChartCard>
+                </div>
+              </div>
+            ) : (
+              <div
+                key="dimensions"
+                style={{
+                  display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10,
+                  gridAutoRows: 'minmax(280px, auto)', alignItems: 'stretch', paddingBottom: '24px'
+                }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, height: '100%' }}>
+                  <ChartCard title="Monthly Trend (Unique Cases)" subtitle="Unique active cases per month" skeletonType="line"
+                    loading={dashboardLoading || tabSkeleton}
+                    highlighted={crossFilter?.type === 'month'} onClear={clearCF}>
+                    <MonthlyChart data={monData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
+                  </ChartCard>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, height: '100%' }}>
+                  <ChartCard title="User Activity (ERNAM)" subtitle="Who performed activities (Unique Cases)" skeletonType="bar-horizontal"
+                    loading={dashboardLoading || tabSkeleton}
+                    highlighted={crossFilter?.type === 'ernam'} onClear={clearCF}>
+                    <ErnamChart data={ernamData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
+                  </ChartCard>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, height: '100%' }}>
+                  <ChartCard title="Company Distribution" subtitle="Cases per company code" skeletonType="pie"
+                    loading={dashboardLoading || tabSkeleton}
+                    highlighted={crossFilter?.type === 'company'} onClear={clearCF}>
+                    <CompanyDonutChart data={compData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
+                  </ChartCard>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, height: '100%' }}>
+                  <ChartCard title="PO Type (BSART)" subtitle="Distribution by document type" skeletonType="bar-vertical"
+                    loading={dashboardLoading || tabSkeleton}
+                    highlighted={crossFilter?.type === 'bsart'} onClear={clearCF}>
+                    <ScrollableVBarChart data={bsData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
+                  </ChartCard>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, height: '100%' }}>
+                  <ChartCard title="Material Group" subtitle="Purchasing activity by material category" skeletonType="bar-horizontal"
+                    loading={dashboardLoading || tabSkeleton}
+                    highlighted={crossFilter?.type === 'matkl'} onClear={clearCF}>
+                    <ScrollableHBarChart data={mkData} dataKey="count" labelKey="matkl"
+                      color="#0078D4" crossFilter={crossFilter} crossKey="matkl" onSelect={handleSelect} isAnimationActive={false} />
+                  </ChartCard>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, height: '100%' }}>
+                  <ChartCard title="Vendors by Cases" subtitle="Top suppliers by volume" skeletonType="bar-horizontal"
+                    loading={dashboardLoading || tabSkeleton}
+                    highlighted={crossFilter?.type === 'vendor'} onClear={clearCF}>
+                    <ScrollableHBarChart data={vendData} dataKey="count" labelKey="vendor"
+                      color="#005A9E" crossFilter={crossFilter} crossKey="vendor" onSelect={handleSelect} isAnimationActive={false} />
+                  </ChartCard>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, height: '100%' }}>
+                  <ChartCard title="Purchasing Group Workload (EKGRP)" subtitle="Cases handled per purchasing group — click a bar to filter" skeletonType="bar-horizontal"
+                    loading={dashboardLoading || tabSkeleton}
+                    highlighted={crossFilter?.type === 'purch_group'} onClear={clearCF}>
+                    <EmptyState condition={!dashboardLoading && purchGroupWorkload.length === 0} message="No workload data found.">
+                      <PurchGroupWorkloadChart data={purchGroupWorkload} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
+                    </EmptyState>
+                  </ChartCard>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <ChartCard title="Avg Days PO → GR by Vendor" skeletonType="bar-horizontal"
+                    loading={dashboardLoading || tabSkeleton}
+                    highlighted={crossFilter?.type === 'vendor'} onClear={clearCF}>
+                    <EmptyState condition={!dashboardLoading && vendorLeadTime.length === 0} message="No GR data found to calculate lead time.">
+                      <VendorAvgDaysChart data={vendorLeadTime} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
+                    </EmptyState>
+                  </ChartCard>
+                </div>
+
+                <div style={{ gridColumn: '1 / -1', marginTop: '10px' }}>
+                  <ChartCard title="Case Details (EDA)" subtitle="Click a Case ID to view its chronological event log" loading={dashboardLoading || tabSkeleton} skeletonType="timeline">
+                    <CaseTableEda
+                      data={caseTableData}
+                      events={caseEvents}
+                      selectedId={selected.case_id}
+                      onSelect={(id) => {
+                        const newId = selected.case_id === id ? 'ALL' : id;
+                        setSelected(prev => ({ ...prev, case_id: newId }));
+                        setCrossFilter(null);
+                        logAction('FILTER', `Clicked case row (EDA): ${newId}`);
+                      }}
+                    />
+                  </ChartCard>
+                </div>
+
+              </div>
+            )}
+
+          </>)}
+
+          {/* --- NEW FILE HUB UI INSTEAD OF "NO DATA LOADED" --- */}
+        </div>
+
+        {screenshotting && (
+          <div
+            id="screenshot-loading-overlay"
+            className="no-screenshot"
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 99999,
+              background: 'rgba(15, 23, 42, 0.75)',
+              backdropFilter: 'blur(4px)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 16
+            }}
+          >
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              background: 'rgba(30, 41, 59, 0.9)',
+              padding: '30px 50px',
+              borderRadius: '12px',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)',
+              color: '#fff',
+              gap: 12
+            }}>
+              <div style={{
+                width: 36, height: 36,
+                border: '3px solid rgba(255,255,255,0.2)',
+                borderTop: `3px solid ${C.headerBg}`,
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite'
+              }} />
+              <div style={{ fontSize: 16, fontWeight: 700 }}>Generating Screenshot...</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>Please wait while we capture the dashboard.</div>
+            </div>
+          </div>
+        )}
+
+        <div style={{ textAlign: 'center', fontSize: '12px', color: '#605E5C', padding: '10px 0', borderTop: '1px solid #E1DFDD', flexShrink: 0, zIndex: 100 }}>
+          ©2023 <a href="https://ajalabs.ai" target="_blank" rel="noopener noreferrer" style={{ color: '#323130', textDecoration: 'none', fontWeight: 'bold' }}>ajalabs.ai</a> All rights reserved - <a href="#" style={{ color: '#0078D4', textDecoration: 'none' }}>Data Privacy</a>
+        </div>
+
       </div>
-
-      <div style={{ textAlign: 'center', fontSize: '12px', color: '#605E5C', padding: '10px 0', borderTop: '1px solid #E1DFDD', flexShrink: 0, zIndex: 100 }}>
-        ©2023 <a href="https://ajalabs.ai" target="_blank" rel="noopener noreferrer" style={{ color: '#323130', textDecoration: 'none', fontWeight: 'bold' }}>ajalabs.ai</a> All rights reserved - <a href="#" style={{ color: '#0078D4', textDecoration: 'none' }}>Data Privacy</a>
-      </div>
-
     </div>
   );
 }
