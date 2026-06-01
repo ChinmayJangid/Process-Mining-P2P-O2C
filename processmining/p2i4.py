@@ -363,18 +363,26 @@ def process_df(df: pd.DataFrame) -> pd.DataFrame:
     print(f"[P2I PROCESS] Parsing dates for {len(df)} rows.")
 
     # ── Ensure UniqueID_P2I exists ────────────────────────────────────────────
-    if COL_CASE not in df.columns:
-        if COL_AUFNR in df.columns and COL_POSNR in df.columns:
-            df[COL_CASE] = (
-                df[COL_AUFNR].astype(str).str.strip().str.zfill(12)
-                + df[COL_POSNR].astype(str).str.strip().str.zfill(4)
-            )
-            print(f"[P2I PROCESS] Built UniqueID_P2I from AUFNR+POSNR: {df[COL_CASE].nunique()} items")
-        elif COL_AUFNR in df.columns:
-            df[COL_CASE] = df[COL_AUFNR].astype(str).str.strip().str.zfill(12) + "0001"
-            print(f"[P2I PROCESS] Built UniqueID_P2I from AUFNR only: {df[COL_CASE].nunique()} items")
-        else:
-            print("[P2I PROCESS] WARNING: Neither UniqueID_P2I nor AUFNR found — case ID will be missing")
+    if COL_CASE in df.columns:
+        df = df[df[COL_CASE].notna() & (df[COL_CASE].astype(str).str.strip() != "")]
+        df[COL_CASE] = df[COL_CASE].astype(str).str.strip().str.replace(r"\.0$", "", regex=True)
+    elif COL_AUFNR in df.columns and COL_POSNR in df.columns:
+        df = df[df[COL_AUFNR].notna() & (df[COL_AUFNR].astype(str).str.strip() != "") &
+                df[COL_POSNR].notna() & (df[COL_POSNR].astype(str).str.strip() != "")]
+        aufnr_clean = df[COL_AUFNR].astype(str).str.strip().str.replace(r"\.0$", "", regex=True)
+        posnr_clean = df[COL_POSNR].astype(str).str.strip().str.replace(r"\.0$", "", regex=True)
+        df[COL_CASE] = (
+            aufnr_clean.str.zfill(12)
+            + posnr_clean.str.zfill(4)
+        )
+        print(f"[P2I PROCESS] Built UniqueID_P2I from AUFNR+POSNR: {df[COL_CASE].nunique()} items")
+    elif COL_AUFNR in df.columns:
+        df = df[df[COL_AUFNR].notna() & (df[COL_AUFNR].astype(str).str.strip() != "")]
+        aufnr_clean = df[COL_AUFNR].astype(str).str.strip().str.replace(r"\.0$", "", regex=True)
+        df[COL_CASE] = aufnr_clean.str.zfill(12) + "0001"
+        print(f"[P2I PROCESS] Built UniqueID_P2I from AUFNR only: {df[COL_CASE].nunique()} items")
+    else:
+        print("[P2I PROCESS] WARNING: Neither UniqueID_P2I nor AUFNR found — case ID will be missing")
     all_date_cols = list(dict.fromkeys(ACTIVITY_COLUMNS))
     for c in all_date_cols:
         if c in df.columns:
@@ -701,18 +709,24 @@ async def upload_csv(
     username: str = Form("Unknown"),
     column_mapping: str = Form("{}"),
 ):
-    if not file.filename.lower().endswith(".csv"):
-        raise HTTPException(status_code=400, detail="Only CSV files are supported")
+    fn = file.filename.lower()
+    is_excel = fn.endswith(".xlsx") or fn.endswith(".xls")
+    if not (fn.endswith(".csv") or is_excel):
+        raise HTTPException(status_code=400, detail="Only CSV and Excel files are supported")
     content = await file.read()
     try:
-        for enc in ("utf-8", "latin-1", "windows-1252"):
-            try:
-                df = pd.read_csv(io.BytesIO(content), encoding=enc, low_memory=False)
-                break
-            except (UnicodeDecodeError, Exception):
-                continue
+        if is_excel:
+            df = pd.read_excel(io.BytesIO(content))
+            df = df.dropna(how="all")
         else:
-            raise ValueError("Could not decode CSV with any supported encoding.")
+            for enc in ("utf-8", "latin-1", "windows-1252"):
+                try:
+                    df = pd.read_csv(io.BytesIO(content), encoding=enc, low_memory=False)
+                    break
+                except (UnicodeDecodeError, Exception):
+                    continue
+            else:
+                raise ValueError("Could not decode CSV with any supported encoding.")
 
         try:
             mapping = json.loads(column_mapping)
@@ -1440,6 +1454,7 @@ async def upload_aufk(
                 raise ValueError("Could not decode AUFK CSV.")
         elif fname.endswith((".xlsx", ".xls")):
             aufk_raw = pd.read_excel(io.BytesIO(content))
+            aufk_raw = aufk_raw.dropna(how="all")
         else:
             raise HTTPException(400, "Only CSV or Excel (.xlsx/.xls) files are supported for AUFK upload.")
 
@@ -1764,3 +1779,153 @@ def get_process_map(params: dict = Depends(get_filter_params)):
         })
 
     return {"nodes": nodes_out, "edges": edges_out}
+
+@router.get("/dashboard-batch")
+def get_dashboard_batch(
+    username: str = Query("Unknown"),
+    company: Optional[str] = Query(None),
+    plant: Optional[str] = Query(None),
+    matnr: Optional[str] = Query(None),
+    bsart: Optional[str] = Query(None),
+    ekgrp: Optional[str] = Query(None),
+    lifnr: Optional[str] = Query(None),
+    vendor: Optional[str] = Query(None),
+    case_id: Optional[str] = Query(None),
+    activity: Optional[str] = Query(None),
+    month: Optional[str] = Query(None),
+    year: Optional[str] = Query(None),
+    quarter: Optional[str] = Query(None),
+    lead_time: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    ernam: Optional[str] = Query(None),
+    auart: Optional[str] = Query(None),
+    kostl: Optional[str] = Query(None),
+    fevor: Optional[str] = Query(None),
+):
+    df_raw = get_user_df(username)
+    if df_raw.empty:
+        return {
+            "kpis": {"total_orders": 0},
+            "cases": [],
+            "process_map": {"nodes": [], "edges": []},
+            "activity": [],
+            "monthly": [],
+            "company": [],
+            "plant": [],
+            "material": [],
+            "ernam": [],
+            "vendors": [],
+            "leadtime": [],
+            "happy_path": [],
+            "bottleneck": [],
+            "operation_reversals": [],
+            "gi_before_confirm_ernam": [],
+            "plant_lead_time": [],
+            "po_rev_timeline": [],
+            "order_type": [],
+            "schedule_adherence": [],
+            "order_quantity": [],
+            "cost_center": [],
+            "supervisor": [],
+            "quantity_trend": [],
+            "yield_analysis": [],
+        }
+
+    # Filter base once
+    filter_args = fp(company=company, plant=plant, matnr=matnr, bsart=bsart,
+                     ekgrp=ekgrp, lifnr=lifnr, vendor=vendor, case_id=case_id,
+                     activity=activity, month=month, year=year, quarter=quarter,
+                     lead_time=lead_time, status=status, ernam=ernam,
+                     auart=auart, kostl=kostl, fevor=fevor)
+    d = filter_raw(df_raw.copy(), **filter_args)
+
+    temp_username = f"{username}__temp_batch"
+    USER_DFS[temp_username] = d
+
+    # Prepare params dicts
+    temp_params = {
+        "username": temp_username,
+        "company": company,
+        "plant": plant,
+        "matnr": matnr,
+        "bsart": bsart,
+        "ekgrp": ekgrp,
+        "lifnr": lifnr,
+        "vendor": vendor,
+        "case_id": case_id,
+        "activity": activity,
+        "month": month,
+        "year": year,
+        "quarter": quarter,
+        "lead_time": lead_time,
+        "status": status,
+        "ernam": ernam,
+        "auart": auart,
+        "kostl": kostl,
+        "fevor": fevor,
+    }
+    
+    real_params = temp_params.copy()
+    real_params["username"] = username
+
+    try:
+        kpis = get_kpis(params=temp_params)
+        cases = get_cases(params=temp_params)
+        process_map = get_process_map(params=temp_params)
+        
+        # Get charts
+        activity_data = chart_activity(params=temp_params)
+        monthly = chart_monthly(params=temp_params)
+        company_chart = chart_company(params=temp_params)
+        plant_chart = chart_plant(params=temp_params)
+        material_chart = chart_material(params=temp_params)
+        ernam_chart = chart_ernam(params=temp_params)
+        vendors_chart = chart_vendors(params=temp_params)
+        leadtime = chart_leadtime(params=temp_params)
+        bottleneck = chart_bottleneck(params=temp_params)
+        operation_reversals = chart_operation_reversals(params=temp_params)
+        gi_before_confirm_ernam = chart_gi_before_confirm_ernam(params=temp_params)
+        plant_lead_time = chart_plant_lead_time(params=temp_params)
+        po_rev_timeline = chart_po_rev_timeline(params=temp_params)
+        
+        # AUFK charts
+        order_type = chart_order_type(params=temp_params)
+        schedule_adherence = chart_schedule_adherence(params=temp_params)
+        order_quantity = chart_order_quantity(params=temp_params)
+        cost_center = chart_cost_center(params=temp_params)
+        supervisor = chart_supervisor(params=temp_params)
+        quantity_trend = chart_quantity_trend(params=temp_params)
+        yield_analysis = chart_yield_analysis(params=temp_params)
+
+        # Happy path (ignores status parameter)
+        happy_path = chart_happy_path(params=real_params)
+
+        return {
+            "kpis": kpis,
+            "cases": cases,
+            "process_map": process_map,
+            "activity": activity_data,
+            "monthly": monthly,
+            "company": company_chart,
+            "plant": plant_chart,
+            "material": material_chart,
+            "ernam": ernam_chart,
+            "vendors": vendors_chart,
+            "leadtime": leadtime,
+            "happy_path": happy_path,
+            "bottleneck": bottleneck,
+            "operation_reversals": operation_reversals,
+            "gi_before_confirm_ernam": gi_before_confirm_ernam,
+            "plant_lead_time": plant_lead_time,
+            "po_rev_timeline": po_rev_timeline,
+            "order_type": order_type,
+            "schedule_adherence": schedule_adherence,
+            "order_quantity": order_quantity,
+            "cost_center": cost_center,
+            "supervisor": supervisor,
+            "quantity_trend": quantity_trend,
+            "yield_analysis": yield_analysis,
+        }
+    finally:
+        if temp_username in USER_DFS:
+            del USER_DFS[temp_username]
