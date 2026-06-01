@@ -2,17 +2,35 @@ import io
 import os
 import json
 import pandas as pd
-from fastapi import APIRouter, Query, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Query, HTTPException, UploadFile, File, Form, Request
 from fastapi.responses import StreamingResponse
+from fastapi.routing import APIRoute
 from pydantic import BaseModel
 from typing import Optional
 import warnings
 import re
 from datetime import datetime
+import contextvars
 
 warnings.filterwarnings("ignore")
 
+current_query_params = contextvars.ContextVar("current_query_params", default={})
+
+class FilterInterceptRoute(APIRoute):
+    def get_route_handler(self):
+        original_route_handler = super().get_route_handler()
+        async def custom_route_handler(request: Request):
+            params = dict(request.query_params)
+            token = current_query_params.set(params)
+            try:
+                response = await original_route_handler(request)
+                return response
+            finally:
+                current_query_params.reset(token)
+        return custom_route_handler
+
 router = APIRouter(prefix="/p2p", tags=["Procure-to-Pay"])
+router.route_class = FilterInterceptRoute
 
 # ─── Server-side CSV Output Directory ───────────────────────────────────────
 # All processed CSVs are saved here on the server.  No Windows hard-coded path.
@@ -308,6 +326,10 @@ MAIN_NODES = {"PR Creation", "PR Release Date", "PO Creation", "PO Date", "GR Po
 
 def process_df(df: pd.DataFrame) -> pd.DataFrame:
     print(f"[P2P PROCESS] Parsing dates for {len(df)} rows. Outputting to terminal.")
+    if COL_CASE in df.columns:
+        # Drop rows where UniqueID_PO is NaN or empty
+        df = df[df[COL_CASE].notna() & (df[COL_CASE].astype(str).str.strip() != "")]
+        df[COL_CASE] = df[COL_CASE].astype(str).str.strip().str.replace(r"\.0$", "", regex=True)
     all_date_cols = list(dict.fromkeys(ACTIVITY_COLUMNS + ["Timestamp", "PO Date"]))
     for c in all_date_cols:
         if c in df.columns:
@@ -468,10 +490,136 @@ def download_output_csv(username: str = Query("Unknown")):
     )
 
 
+def get_activity_combinations(df):
+    if df.empty:
+        return []
+    cols_to_melt = [c for c in ACTIVITY_COLUMNS if c in df.columns]
+    melted = df.melt(id_vars=[COL_CASE], value_vars=cols_to_melt, var_name="Activity", value_name="Activitytime")
+    melted = melted.dropna(subset=["Activitytime"])
+
+    ref_cols = [COL_CASE] + [c for c in ["PO Creation", "GR Posting", "Invoice Posting"] if c in df.columns]
+    ref_times = df[ref_cols].copy()
+    melted = melted.merge(ref_times, on=COL_CASE, how="left")
+
+    def rename_activity_comb(row):
+        act = row["Activity"]
+        ts = row["Activitytime"]
+        if act == "PR Reversal Date":
+            po_c = row.get("PO Creation")
+            if pd.notna(po_c) and pd.notna(ts) and ts > po_c: return "PR Reversal (Post-PO)"
+            return "PR Reversal"
+        if act == "PO Reversal Date":
+            gr_p = row.get("GR Posting")
+            if pd.notna(gr_p) and pd.notna(ts) and ts > gr_p: return "PO Reversal (Post-GR)"
+            return "PO Reversal"
+        if act == "GR Reversal Date":
+            inv_p = row.get("Invoice Posting")
+            if pd.notna(inv_p) and pd.notna(ts) and ts > inv_p: return "GR Reversal (Post-Inv)"
+            return "GR Reversal"
+        return act
+
+    melted["Activity"] = melted.apply(rename_activity_comb, axis=1)
+
+    base_order = [
+        "PR Creation", "PR Release Date", "PR Reversal", "PR Reversal (Post-PO)",
+        "PO Creation", "PO Date", "PO Reversal", "PO Reversal (Post-GR)",
+        "GR Posting", "GR Reversal", "GR Reversal (Post-Inv)",
+        "Invoice Posting", "Invoice Reversal Date"
+    ]
+    act_order = {col: i for i, col in enumerate(base_order)}
+    for c in ACTIVITY_COLUMNS:
+        if c not in act_order: act_order[c] = 99
+
+    melted["Act_Idx"] = melted["Activity"].map(act_order).fillna(99)
+    melted = melted.sort_values(by=[COL_CASE,"Activitytime","Act_Idx"])
+
+    melted["Next_Activity"] = melted.groupby(COL_CASE)["Activity"].shift(-1)
+
+    transitions = melted.dropna(subset=["Next_Activity"]).copy()
+    edge_freqs = transitions.groupby(["Activity","Next_Activity"])[COL_CASE].nunique().reset_index(name="frequency")
+
+    combinations = []
+    for _, row in edge_freqs.iterrows():
+        combinations.append(f"{row['Activity']} -> {row['Next_Activity']}")
+    return sorted(combinations)
+
+
 # ─── Data Filtering ──────────────────────────────────────────────────────────
 def filter_raw(df, company=None, bsart=None, matkl=None, vendor=None, plant=None, purch_group=None, 
                case_id=None, activity=None, month=None, year=None, quarter=None, lifnr=None, 
-               lead_time=None, status=None, ernam=None, sod=None):
+               lead_time=None, status=None, ernam=None, sod=None, events=None, start_date=None, end_date=None):
+    
+    query_params = current_query_params.get() or {}
+    if not events:
+        events = query_params.get("events")
+    if not start_date:
+        start_date = query_params.get("start_date")
+    if not end_date:
+        end_date = query_params.get("end_date")
+
+    if events and events != "ALL":
+        try:
+            parts = events.split(" -> ")
+            if len(parts) == 2:
+                act_a, act_b = parts[0], parts[1]
+                cols_to_melt = [c for c in ACTIVITY_COLUMNS if c in df.columns]
+                melted = df.melt(id_vars=[COL_CASE], value_vars=cols_to_melt, var_name="Activity", value_name="Activitytime")
+                melted = melted.dropna(subset=["Activitytime"])
+                
+                ref_cols = [COL_CASE] + [c for c in ["PO Creation", "GR Posting", "Invoice Posting"] if c in df.columns]
+                ref_times = df[ref_cols].copy()
+                melted = melted.merge(ref_times, on=COL_CASE, how="left")
+                
+                def rename_activity_local(row):
+                    act = row["Activity"]
+                    ts = row["Activitytime"]
+                    if act == "PR Reversal Date":
+                        po_c = row.get("PO Creation")
+                        if pd.notna(po_c) and pd.notna(ts) and ts > po_c: return "PR Reversal (Post-PO)"
+                        return "PR Reversal"
+                    if act == "PO Reversal Date":
+                        gr_p = row.get("GR Posting")
+                        if pd.notna(gr_p) and pd.notna(ts) and ts > gr_p: return "PO Reversal (Post-GR)"
+                        return "PO Reversal"
+                    if act == "GR Reversal Date":
+                        inv_p = row.get("Invoice Posting")
+                        if pd.notna(inv_p) and pd.notna(ts) and ts > inv_p: return "GR Reversal (Post-Inv)"
+                        return "GR Reversal"
+                    return act
+                
+                melted["Activity"] = melted.apply(rename_activity_local, axis=1)
+                
+                base_order = [
+                    "PR Creation", "PR Release Date", "PR Reversal", "PR Reversal (Post-PO)",
+                    "PO Creation", "PO Date", "PO Reversal", "PO Reversal (Post-GR)",
+                    "GR Posting", "GR Reversal", "GR Reversal (Post-Inv)",
+                    "Invoice Posting", "Invoice Reversal Date"
+                ]
+                act_order = {col: i for i, col in enumerate(base_order)}
+                for c in ACTIVITY_COLUMNS:
+                    if c not in act_order: act_order[c] = 99
+                
+                melted["Act_Idx"] = melted["Activity"].map(act_order).fillna(99)
+                melted = melted.sort_values(by=[COL_CASE,"Activitytime","Act_Idx"])
+                
+                melted["Next_Activity"] = melted.groupby(COL_CASE)["Activity"].shift(-1)
+                
+                matching_cases = melted[(melted["Activity"] == act_a) & (melted["Next_Activity"] == act_b)][COL_CASE].unique()
+                df = df[df[COL_CASE].isin(matching_cases)]
+        except Exception:
+            pass
+
+    if start_date or end_date:
+        try:
+            time_cols = [c for c in ACTIVITY_COLUMNS if c in df.columns]
+            if time_cols:
+                case_min = df[time_cols].min(axis=1)
+                if start_date:
+                    df = df[case_min >= pd.to_datetime(start_date)]
+                if end_date:
+                    df = df[case_min <= pd.to_datetime(end_date)]
+        except Exception:
+            pass
     
     if company     and company     != "ALL" and COL_COMPANY in df.columns: df = df[df[COL_COMPANY].astype(str) == company]
     if bsart       and bsart       != "ALL" and COL_BSART   in df.columns: df = df[df[COL_BSART].astype(str) == bsart]
@@ -550,10 +698,10 @@ def unique_cases(df):
     return int(df[COL_CASE].nunique()) if COL_CASE in df.columns else len(df)
 
 def fp(company, bsart, matkl, vendor, plant, purch_group, case_id,
-       activity, month, year=None, quarter=None, lifnr=None, lead_time=None, status=None, ernam=None, sod=None):
+       activity, month, year=None, quarter=None, lifnr=None, lead_time=None, status=None, ernam=None, sod=None, events=None):
     return dict(company=company, bsart=bsart, matkl=matkl, vendor=vendor, plant=plant, purch_group=purch_group, 
                 case_id=case_id, activity=activity, month=month, year=year, quarter=quarter, 
-                lifnr=lifnr, lead_time=lead_time, status=status, ernam=ernam, sod=sod)
+                lifnr=lifnr, lead_time=lead_time, status=status, ernam=ernam, sod=sod, events=events)
 
 @router.get("/")
 def p2p_root():
@@ -562,19 +710,25 @@ def p2p_root():
 
 @router.post("/upload")
 async def upload_csv(file: UploadFile = File(...), username: str = Form("Unknown"), column_mapping: str = Form("{}")):
-    if not file.filename.lower().endswith(".csv"):
-        raise HTTPException(status_code=400, detail="Only CSV files are supported")
+    fn = file.filename.lower()
+    is_excel = fn.endswith(".xlsx") or fn.endswith(".xls")
+    if not (fn.endswith(".csv") or is_excel):
+        raise HTTPException(status_code=400, detail="Only CSV and Excel files are supported")
     content = await file.read()
     try:
-        # ── Parse CSV (try UTF-8 first, then latin-1) ──────────────────────
-        for enc in ("utf-8", "latin-1", "windows-1252"):
-            try:
-                df = pd.read_csv(io.BytesIO(content), encoding=enc, low_memory=False)
-                break
-            except (UnicodeDecodeError, Exception):
-                continue
+        if is_excel:
+            df = pd.read_excel(io.BytesIO(content))
+            df = df.dropna(how="all")
         else:
-            raise ValueError("Could not decode CSV with any supported encoding.")
+            # ── Parse CSV (try UTF-8 first, then latin-1) ──────────────────────
+            for enc in ("utf-8", "latin-1", "windows-1252"):
+                try:
+                    df = pd.read_csv(io.BytesIO(content), encoding=enc, low_memory=False)
+                    break
+                except (UnicodeDecodeError, Exception):
+                    continue
+            else:
+                raise ValueError("Could not decode CSV with any supported encoding.")
 
         try:
             import json
@@ -669,11 +823,11 @@ def get_filters(
     vendor: Optional[str]=Query(None), plant: Optional[str]=Query(None), purch_group: Optional[str]=Query(None),
     case_id: Optional[str]=Query(None), activity: Optional[str]=Query(None), month: Optional[str]=Query(None), 
     year: Optional[str]=Query(None), quarter: Optional[str]=Query(None), lifnr: Optional[str]=Query(None),
-    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None)
+    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None), events: Optional[str]=Query(None)
 ):
     df_raw = get_user_df(username)
     if df_raw.empty: raise HTTPException(500, "Data not loaded")
-    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod))
+    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod,events=events))
     def uniq(col): return ["ALL"] + sorted(d[col].dropna().astype(str).unique().tolist()) if col in d.columns else ["ALL"]
     # Vendor filter: prefer NAME1, fall back to LIFNR if NAME1 is all-null
     vendor_col = COL_VENDOR if (COL_VENDOR in d.columns and d[COL_VENDOR].notna().any()) else COL_LIFNR
@@ -683,20 +837,39 @@ def get_filters(
         "plants": uniq(COL_WERKS), "purch_groups": uniq(COL_EKGRP), "lifnrs": uniq(COL_LIFNR),
         "case_ids": ["ALL"] + sorted(d[COL_CASE].dropna().astype(str).unique().tolist()) if COL_CASE in d.columns else ["ALL"],
         "months": ["ALL"] + sorted(d["Month"].dropna().astype(str).unique().tolist()) if "Month" in d.columns else ["ALL"],
-        "years": ["ALL"] + sorted(d["Year"].dropna().astype(str).unique().tolist()) if "Year" in d.columns else ["ALL"]
+        "years": ["ALL"] + sorted(d["Year"].dropna().astype(str).unique().tolist()) if "Year" in d.columns else ["ALL"],
+        "events": ["ALL"] + get_activity_combinations(df_raw)
+    }
+
+@router.get("/date_range")
+def get_date_range(username: str = Query("Unknown")):
+    """Return the min and max activity dates present in the dataset."""
+    df_raw = get_user_df(username)
+    if df_raw.empty:
+        return {"min_date": None, "max_date": None}
+    time_cols = [c for c in ACTIVITY_COLUMNS if c in df_raw.columns]
+    if not time_cols:
+        return {"min_date": None, "max_date": None}
+    all_dates = df_raw[time_cols].apply(pd.to_datetime, errors="coerce")
+    min_date = all_dates.min().min()
+    max_date = all_dates.max().max()
+    return {
+        "min_date": min_date.strftime("%Y-%m-%d") if pd.notna(min_date) else None,
+        "max_date": max_date.strftime("%Y-%m-%d") if pd.notna(max_date) else None,
     }
 
 @router.get("/kpis")
+
 def get_kpis(
     username: str = Query("Unknown"), company: Optional[str]=Query(None), bsart: Optional[str]=Query(None), matkl: Optional[str]=Query(None), 
     vendor: Optional[str]=Query(None), plant: Optional[str]=Query(None), purch_group: Optional[str]=Query(None),
     case_id: Optional[str]=Query(None), activity: Optional[str]=Query(None), month: Optional[str]=Query(None), 
     year: Optional[str]=Query(None), quarter: Optional[str]=Query(None), lifnr: Optional[str]=Query(None),
-    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None)
+    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None), events: Optional[str]=Query(None)
 ):
     df_raw = get_user_df(username)
     if df_raw.empty: raise HTTPException(500, "Data not loaded")
-    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod))
+    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod,events=events))
 
     po_without_pr, pr_rev_after_po, po_rev_after_gr, gr_no_invoice, inv_no_gr = 0,0,0,0,0
     if "PO Creation" in d.columns and "PR Creation" in d.columns: po_without_pr = int((d["PO Creation"].notna() & d["PR Creation"].isna()).sum())
@@ -729,18 +902,32 @@ def get_cases(
     vendor: Optional[str]=Query(None), plant: Optional[str]=Query(None), purch_group: Optional[str]=Query(None),
     case_id: Optional[str]=Query(None), activity: Optional[str]=Query(None), month: Optional[str]=Query(None), 
     year: Optional[str]=Query(None), quarter: Optional[str]=Query(None), lifnr: Optional[str]=Query(None),
-    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None)
+    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None), events: Optional[str]=Query(None)
 ):
     df_raw = get_user_df(username)
     if df_raw.empty: raise HTTPException(500, "Data not loaded")
-    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod))
+    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod,events=events))
     if COL_CASE not in d.columns: return []
     time_cols = [c for c in ACTIVITY_COLUMNS if c in d.columns]
     if not time_cols: return []
     d["start_date"] = d[time_cols].min(axis=1).dt.strftime("%Y-%m-%d")
     d["end_date"]   = d[time_cols].max(axis=1).dt.strftime("%Y-%m-%d")
-    res = d[[COL_CASE, "start_date", "end_date"]].dropna(subset=[COL_CASE]).rename(columns={COL_CASE: "case_id"})
-    return res.sort_values("start_date", ascending=False).head(200).to_dict("records")
+    
+    cols_to_keep = [COL_CASE, "start_date", "end_date"]
+    extra_cols = [
+        "PO Qty", "Netpr", "Netwr",
+        "GR Quantity", "GR Doc Amount", "IR Quantity", "IR Doc Amount"
+    ]
+    for col in extra_cols:
+        if col in d.columns:
+            cols_to_keep.append(col)
+        else:
+            d[col] = None
+            cols_to_keep.append(col)
+            
+    res = d[cols_to_keep].dropna(subset=[COL_CASE]).rename(columns={COL_CASE: "case_id"})
+    res = res.astype(object).where(pd.notna(res), None)
+    return res.sort_values("start_date", ascending=False).to_dict("records")
 
 @router.get("/case_events")
 def get_case_events(case_id: str = Query(...), username: str = Query("Unknown")):
@@ -770,11 +957,11 @@ def chart_activity(
     vendor: Optional[str]=Query(None), plant: Optional[str]=Query(None), purch_group: Optional[str]=Query(None),
     case_id: Optional[str]=Query(None), activity: Optional[str]=Query(None), month: Optional[str]=Query(None), 
     year: Optional[str]=Query(None), quarter: Optional[str]=Query(None), lifnr: Optional[str]=Query(None),
-    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None)
+    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None), events: Optional[str]=Query(None)
 ):
     df_raw = get_user_df(username)
     if df_raw.empty: raise HTTPException(500, "Data not loaded")
-    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod))
+    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod,events=events))
     results = []
     for col in ACTIVITY_COLUMNS:
         if col not in d.columns: continue
@@ -788,11 +975,11 @@ def chart_monthly(
     vendor: Optional[str]=Query(None), plant: Optional[str]=Query(None), purch_group: Optional[str]=Query(None),
     case_id: Optional[str]=Query(None), activity: Optional[str]=Query(None), month: Optional[str]=Query(None), 
     year: Optional[str]=Query(None), quarter: Optional[str]=Query(None), lifnr: Optional[str]=Query(None),
-    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None)
+    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None), events: Optional[str]=Query(None)
 ):
     df_raw = get_user_df(username)
     if df_raw.empty: raise HTTPException(500, "Data not loaded")
-    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod))
+    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod,events=events))
     cols_to_melt = [c for c in ACTIVITY_COLUMNS if c in d.columns]
     if not cols_to_melt: return []
     melted = d.melt(id_vars=[COL_CASE], value_vars=cols_to_melt, value_name="Date").dropna(subset=["Date"])
@@ -807,11 +994,11 @@ def chart_ernam(
     vendor: Optional[str]=Query(None), plant: Optional[str]=Query(None), purch_group: Optional[str]=Query(None),
     case_id: Optional[str]=Query(None), activity: Optional[str]=Query(None), month: Optional[str]=Query(None), 
     year: Optional[str]=Query(None), quarter: Optional[str]=Query(None), lifnr: Optional[str]=Query(None),
-    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None)
+    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None), events: Optional[str]=Query(None)
 ):
     df_raw = get_user_df(username)
     if df_raw.empty: raise HTTPException(500, "Data not loaded")
-    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod))
+    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod,events=events))
     if COL_ERNAM not in d.columns: return []
     vc = d.dropna(subset=[COL_ERNAM]).groupby(COL_ERNAM)[COL_CASE].nunique().reset_index()
     vc.columns = ["ernam","count"]
@@ -823,11 +1010,11 @@ def chart_company(
     vendor: Optional[str]=Query(None), plant: Optional[str]=Query(None), purch_group: Optional[str]=Query(None),
     case_id: Optional[str]=Query(None), activity: Optional[str]=Query(None), month: Optional[str]=Query(None), 
     year: Optional[str]=Query(None), quarter: Optional[str]=Query(None), lifnr: Optional[str]=Query(None),
-    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None)
+    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None), events: Optional[str]=Query(None)
 ):
     df_raw = get_user_df(username)
     if df_raw.empty: raise HTTPException(500, "Data not loaded")
-    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod))
+    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod,events=events))
     if COL_COMPANY not in d.columns: return []
     vc = d.dropna(subset=[COL_COMPANY]).groupby(COL_COMPANY)[COL_CASE].nunique().reset_index()
     vc.columns = ["company","count"]
@@ -838,11 +1025,11 @@ def chart_bsart(
     username: str = Query("Unknown"), company: Optional[str]=Query(None), matkl: Optional[str]=Query(None), vendor: Optional[str]=Query(None),  
     plant: Optional[str]=Query(None), purch_group: Optional[str]=Query(None), case_id: Optional[str]=Query(None),
     activity: Optional[str]=Query(None), month: Optional[str]=Query(None), year: Optional[str]=Query(None),    
-    quarter: Optional[str]=Query(None), lifnr: Optional[str]=Query(None), lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None)
+    quarter: Optional[str]=Query(None), lifnr: Optional[str]=Query(None), lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None), events: Optional[str]=Query(None)
 ):
     df_raw = get_user_df(username)
     if df_raw.empty: raise HTTPException(500, "Data not loaded")
-    d = filter_raw(df_raw.copy(), **fp(company,None,matkl,vendor,plant,purch_group,None,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod))
+    d = filter_raw(df_raw.copy(), **fp(company,None,matkl,vendor,plant,purch_group,None,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod,events=events))
     if COL_BSART not in d.columns: return []
     vc = d.dropna(subset=[COL_BSART]).groupby(COL_BSART)[COL_CASE].nunique().reset_index()
     vc.columns = ["bsart","count"]
@@ -853,11 +1040,11 @@ def chart_matkl(
     username: str = Query("Unknown"), company: Optional[str]=Query(None), bsart: Optional[str]=Query(None), vendor: Optional[str]=Query(None),  
     plant: Optional[str]=Query(None), purch_group: Optional[str]=Query(None), case_id: Optional[str]=Query(None),
     activity: Optional[str]=Query(None), month: Optional[str]=Query(None), year: Optional[str]=Query(None),    
-    quarter: Optional[str]=Query(None), lifnr: Optional[str]=Query(None), lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None)
+    quarter: Optional[str]=Query(None), lifnr: Optional[str]=Query(None), lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None), events: Optional[str]=Query(None)
 ):
     df_raw = get_user_df(username)
     if df_raw.empty: raise HTTPException(500, "Data not loaded")
-    d = filter_raw(df_raw.copy(), **fp(company,bsart,None,vendor,plant,purch_group,None,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod))
+    d = filter_raw(df_raw.copy(), **fp(company,bsart,None,vendor,plant,purch_group,None,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod,events=events))
     if COL_MATKL not in d.columns: return []
     vc = d.dropna(subset=[COL_MATKL]).groupby(COL_MATKL)[COL_CASE].nunique().reset_index()
     vc.columns = ["matkl","count"]
@@ -868,11 +1055,11 @@ def chart_vendors(
     username: str = Query("Unknown"), company: Optional[str]=Query(None), bsart: Optional[str]=Query(None), matkl: Optional[str]=Query(None),   
     plant: Optional[str]=Query(None), purch_group: Optional[str]=Query(None), case_id: Optional[str]=Query(None),
     activity: Optional[str]=Query(None), month: Optional[str]=Query(None), year: Optional[str]=Query(None),    
-    quarter: Optional[str]=Query(None), lifnr: Optional[str]=Query(None), lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None)
+    quarter: Optional[str]=Query(None), lifnr: Optional[str]=Query(None), lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None), events: Optional[str]=Query(None)
 ):
     df_raw = get_user_df(username)
     if df_raw.empty: raise HTTPException(500, "Data not loaded")
-    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,None,plant,purch_group,None,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod))
+    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,None,plant,purch_group,None,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod,events=events))
     # Use NAME1 (vendor name) when available and populated; fall back to LIFNR (vendor ID)
     name_col = None
     if COL_VENDOR in d.columns and d[COL_VENDOR].notna().any():
@@ -890,11 +1077,11 @@ def chart_leadtime(
     vendor: Optional[str]=Query(None), plant: Optional[str]=Query(None), purch_group: Optional[str]=Query(None),
     case_id: Optional[str]=Query(None), activity: Optional[str]=Query(None), month: Optional[str]=Query(None), 
     year: Optional[str]=Query(None), quarter: Optional[str]=Query(None), lifnr: Optional[str]=Query(None),
-    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None)
+    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None), events: Optional[str]=Query(None)
 ):
     df_raw = get_user_df(username)
     if df_raw.empty: raise HTTPException(500, "Data not loaded")
-    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod))
+    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod,events=events))
     if "PO Creation" not in d.columns or "GR Posting" not in d.columns: return []
     lt = d.dropna(subset=["PO Creation","GR Posting"]).copy()
     lt["days"] = (lt["GR Posting"] - lt["PO Creation"]).dt.days
@@ -911,11 +1098,11 @@ def chart_po_rev_ernam(
     vendor: Optional[str]=Query(None), plant: Optional[str]=Query(None), purch_group: Optional[str]=Query(None),
     case_id: Optional[str]=Query(None), activity: Optional[str]=Query(None), month: Optional[str]=Query(None), 
     year: Optional[str]=Query(None), quarter: Optional[str]=Query(None), lifnr: Optional[str]=Query(None),
-    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None)
+    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None), events: Optional[str]=Query(None)
 ):
     df_raw = get_user_df(username)
     if df_raw.empty: raise HTTPException(500, "Data not loaded")
-    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod))
+    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod,events=events))
     if "PO Reversal Date" not in d.columns or COL_ERNAM not in d.columns: return []
     b = d.dropna(subset=["PO Reversal Date", COL_ERNAM])
     vc = b.groupby(COL_ERNAM)[COL_CASE].nunique().reset_index(name="count")
@@ -928,11 +1115,11 @@ def chart_po_rev_timeline(
     vendor: Optional[str]=Query(None), plant: Optional[str]=Query(None), purch_group: Optional[str]=Query(None),
     case_id: Optional[str]=Query(None), activity: Optional[str]=Query(None), month: Optional[str]=Query(None), 
     year: Optional[str]=Query(None), quarter: Optional[str]=Query(None), lifnr: Optional[str]=Query(None),
-    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None)
+    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None), events: Optional[str]=Query(None)
 ):
     df_raw = get_user_df(username)
     if df_raw.empty: raise HTTPException(500, "Data not loaded")
-    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod))
+    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod,events=events))
     if "PO Reversal Date" not in d.columns: return []
     b = d.dropna(subset=["PO Reversal Date"]).copy()
     b["Month"] = b["PO Reversal Date"].dt.to_period("M").astype(str)
@@ -945,11 +1132,11 @@ def chart_pr_rev_after_po_ernam(
     vendor: Optional[str]=Query(None), plant: Optional[str]=Query(None), purch_group: Optional[str]=Query(None),
     case_id: Optional[str]=Query(None), activity: Optional[str]=Query(None), month: Optional[str]=Query(None), 
     year: Optional[str]=Query(None), quarter: Optional[str]=Query(None), lifnr: Optional[str]=Query(None),
-    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None)
+    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None), events: Optional[str]=Query(None)
 ):
     df_raw = get_user_df(username)
     if df_raw.empty: raise HTTPException(500, "Data not loaded")
-    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod))
+    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod,events=events))
     if "PR Reversal Date" not in d.columns or "PO Date" not in d.columns or COL_ERNAM not in d.columns: return []
     b = d.dropna(subset=["PR Reversal Date", "PO Date", COL_ERNAM])
     b = b[b["PR Reversal Date"] > b["PO Date"]]
@@ -963,11 +1150,11 @@ def chart_seq_violation_ernam(
     vendor: Optional[str]=Query(None), plant: Optional[str]=Query(None), purch_group: Optional[str]=Query(None),
     case_id: Optional[str]=Query(None), activity: Optional[str]=Query(None), month: Optional[str]=Query(None), 
     year: Optional[str]=Query(None), quarter: Optional[str]=Query(None), lifnr: Optional[str]=Query(None),
-    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None)
+    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None), events: Optional[str]=Query(None)
 ):
     df_raw = get_user_df(username)
     if df_raw.empty: raise HTTPException(500, "Data not loaded")
-    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod))
+    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod,events=events))
     if "PO Date" not in d.columns or COL_ERNAM not in d.columns: return []
     
     mask_gr = (d["GR Posting"].notna()) & (d["PO Date"] > d["GR Posting"]) if "GR Posting" in d.columns else False
@@ -984,7 +1171,7 @@ def chart_happy_path(
     vendor: Optional[str]=Query(None), plant: Optional[str]=Query(None), purch_group: Optional[str]=Query(None),
     case_id: Optional[str]=Query(None), activity: Optional[str]=Query(None), month: Optional[str]=Query(None), 
     year: Optional[str]=Query(None), quarter: Optional[str]=Query(None), lifnr: Optional[str]=Query(None),
-    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None)
+    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None), events: Optional[str]=Query(None)
 ):
     df_raw = get_user_df(username)
     if df_raw.empty: raise HTTPException(500, "Data not loaded")
@@ -1026,11 +1213,11 @@ def chart_sod_violations(
     vendor: Optional[str]=Query(None), plant: Optional[str]=Query(None), purch_group: Optional[str]=Query(None),
     case_id: Optional[str]=Query(None), activity: Optional[str]=Query(None), month: Optional[str]=Query(None),
     year: Optional[str]=Query(None), quarter: Optional[str]=Query(None), lifnr: Optional[str]=Query(None),
-    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None)
+    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None), events: Optional[str]=Query(None)
 ):
     df_raw = get_user_df(username)
     if df_raw.empty: raise HTTPException(500, "Data not loaded")
-    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod))
+    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod,events=events))
 
     COL_PO_USER  = "ERNAM"
     COL_PR_USER  = "ERNAM (EBAN)"
@@ -1071,11 +1258,11 @@ def chart_bottleneck(
     vendor: Optional[str]=Query(None), plant: Optional[str]=Query(None), purch_group: Optional[str]=Query(None),
     case_id: Optional[str]=Query(None), activity: Optional[str]=Query(None), month: Optional[str]=Query(None),
     year: Optional[str]=Query(None), quarter: Optional[str]=Query(None), lifnr: Optional[str]=Query(None),
-    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None)
+    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None), events: Optional[str]=Query(None)
 ):
     df_raw = get_user_df(username)
     if df_raw.empty: raise HTTPException(500, "Data not loaded")
-    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod))
+    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod,events=events))
     steps = [
         ("PR Creation", "PO Creation", "PR → PO"),
         ("PO Creation", "GR Posting", "PO → GR"),
@@ -1103,11 +1290,11 @@ def chart_rev_by_purch_group(
     vendor: Optional[str]=Query(None), plant: Optional[str]=Query(None), purch_group: Optional[str]=Query(None),
     case_id: Optional[str]=Query(None), activity: Optional[str]=Query(None), month: Optional[str]=Query(None),
     year: Optional[str]=Query(None), quarter: Optional[str]=Query(None), lifnr: Optional[str]=Query(None),
-    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None)
+    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None), events: Optional[str]=Query(None)
 ):
     df_raw = get_user_df(username)
     if df_raw.empty: raise HTTPException(500, "Data not loaded")
-    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod))
+    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod,events=events))
     if "PO Reversal Date" not in d.columns or COL_EKGRP not in d.columns: return []
     b = d.dropna(subset=["PO Reversal Date", COL_EKGRP])
     vc = b.groupby(COL_EKGRP)[COL_CASE].nunique().reset_index(name="count")
@@ -1120,11 +1307,11 @@ def chart_purch_group_workload(
     vendor: Optional[str]=Query(None), plant: Optional[str]=Query(None), purch_group: Optional[str]=Query(None),
     case_id: Optional[str]=Query(None), activity: Optional[str]=Query(None), month: Optional[str]=Query(None),
     year: Optional[str]=Query(None), quarter: Optional[str]=Query(None), lifnr: Optional[str]=Query(None),
-    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None)
+    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None), events: Optional[str]=Query(None)
 ):
     df_raw = get_user_df(username)
     if df_raw.empty: raise HTTPException(500, "Data not loaded")
-    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod))
+    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod,events=events))
     if COL_EKGRP not in d.columns: return []
     vc = d.dropna(subset=[COL_EKGRP]).groupby(COL_EKGRP)[COL_CASE].nunique().reset_index()
     vc.columns = ["purch_group", "count"]
@@ -1136,11 +1323,11 @@ def chart_vendor_lead_time(
     vendor: Optional[str]=Query(None), plant: Optional[str]=Query(None), purch_group: Optional[str]=Query(None),
     case_id: Optional[str]=Query(None), activity: Optional[str]=Query(None), month: Optional[str]=Query(None),
     year: Optional[str]=Query(None), quarter: Optional[str]=Query(None), lifnr: Optional[str]=Query(None),
-    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None)
+    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None), events: Optional[str]=Query(None)
 ):
     df_raw = get_user_df(username)
     if df_raw.empty: raise HTTPException(500, "Data not loaded")
-    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod))
+    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod,events=events))
     if "PO Creation" not in d.columns or "GR Posting" not in d.columns: return []
     # Use NAME1 when populated, fall back to LIFNR (vendor ID) so chart always renders
     name_col = None
@@ -1164,11 +1351,11 @@ def get_process_map(
     vendor: Optional[str]=Query(None), plant: Optional[str]=Query(None), purch_group: Optional[str]=Query(None),
     case_id: Optional[str]=Query(None), activity: Optional[str]=Query(None), month: Optional[str]=Query(None), 
     year: Optional[str]=Query(None), quarter: Optional[str]=Query(None), lifnr: Optional[str]=Query(None),
-    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None)
+    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None), events: Optional[str]=Query(None)
 ):
     df_raw = get_user_df(username)
     if df_raw.empty: raise HTTPException(500, "Data not loaded")
-    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod))
+    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod,events=events))
 
     LAYOUT_H = {
         "PR Creation":           {"x":100,  "y":800},
@@ -1278,3 +1465,96 @@ def get_process_map(
         })
 
     return {"nodes": nodes_out, "edges": edges_out}
+
+@router.get("/dashboard-batch")
+def get_dashboard_batch(
+    username: str = Query("Unknown"), company: Optional[str]=Query(None), bsart: Optional[str]=Query(None), matkl: Optional[str]=Query(None), 
+    vendor: Optional[str]=Query(None), plant: Optional[str]=Query(None), purch_group: Optional[str]=Query(None),
+    case_id: Optional[str]=Query(None), activity: Optional[str]=Query(None), month: Optional[str]=Query(None), 
+    year: Optional[str]=Query(None), quarter: Optional[str]=Query(None), lifnr: Optional[str]=Query(None),
+    lead_time: Optional[str]=Query(None), status: Optional[str]=Query(None), ernam: Optional[str]=Query(None), sod: Optional[str]=Query(None), events: Optional[str]=Query(None)
+):
+    df_raw = get_user_df(username)
+    if df_raw.empty:
+        return {
+            "kpis": {"total_cases": 0},
+            "activity": [],
+            "monthly": [],
+            "ernam": [],
+            "company": [],
+            "leadtime": [],
+            "po_rev_ernam": [],
+            "po_rev_timeline": [],
+            "pr_rev_after_po_ernam": [],
+            "seq_violation_ernam": [],
+            "sod_violations": [],
+            "bottleneck": [],
+            "rev_by_purch_group": [],
+            "purch_group_workload": [],
+            "vendor_lead_time": [],
+            "cases": [],
+            "process_map": {"nodes": [], "edges": []},
+            "bsart": [],
+            "matkl": [],
+            "vendors": [],
+            "happy_path": []
+        }
+
+    # Filter base once
+    d = filter_raw(df_raw.copy(), **fp(company,bsart,matkl,vendor,plant,purch_group,case_id,activity,month,year,quarter,lifnr,lead_time,status,ernam,sod=sod,events=events))
+    
+    temp_username = f"{username}__temp_batch"
+    USER_DFS[temp_username] = d
+    
+    try:
+        # Run 16 charts on pre-filtered d
+        kpis = get_kpis(username=temp_username, company=company, bsart=bsart, matkl=matkl, vendor=vendor, plant=plant, purch_group=purch_group, case_id=case_id, activity=activity, month=month, year=year, quarter=quarter, lifnr=lifnr, lead_time=lead_time, status=status, ernam=ernam, sod=sod, events=events)
+        activity_data = chart_activity(username=temp_username, company=company, bsart=bsart, matkl=matkl, vendor=vendor, plant=plant, purch_group=purch_group, case_id=case_id, activity=activity, month=month, year=year, quarter=quarter, lifnr=lifnr, lead_time=lead_time, status=status, ernam=ernam, sod=sod, events=events)
+        monthly = chart_monthly(username=temp_username, company=company, bsart=bsart, matkl=matkl, vendor=vendor, plant=plant, purch_group=purch_group, case_id=case_id, activity=activity, month=month, year=year, quarter=quarter, lifnr=lifnr, lead_time=lead_time, status=status, ernam=ernam, sod=sod, events=events)
+        ernam_data = chart_ernam(username=temp_username, company=company, bsart=bsart, matkl=matkl, vendor=vendor, plant=plant, purch_group=purch_group, case_id=case_id, activity=activity, month=month, year=year, quarter=quarter, lifnr=lifnr, lead_time=lead_time, status=status, ernam=ernam, sod=sod, events=events)
+        company_data = chart_company(username=temp_username, company=company, bsart=bsart, matkl=matkl, vendor=vendor, plant=plant, purch_group=purch_group, case_id=case_id, activity=activity, month=month, year=year, quarter=quarter, lifnr=lifnr, lead_time=lead_time, status=status, ernam=ernam, sod=sod, events=events)
+        leadtime = chart_leadtime(username=temp_username, company=company, bsart=bsart, matkl=matkl, vendor=vendor, plant=plant, purch_group=purch_group, case_id=case_id, activity=activity, month=month, year=year, quarter=quarter, lifnr=lifnr, lead_time=lead_time, status=status, ernam=ernam, sod=sod, events=events)
+        po_rev_ernam = chart_po_rev_ernam(username=temp_username, company=company, bsart=bsart, matkl=matkl, vendor=vendor, plant=plant, purch_group=purch_group, case_id=case_id, activity=activity, month=month, year=year, quarter=quarter, lifnr=lifnr, lead_time=lead_time, status=status, ernam=ernam, sod=sod, events=events)
+        po_rev_timeline = chart_po_rev_timeline(username=temp_username, company=company, bsart=bsart, matkl=matkl, vendor=vendor, plant=plant, purch_group=purch_group, case_id=case_id, activity=activity, month=month, year=year, quarter=quarter, lifnr=lifnr, lead_time=lead_time, status=status, ernam=ernam, sod=sod, events=events)
+        pr_rev_after_po_ernam = chart_pr_rev_after_po_ernam(username=temp_username, company=company, bsart=bsart, matkl=matkl, vendor=vendor, plant=plant, purch_group=purch_group, case_id=case_id, activity=activity, month=month, year=year, quarter=quarter, lifnr=lifnr, lead_time=lead_time, status=status, ernam=ernam, sod=sod, events=events)
+        seq_violation_ernam = chart_seq_violation_ernam(username=temp_username, company=company, bsart=bsart, matkl=matkl, vendor=vendor, plant=plant, purch_group=purch_group, case_id=case_id, activity=activity, month=month, year=year, quarter=quarter, lifnr=lifnr, lead_time=lead_time, status=status, ernam=ernam, sod=sod, events=events)
+        sod_violations = chart_sod_violations(username=temp_username, company=company, bsart=bsart, matkl=matkl, vendor=vendor, plant=plant, purch_group=purch_group, case_id=case_id, activity=activity, month=month, year=year, quarter=quarter, lifnr=lifnr, lead_time=lead_time, status=status, ernam=ernam, sod=sod, events=events)
+        bottleneck = chart_bottleneck(username=temp_username, company=company, bsart=bsart, matkl=matkl, vendor=vendor, plant=plant, purch_group=purch_group, case_id=case_id, activity=activity, month=month, year=year, quarter=quarter, lifnr=lifnr, lead_time=lead_time, status=status, ernam=ernam, sod=sod, events=events)
+        rev_by_purch_group = chart_rev_by_purch_group(username=temp_username, company=company, bsart=bsart, matkl=matkl, vendor=vendor, plant=plant, purch_group=purch_group, case_id=case_id, activity=activity, month=month, year=year, quarter=quarter, lifnr=lifnr, lead_time=lead_time, status=status, ernam=ernam, sod=sod, events=events)
+        purch_group_workload = chart_purch_group_workload(username=temp_username, company=company, bsart=bsart, matkl=matkl, vendor=vendor, plant=plant, purch_group=purch_group, case_id=case_id, activity=activity, month=month, year=year, quarter=quarter, lifnr=lifnr, lead_time=lead_time, status=status, ernam=ernam, sod=sod, events=events)
+        vendor_lead_time = chart_vendor_lead_time(username=temp_username, company=company, bsart=bsart, matkl=matkl, vendor=vendor, plant=plant, purch_group=purch_group, case_id=case_id, activity=activity, month=month, year=year, quarter=quarter, lifnr=lifnr, lead_time=lead_time, status=status, ernam=ernam, sod=sod, events=events)
+        cases = get_cases(username=temp_username, company=company, bsart=bsart, matkl=matkl, vendor=vendor, plant=plant, purch_group=purch_group, case_id=case_id, activity=activity, month=month, year=year, quarter=quarter, lifnr=lifnr, lead_time=lead_time, status=status, ernam=ernam, sod=sod, events=events)
+        process_map = get_process_map(username=temp_username, company=company, bsart=bsart, matkl=matkl, vendor=vendor, plant=plant, purch_group=purch_group, case_id=case_id, activity=activity, month=month, year=year, quarter=quarter, lifnr=lifnr, lead_time=lead_time, status=status, ernam=ernam, sod=sod, events=events)
+
+        # Run cross-filtered / ignoring charts on real username
+        bsart_data = chart_bsart(username=username, company=company, matkl=matkl, vendor=vendor, plant=plant, purch_group=purch_group, case_id=case_id, activity=activity, month=month, year=year, quarter=quarter, lifnr=lifnr, lead_time=lead_time, status=status, ernam=ernam, sod=sod, events=events)
+        matkl_data = chart_matkl(username=username, company=company, bsart=bsart, vendor=vendor, plant=plant, purch_group=purch_group, case_id=case_id, activity=activity, month=month, year=year, quarter=quarter, lifnr=lifnr, lead_time=lead_time, status=status, ernam=ernam, sod=sod, events=events)
+        vendors_data = chart_vendors(username=username, company=company, bsart=bsart, matkl=matkl, plant=plant, purch_group=purch_group, case_id=case_id, activity=activity, month=month, year=year, quarter=quarter, lifnr=lifnr, lead_time=lead_time, status=status, ernam=ernam, sod=sod, events=events)
+        happy_path = chart_happy_path(username=username, company=company, bsart=bsart, matkl=matkl, vendor=vendor, plant=plant, purch_group=purch_group, case_id=case_id, activity=activity, month=month, year=year, quarter=quarter, lifnr=lifnr, lead_time=lead_time, status=status, ernam=ernam, sod=sod, events=events)
+
+        return {
+            "kpis": kpis,
+            "activity": activity_data,
+            "monthly": monthly,
+            "ernam": ernam_data,
+            "company": company_data,
+            "leadtime": leadtime,
+            "po_rev_ernam": po_rev_ernam,
+            "po_rev_timeline": po_rev_timeline,
+            "pr_rev_after_po_ernam": pr_rev_after_po_ernam,
+            "seq_violation_ernam": seq_violation_ernam,
+            "sod_violations": sod_violations,
+            "bottleneck": bottleneck,
+            "rev_by_purch_group": rev_by_purch_group,
+            "purch_group_workload": purch_group_workload,
+            "vendor_lead_time": vendor_lead_time,
+            "cases": cases,
+            "process_map": process_map,
+            "bsart": bsart_data,
+            "matkl": matkl_data,
+            "vendors": vendors_data,
+            "happy_path": happy_path
+        }
+    finally:
+        if temp_username in USER_DFS:
+            del USER_DFS[temp_username]
