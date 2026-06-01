@@ -14,6 +14,7 @@ import {
 } from 'recharts';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
 import './App.css';
+import html2canvas from 'html2canvas';
 
 const API = 'http://localhost:8000';
 
@@ -192,7 +193,7 @@ const ProcessNode = React.memo(({ data }) => {
         width: 170,
         height: 165,
         borderRadius: '60%',
-        background: isHappyPath ? '#2f8556ff' : '#877b6fff',
+        background: isHappyPath ? '#006B3C' : '#877b6fff',
         color: '#ffffff',
         display: 'flex',
         alignItems: 'center',
@@ -262,8 +263,10 @@ const FreqEdge = React.memo(({ id, sourceX, sourceY, targetX, targetY, sourcePos
 
   const isMainPath = ratio >= 0.1;
   const strokeWidth = isMainPath ? 2 + ratio * 8 : 2;
-  const arcColor = isMainPath ? '#605E5C' : '#A19F9D';
-  const dashArray = isMainPath ? 'none' : '10, 10';
+  const isSkipped = data?.isSkipped;
+  const arcColor = isSkipped ? '#E81123' : (isMainPath ? '#605E5C' : '#A19F9D');
+  const dashArray = isSkipped ? 'none' : (isMainPath ? 'none' : '10, 10');
+  const flowColor = isSkipped ? '#E81123' : '#00B7C3';
 
   let edgePath, labelX, labelY;
 
@@ -330,7 +333,7 @@ const FreqEdge = React.memo(({ id, sourceX, sourceY, targetX, targetY, sourcePos
       <path
         d={edgePath}
         fill="none"
-        stroke="#00B7C3"
+        stroke={flowColor}
         strokeWidth={Math.max(4, strokeWidth / 1.5)}
         strokeDasharray="1 20"
         strokeLinecap="round"
@@ -347,7 +350,7 @@ const FreqEdge = React.memo(({ id, sourceX, sourceY, targetX, targetY, sourcePos
           <path
             key={i}
             d="M -8,-6 L 8,0 L -8,6 Z"
-            fill="#00B7C3"
+            fill={flowColor}
             style={{
               opacity: 0,
             }}
@@ -520,13 +523,17 @@ const buildFlowMap = (bNodes, bEdges, setRfNodes, setRfEdges, dir) => {
       e.source, e.target, sN.position, tN.position, dir
     );
 
+    const sIdx = HAPPY_IDX[e.source];
+    const tIdx = HAPPY_IDX[e.target];
+    const isSkipped = sIdx !== undefined && tIdx !== undefined && (tIdx !== sIdx + 1);
+
     return {
       id: e.id || `${e.source}--${e.target}`,
       source: e.source, target: e.target,
       sourceHandle: sh, targetHandle: th,
       type: 'freqEdge',
-      markerEnd: { type: MarkerType.ArrowClosed, color: ((e.frequency || 0) / mxE >= 0.1) ? '#605E5C' : '#A19F9D', width: 15, height: 15 },
-      data: { frequency: e.frequency, avg_days: e.avg_days, maxFreq: mxE, curvature, sweepSide, sweepDist },
+      markerEnd: { type: MarkerType.ArrowClosed, color: isSkipped ? '#E81123' : (((e.frequency || 0) / mxE >= 0.1) ? '#605E5C' : '#A19F9D'), width: 15, height: 15 },
+      data: { frequency: e.frequency, avg_days: e.avg_days, maxFreq: mxE, curvature, sweepSide, sweepDist, isSkipped },
     };
   }).filter(Boolean);
 
@@ -535,17 +542,17 @@ const buildFlowMap = (bNodes, bEdges, setRfNodes, setRfEdges, dir) => {
 };
 
 /* ─── HELPERS ──────────────────────────────────────────────────── */
-const VALID_KEYS = new Set(['customer', 'vkorg', 'auart', 'matkl', 'werks',
-  'case_id', 'month', 'activity', 'year', 'quarter', 'lead_time', 'ernam', 'status']);
+const VALID_KEYS = new Set(['customer', 'vkorg', 'auart', 'matkl',
+  'case_id', 'month', 'activity', 'quarter', 'lead_time', 'events', 'ernam', 'start_date', 'end_date']);
 const qs = (params) => {
-  const p = Object.entries(params).filter(([k, v]) => VALID_KEYS.has(k) && v && v !== 'ALL');
+  const p = Object.entries(params).filter(([k, v]) => VALID_KEYS.has(k) && v && v !== 'ALL' && v !== '');
   return p.length ? '?' + p.map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&') : '';
 };
 
 const CROSS_TO_PARAM = {
-  customer: 'customer', vkorg: 'vkorg', auart: 'auart', matkl: 'matkl', werks: 'werks',
-  activity: 'activity', month: 'month', year: 'year', quarter: 'quarter',
-  case_id: 'case_id', lead_time: 'lead_time', ernam: 'ernam', status: 'status'
+  customer: 'customer', vkorg: 'vkorg', auart: 'auart', matkl: 'matkl',
+  activity: 'activity', month: 'month', quarter: 'quarter',
+  case_id: 'case_id', lead_time: 'lead_time', events: 'events', ernam: 'ernam'
 };
 
 const Skeleton = ({ width = '100%', height = '20px', borderRadius = 4, style }) => (
@@ -688,7 +695,7 @@ const ConfKpiCard = ({ label, value, color, sub, tooltip, onClick, highlighted }
 };
 
 /* ─── SEARCHABLE SELECT COMPONENT ─────────────────────────────── */
-const SearchableSelect = ({ label, value, options, onChange, wide }) => {
+const SearchableSelect = ({ label, value, options, onChange, style }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const dropdownRef = useRef(null);
@@ -713,7 +720,7 @@ const SearchableSelect = ({ label, value, options, onChange, wide }) => {
   const displayedOptions = filteredOptions.slice(0, 100);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1, minWidth: '150px', position: 'relative' }} ref={dropdownRef}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1, minWidth: '150px', position: 'relative', ...style }} ref={dropdownRef}>
       <label style={{
         fontSize: 10, fontWeight: 700, color: '#323130',
         textTransform: 'uppercase', letterSpacing: .4
@@ -784,8 +791,8 @@ const SearchableSelect = ({ label, value, options, onChange, wide }) => {
   );
 };
 
-const FilterSelect = ({ label, value, options, onChange, wide }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1, minWidth: '150px' }}>
+const FilterSelect = ({ label, value, options, onChange, style }) => (
+  <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1, minWidth: '150px', ...style }}>
     <label style={{
       fontSize: 10, fontWeight: 700, color: '#323130',
       textTransform: 'uppercase', letterSpacing: .4
@@ -801,6 +808,46 @@ const FilterSelect = ({ label, value, options, onChange, wide }) => (
         <option key={o} value={o}>{o}</option>
       ))}
     </select>
+  </div>
+);
+
+const DateRangeFilter = ({ label, fromValue, toValue, onFromChange, onToChange, minDate, maxDate }) => (
+  <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1.5, minWidth: '220px' }}>
+    <label style={{
+      fontSize: 10, fontWeight: 700, color: '#323130',
+      textTransform: 'uppercase', letterSpacing: .4
+    }}>{label}</label>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <input
+        type="date"
+        value={fromValue || ''}
+        min={minDate || ''}
+        max={maxDate || ''}
+        onChange={e => onFromChange(e.target.value)}
+        style={{
+          fontSize: 11, padding: '4px 6px', borderRadius: 4, flex: 1,
+          border: fromValue ? `1.5px solid ${C.blue700}` : `1px solid ${C.border}`,
+          background: fromValue ? '#EFF6FF' : C.card,
+          color: '#323130', outline: 'none', cursor: 'pointer',
+          fontWeight: fromValue ? 700 : 'normal',
+        }}
+      />
+      <span style={{ fontSize: 11, color: '#605E5C' }}>to</span>
+      <input
+        type="date"
+        value={toValue || ''}
+        min={minDate || ''}
+        max={maxDate || ''}
+        onChange={e => onToChange(e.target.value)}
+        style={{
+          fontSize: 11, padding: '4px 6px', borderRadius: 4, flex: 1,
+          border: toValue ? `1.5px solid ${C.blue700}` : `1px solid ${C.border}`,
+          background: toValue ? '#EFF6FF' : C.card,
+          color: '#323130', outline: 'none', cursor: 'pointer',
+          fontWeight: toValue ? 700 : 'normal',
+        }}
+      />
+    </div>
   </div>
 );
 
@@ -960,9 +1007,180 @@ const CaseTable = React.memo(({ data, events, onSelect, selectedId }) => {
   );
 });
 
+const CaseTableEda = React.memo(({ data, events, onSelect, selectedId }) => {
+  const [limit, setLimit] = useState(100);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Reset limit when search query changes
+  useEffect(() => {
+    setLimit(100);
+  }, [searchQuery]);
+
+  // ── 1. Calculate non-blank/filled fields for custom sorting ─────────────────
+  const getFilledScore = React.useCallback((row) => {
+    let score = 0;
+    const targetCols = [
+      "Net Value of the Order Item",
+      "Actual quantity delivered",
+      "Actual billed quantity",
+      "Net value of the billing item",
+      "Amount in Local Currency"
+    ];
+    targetCols.forEach(col => {
+      const v = row[col];
+      if (v != null && v !== '' && v !== 0 && v !== '0') {
+        score += 1;
+      }
+    });
+    return score;
+  }, []);
+
+  // ── 2. Filter & Sort cases: filled first, blank after ────────────────────────
+  const processedData = React.useMemo(() => {
+    let list = [...data];
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(row => String(row.case_id).toLowerCase().includes(q));
+    }
+
+    // Sort logic: higher score (more filled columns) comes first
+    return list.sort((a, b) => {
+      const scoreA = getFilledScore(a);
+      const scoreB = getFilledScore(b);
+      if (scoreA !== scoreB) {
+        return scoreB - scoreA; // descending order of filled columns
+      }
+      // Stable sorting fallback on case_id
+      return String(b.case_id).localeCompare(String(a.case_id));
+    });
+  }, [data, searchQuery, getFilledScore]);
+
+  const visibleData = React.useMemo(() => {
+    return processedData.slice(0, limit);
+  }, [processedData, limit]);
+
+  const handleScroll = (e) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.target;
+    // Load 100 more rows when user scrolls near the bottom (within 100px)
+    if (scrollHeight - scrollTop - clientHeight < 100) {
+      if (limit < processedData.length) {
+        setLimit(prev => prev + 100);
+      }
+    }
+  };
+
+  const formatQty = (v) => (v != null && v !== '') ? Number(v).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 3 }) : '—';
+  const formatAmt = (v) => (v != null && v !== '') ? Number(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—';
+
+  // ── Conditional Return for Selected Case Event Log (placed at the bottom to avoid hook violation) ──
+  if (selectedId !== 'ALL' && selectedId != null) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: '360px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, paddingBottom: 8, borderBottom: `1px solid ${C.border}` }}>
+          <div>
+            <span style={{ fontSize: 11, color: C.slate }}>Event Log for Case: </span>
+            <strong style={{ fontSize: 13, color: '#323130' }}>{selectedId}</strong>
+          </div>
+          <button
+            onClick={() => onSelect('ALL')}
+            style={{ fontSize: 11, background: C.blue700, color: '#fff', border: 'none', padding: '4px 12px', borderRadius: 4, cursor: 'pointer', fontWeight: 600 }}>
+            Back to Case List
+          </button>
+        </div>
+        <div style={{ overflowY: 'auto', flex: 1 }}>
+          {(!events || events.length === 0) ? <Empty /> : (
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
+              <thead style={{ position: 'sticky', top: 0, background: '#F0F2F5', zIndex: 1 }}>
+                <tr>
+                  <th style={{ padding: '8px', textAlign: 'left', borderBottom: `1px solid ${C.border}`, color: C.slate }}>Activity</th>
+                  <th style={{ padding: '8px', textAlign: 'left', borderBottom: `1px solid ${C.border}`, color: C.slate }}>Timestamp</th>
+                  <th style={{ padding: '8px', textAlign: 'left', borderBottom: `1px solid ${C.border}`, color: C.slate }}>User (ERNAM)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {events.map((e, i) => (
+                  <tr key={i} style={{ borderBottom: `1px solid ${C.border}`, background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                    <td style={{ padding: '6px 8px', color: '#323130', fontWeight: 600 }}>{e.Activity}</td>
+                    <td style={{ padding: '6px 8px', color: '#605E5C' }}>{e.Timestamp}</td>
+                    <td style={{ padding: '6px 8px', color: '#605E5C' }}>{e.User}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (!Array.isArray(data) || !data.length) return <Empty />;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {/* Search and stats bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fff', border: `1px solid ${C.border}`, borderRadius: 4, padding: '4px 8px', width: '260px' }}>
+          <span style={{ fontSize: 12, opacity: 0.6 }}>🔍</span>
+          <input
+            type="text"
+            placeholder="Search Case ID..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ border: 'none', outline: 'none', fontSize: 11, width: '100%' }}
+          />
+        </div>
+        <div style={{ fontSize: 11, color: C.slate }}>
+          Showing top <strong>{Math.min(processedData.length, limit)}</strong> of <strong>{processedData.length}</strong> cases (Scroll down to load more)
+        </div>
+      </div>
+
+      {/* Scrollable Container with handleScroll */}
+      <div
+        onScroll={handleScroll}
+        style={{ overflowX: 'auto', maxHeight: '360px', overflowY: 'auto', border: `1px solid ${C.border}`, borderRadius: '6px' }}
+      >
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
+          <thead style={{ position: 'sticky', top: 0, background: '#F0F2F5', zIndex: 2 }}>
+            <tr>
+              <th style={{ padding: '8px', textAlign: 'left', borderBottom: `1px solid ${C.border}`, color: C.slate, position: 'sticky', left: 0, background: '#F0F2F5', zIndex: 3 }}>Case ID</th>
+              <th style={{ padding: '8px', textAlign: 'right', borderBottom: `1px solid ${C.border}`, color: C.slate }}>Order Value</th>
+              <th style={{ padding: '8px', textAlign: 'right', borderBottom: `1px solid ${C.border}`, color: C.slate }}>Delivered Qty</th>
+              <th style={{ padding: '8px', textAlign: 'right', borderBottom: `1px solid ${C.border}`, color: C.slate }}>Billed Qty</th>
+              <th style={{ padding: '8px', textAlign: 'right', borderBottom: `1px solid ${C.border}`, color: C.slate }}>Invoice Amount</th>
+              <th style={{ padding: '8px', textAlign: 'right', borderBottom: `1px solid ${C.border}`, color: C.slate }}>Cleared Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {visibleData.map((row, i) => (
+              <tr
+                key={i}
+                onClick={() => onSelect(row.case_id)}
+                style={{
+                  borderBottom: `1px solid ${C.border}`,
+                  background: row.case_id === selectedId ? C.selected : (i % 2 === 0 ? '#fff' : '#fafafa'),
+                  cursor: 'pointer',
+                  transition: 'background 0.2s',
+                  borderLeft: row.case_id === selectedId ? `4px solid ${C.selectedBorder}` : '4px solid transparent'
+                }}
+              >
+                <td style={{ padding: '6px 8px', color: '#323130', fontWeight: 600, textAlign: 'left', position: 'sticky', left: 0, background: row.case_id === selectedId ? C.selected : (i % 2 === 0 ? '#fff' : '#fafafa'), zIndex: 1 }}>{row.case_id}</td>
+                <td style={{ padding: '6px 8px', color: '#605E5C', textAlign: 'right' }}>{formatAmt(row["Net Value of the Order Item"])}</td>
+                <td style={{ padding: '6px 8px', color: '#605E5C', textAlign: 'right' }}>{formatQty(row["Actual quantity delivered"])}</td>
+                <td style={{ padding: '6px 8px', color: '#605E5C', textAlign: 'right' }}>{formatQty(row["Actual billed quantity"])}</td>
+                <td style={{ padding: '6px 8px', color: '#605E5C', textAlign: 'right' }}>{formatAmt(row["Net value of the billing item"])}</td>
+                <td style={{ padding: '6px 8px', color: '#605E5C', textAlign: 'right' }}>{formatAmt(row["Amount in Local Currency"])}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+});
+
 /* ══════════════════════════════════════════
    CHARTS (MEMOIZED FOR PERFORMANCE)
-══════════════════════════════════════════ */
+   ══════════════════════════════════════════ */
 
 const GenericPieChart = React.memo(({ data, nameKey, dataKey, crossFilter, onSelect }) => {
   if (!Array.isArray(data) || !data.length) return <Empty />;
@@ -1551,14 +1769,13 @@ const O2C_FAQS = [
     ],
   },
   {
-    q: 'What are the most common pain points Process Mining uncovers in O2C?',
-    a: 'Typical findings include:',
+    q: 'What makes ALTeX Hub process mining different?',
+    a: 'The process mining done under ALTeX Hub is different from traditional process mining tools because:',
     bullets: [
-      'Order blocks and rejections — credit holds, incomplete data, pricing errors',
-      'Delivery delays, stockouts, and fulfillment bottlenecks',
-      'Invoice inaccuracies — wrong terms, pricing mismatches, duplicate invoices',
-      'Long invoicing or billing cycle times extending DSO',
-      'Manual rework loops caused by data entry or system integration errors',
+      'Runs in parallel to the CompliBear ACM engine',
+      'It uses machine learning to analyze and interpret process data',
+      'CoSaas: Each run is customised to the business, rather than relying on the data or standard happy path guidelines for the processes',
+      'Interconnected to other processes and systems to bring all the touchpoints as a single source of truth.',
     ],
   },
   {
@@ -1621,8 +1838,7 @@ const EmptyState = ({ condition, message, children, action }) => {
   );
 };
 
-const O2CIntroScreen = ({ onGoTableBuild, onGoCsvUpload }) => {
-  const [introStep, setIntroStep] = useState('overview'); // 'overview' | 'choose'
+const O2CIntroScreen = ({ onGoTableBuild, onGoCsvUpload, introStep, setIntroStep }) => {
   const [hoveredSide, setHoveredSide] = useState(null);
   const [showFaqModal, setShowFaqModal] = useState(false);
 
@@ -2108,36 +2324,30 @@ const O2CIntroScreen = ({ onGoTableBuild, onGoCsvUpload }) => {
 
   /* ── Choose your path ── */
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '36px 24px 48px', overflowY: 'auto' }}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '2rem', overflowY: 'auto', position: 'relative' }}>
+      {/* Snapshot Button */}
+      <button
+        onClick={() => window.open('/snapshot o2c.pdf', '_blank')}
+        style={{
+          position: 'absolute',
+          top: '24px',
+          right: '24px',
+          background: '#16A34A', color: '#fff', border: 'none',
+          padding: '9px 18px', borderRadius: '8px', fontSize: '12px',
+          fontWeight: 700, cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: '6px',
+          boxShadow: '0 4px 12px rgba(22,163,74,0.3)',
+          transition: 'all 0.2s',
+          zIndex: 10
+        }}
+        onMouseOver={e => { e.currentTarget.style.filter = 'brightness(1.1)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+        onMouseOut={e => { e.currentTarget.style.filter = 'none'; e.currentTarget.style.transform = 'none'; }}
+      >
+        📸 Snapshot
+      </button>
+
       <div style={{ maxWidth: 880, width: '100%', display: 'flex', flexDirection: 'column', gap: 24 }}>
 
-        {/* Back link + Snapshot */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <button
-            onClick={() => setIntroStep('overview')}
-            style={{
-              background: 'none', border: '1px solid #E2E8F0', padding: '6px 14px', borderRadius: 6,
-              fontSize: 12, cursor: 'pointer', color: '#64748b', fontWeight: 600
-            }}
-            onMouseOver={e => e.currentTarget.style.background = '#F8FAFC'}
-            onMouseOut={e => e.currentTarget.style.background = 'none'}>
-            ← Back to Overview
-          </button>
-
-          <button
-            onClick={() => window.open('/snapshot o2c.pdf', '_blank')}
-            style={{
-              background: '#16A34A', color: '#fff', border: 'none',
-              padding: '7px 18px', borderRadius: 7, fontSize: 12,
-              fontWeight: 700, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: 6,
-              boxShadow: '0 2px 8px rgba(22,163,74,0.35)'
-            }}
-            onMouseOver={e => e.currentTarget.style.background = '#15803D'}
-            onMouseOut={e => e.currentTarget.style.background = '#16A34A'}>
-            📸 Snapshot
-          </button>
-        </div>
 
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 }}>Get Started</div>
@@ -2162,9 +2372,15 @@ const O2CIntroScreen = ({ onGoTableBuild, onGoCsvUpload }) => {
           >
             <motion.div layout style={{
               width: 60, height: 60, borderRadius: 14, background: '#EDFAF4',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, flexShrink: 0
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
             }}>
-              🔨
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#006B3C" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="3" width="6" height="6" rx="1" />
+                <rect x="16" y="3" width="6" height="6" rx="1" />
+                <rect x="16" y="15" width="6" height="6" rx="1" />
+                <rect x="2" y="15" width="6" height="6" rx="1" />
+                <path d="M8 6h8M19 9v6M16 18H8M5 15V9" />
+              </svg>
             </motion.div>
             <motion.div layout style={{ flex: 1 }}>
               <motion.div layout style={{ fontSize: 18, fontWeight: 700, color: '#1e293b', marginBottom: 8, whiteSpace: hoveredSide === 'csv' ? 'nowrap' : 'normal' }}>Build Event Log</motion.div>
@@ -2173,8 +2389,8 @@ const O2CIntroScreen = ({ onGoTableBuild, onGoCsvUpload }) => {
                   <motion.div
                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                     style={{ fontSize: 13, color: '#64748b', lineHeight: 1.65 }}>
-                    Upload raw SAP tables (VBAK, VBAP, VBFA, LIKP, LIPS, VBRK, VBRP, BSAD, KNA1) and
-                    automatically build the O2C process event log.
+                    Upload raw ERP tables and let the system
+                    automatically build the process event log.
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -2187,7 +2403,7 @@ const O2CIntroScreen = ({ onGoTableBuild, onGoCsvUpload }) => {
               }}
               onMouseOver={e => e.currentTarget.style.background = '#004d2c'}
               onMouseOut={e => e.currentTarget.style.background = '#006B3C'}>
-              {hoveredSide === 'csv' ? 'Build' : '⚡ Build Event Log'}
+              {hoveredSide === 'csv' ? 'Build' : 'Build Event Log'}
             </motion.button>
           </motion.div>
 
@@ -2203,22 +2419,26 @@ const O2CIntroScreen = ({ onGoTableBuild, onGoCsvUpload }) => {
             onClick={onGoCsvUpload}
             onMouseEnter={() => setHoveredSide('csv')}
             onMouseLeave={() => setHoveredSide(null)}
-            animate={{ borderColor: hoveredSide === 'csv' ? '#004d2c' : '#E2E8F0' }}
+            animate={{ borderColor: hoveredSide === 'csv' ? '#006B3C' : '#E2E8F0' }}
           >
             <motion.div layout style={{
-              width: 60, height: 60, borderRadius: 14, background: '#EFF6FF',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, flexShrink: 0
+              width: 60, height: 60, borderRadius: 14, background: '#EDFAF4',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
             }}>
-              📂
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#006B3C" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                <polyline points="14 2 14 8 20 8" />
+                <path d="M8 13h8M8 17h8" />
+              </svg>
             </motion.div>
             <motion.div layout style={{ flex: 1 }}>
-              <motion.div layout style={{ fontSize: 18, fontWeight: 700, color: '#1e293b', marginBottom: 8, whiteSpace: hoveredSide === 'build' ? 'nowrap' : 'normal' }}>Pre-built CSV</motion.div>
+              <motion.div layout style={{ fontSize: 18, fontWeight: 700, color: '#1e293b', marginBottom: 8, whiteSpace: hoveredSide === 'build' ? 'nowrap' : 'normal' }}>Upload Pre-built CSV or Excel</motion.div>
               <AnimatePresence>
                 {hoveredSide !== 'build' && (
                   <motion.div
                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                    style={{ fontSize: 13, color: '#1e6231ff', lineHeight: 1.65 }}>
-                    Already have a formatted event log? Upload your pre-built wide-format CSV directly to launch the dashboard.
+                    style={{ fontSize: 13, color: '#64748b', lineHeight: 1.65 }}>
+                    Already have a formatted event log? Upload your pre-built CSV or Excel file directly to launch the dashboard.
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -2231,7 +2451,7 @@ const O2CIntroScreen = ({ onGoTableBuild, onGoCsvUpload }) => {
               }}
               onMouseOver={e => e.currentTarget.style.background = '#004d2c'}
               onMouseOut={e => e.currentTarget.style.background = '#006B3C'}>
-              {hoveredSide === 'build' ? 'Upload' : '📂 Upload Pre-built CSV'}
+              {hoveredSide === 'build' ? 'Upload' : 'Upload CSV or Excel'}
             </motion.button>
           </motion.div>
         </div>
@@ -2329,6 +2549,7 @@ const O2CTableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, m
       ]
     },
   ];
+  const [erpSystem, setErpSystem] = useState('');
   const [tableStatus, setTableStatus] = useState(Object.fromEntries(tables.map(t => [t.name, 'idle'])));
   const [tableMsg, setTableMsg] = useState(Object.fromEntries(tables.map(t => [t.name, ''])));
   const [appliedMappings, setAppliedMappings] = useState({});
@@ -2554,139 +2775,181 @@ const O2CTableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, m
 
       <div style={{ maxWidth: 820, width: '100%', display: 'flex', flexDirection: 'column', gap: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button onClick={onBack}
-            style={{ background: 'none', border: '1px solid #E2E8F0', padding: '6px 14px', borderRadius: 6, fontSize: 12, cursor: 'pointer', color: '#64748b', fontWeight: 600 }}
-            onMouseOver={e => e.currentTarget.style.background = '#F8FAFC'}
-            onMouseOut={e => e.currentTarget.style.background = 'none'}>
-            ← Back
-          </button>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: '#006B3C', textTransform: 'uppercase', letterSpacing: 0.8 }}>Build Event Log</div>
-            <div style={{ fontSize: 13, color: '#64748b' }}>Upload the 9 SAP tables below, then click Build</div>
+            <div style={{ fontSize: 13, color: '#64748b' }}>Upload the ERP tables below, then click Build</div>
           </div>
         </div>
 
         {/* Table upload panel */}
         <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 10, padding: '20px 22px', boxShadow: '0 2px 6px rgba(0,0,0,0.04)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.8 }}>Required SAP Tables</div>
-            <div style={{ fontSize: 11, color: '#94a3b8' }}>Upload each as <strong style={{ color: '#475569' }}>.csv</strong></div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.8 }}>
+              {erpSystem ? `${erpSystem} Tables` : 'ERP Tables'}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <select
+                value={erpSystem}
+                onChange={e => setErpSystem(e.target.value)}
+                style={{
+                  padding: '5px 12px',
+                  borderRadius: 6,
+                  border: '1.5px solid #E2E8F0',
+                  background: '#fff',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: '#334155',
+                  cursor: 'pointer',
+                  outline: 'none',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                }}
+              >
+                <option value="">Select ERP System</option>
+                <option value="SAP">SAP</option>
+                <option value="Oracle">Oracle</option>
+                <option value="Microsoft Dynamic 365">Microsoft Dynamic 365</option>
+                <option value="Zoho">Zoho</option>
+                <option value="Others">Others</option>
+              </select>
+              <div style={{ fontSize: 11, color: '#94a3b8' }}>Upload each as <strong style={{ color: '#475569' }}>.csv</strong></div>
+            </div>
           </div>
-          <motion.div
-            variants={{
-              visible: { transition: { staggerChildren: 0.05 } }
-            }}
-            initial="hidden"
-            animate="visible"
-            style={{ display: 'flex', flexDirection: 'column', border: '1px solid #E2E8F0', borderRadius: 8, overflow: 'hidden' }}
-          >
-            {tables.map((t, i) => {
-              const s = si(tableStatus[t.name]);
-              const ref = fileRefs.current[t.name];
-              const isUp = tableStatus[t.name] === 'uploading';
-              return (
-                <motion.div
-                  key={t.name}
-                  variants={{
-                    hidden: { opacity: 0, x: -10 },
-                    visible: { opacity: 1, x: 0 }
-                  }}
-                  animate={isUp ? {
-                    backgroundColor: ['#F8FAFC', '#D1FAE5', '#F8FAFC'],
-                    transition: { duration: 1.5, repeat: Infinity }
-                  } : {}}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
-                    background: tableStatus[t.name] === 'done' ? '#F0FAF0' : tableStatus[t.name] === 'error' ? '#FDE7E9' : i % 2 === 0 ? '#F8FAFC' : '#fff',
-                    borderBottom: i < tables.length - 1 ? '1px solid #E2E8F0' : 'none', transition: 'background 0.2s'
-                  }}>
-                  <input ref={ref} type="file" accept=".csv" style={{ display: 'none' }}
-                    onChange={e => { uploadTable(t.name, e.target.files[0]); e.target.value = ''; }} />
-                  <button onClick={() => { if (!isUp && ref.current) { ref.current.value = ''; ref.current.click(); } }}
-                    disabled={isUp}
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28,
-                      borderRadius: 6, border: `1.5px solid ${s.border}`, background: s.bg, color: s.color,
-                      cursor: isUp ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 13, flexShrink: 0
+
+          {erpSystem === 'SAP' ? (
+            <motion.div
+              variants={{
+                visible: { transition: { staggerChildren: 0.05 } }
+              }}
+              initial="hidden"
+              animate="visible"
+              style={{ display: 'flex', flexDirection: 'column', border: '1px solid #E2E8F0', borderRadius: 8, overflow: 'hidden' }}
+            >
+              {tables.map((t, i) => {
+                const s = si(tableStatus[t.name]);
+                const ref = fileRefs.current[t.name];
+                const isUp = tableStatus[t.name] === 'uploading';
+                return (
+                  <motion.div
+                    key={t.name}
+                    variants={{
+                      hidden: { opacity: 0, x: -10 },
+                      visible: { opacity: 1, x: 0 }
                     }}
-                    onMouseOver={e => { if (!isUp) e.currentTarget.style.background = '#D1FAE5'; }}
-                    onMouseOut={e => { e.currentTarget.style.background = s.bg; }}>
-                    {isUp ? <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }}>↻</span> : s.icon}
-                  </button>
-                  <div style={{
-                    minWidth: 52, fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: '#006B3C',
-                    background: '#EDFAF4', padding: '3px 8px', borderRadius: 4, textAlign: 'center', flexShrink: 0
-                  }}>{t.name}</div>
-                  <div style={{ fontSize: 13, color: '#475569', flex: 1 }}>
-                    {t.desc}
-                    {appliedMappings[t.name] && Object.keys(appliedMappings[t.name]).length > 0 && (
-                      <div style={{ fontSize: 11, color: '#006B3C', marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                        {Object.entries(appliedMappings[t.name]).map(([k, v]) => (
-                          <span key={k} style={{ background: '#EDFAF4', padding: '2px 6px', borderRadius: 4 }}><strong>{k}</strong> → {v}</span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginLeft: 'auto', flexShrink: 0 }}>
-                    {tableMsg[t.name] && (
-                      <div style={{
-                        fontSize: 11, fontWeight: 600, maxWidth: 220, lineHeight: 1.3,
-                        color: tableStatus[t.name] === 'error' ? '#DC2626' : '#15803D',
-                        background: tableStatus[t.name] === 'error' ? '#FEF2F2' : 'transparent',
-                        padding: tableStatus[t.name] === 'error' ? '3px 6px' : '0',
-                        borderRadius: 4, border: tableStatus[t.name] === 'error' ? '1px solid #FECACA' : 'none'
-                      }}>
-                        {tableMsg[t.name]}
-                      </div>
-                    )}
-                    {(tableStatus[t.name] === 'done' || tableStatus[t.name] === 'error') && (
-                      <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                        {selectedFiles[t.name] && (
+                    animate={isUp ? {
+                      backgroundColor: ['#F8FAFC', '#D1FAE5', '#F8FAFC'],
+                      transition: { duration: 1.5, repeat: Infinity }
+                    } : {}}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
+                      background: tableStatus[t.name] === 'done' ? '#F0FAF0' : tableStatus[t.name] === 'error' ? '#FDE7E9' : i % 2 === 0 ? '#F8FAFC' : '#fff',
+                      borderBottom: i < tables.length - 1 ? '1px solid #E2E8F0' : 'none', transition: 'background 0.2s'
+                    }}>
+                    <input ref={ref} type="file" accept=".csv" style={{ display: 'none' }}
+                      onChange={e => { uploadTable(t.name, e.target.files[0]); e.target.value = ''; }} />
+                    <button onClick={() => { if (!isUp && ref.current) { ref.current.value = ''; ref.current.click(); } }}
+                      disabled={isUp}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28,
+                        borderRadius: 6, border: `1.5px solid ${s.border}`, background: s.bg, color: s.color,
+                        cursor: isUp ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 13, flexShrink: 0
+                      }}
+                      onMouseOver={e => { if (!isUp) e.currentTarget.style.background = '#D1FAE5'; }}
+                      onMouseOut={e => { e.currentTarget.style.background = s.bg; }}>
+                      {isUp ? <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }}>↻</span> : s.icon}
+                    </button>
+                    <div style={{
+                      minWidth: 52, fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: '#006B3C',
+                      background: '#EDFAF4', padding: '3px 8px', borderRadius: 4, textAlign: 'center', flexShrink: 0
+                    }}>{t.isMandatory ? '* ' : ''}{t.name}</div>
+                    <div style={{ fontSize: 13, color: '#475569', flex: 1 }}>
+                      {t.desc}
+                      {appliedMappings[t.name] && Object.keys(appliedMappings[t.name]).length > 0 && (
+                        <div style={{ fontSize: 11, color: '#006B3C', marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                          {Object.entries(appliedMappings[t.name]).map(([k, v]) => (
+                            <span key={k} style={{ background: '#EDFAF4', padding: '2px 6px', borderRadius: 4 }}><strong>{k}</strong> → {v}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginLeft: 'auto', flexShrink: 0 }}>
+                      {tableMsg[t.name] && (
+                        <div style={{
+                          fontSize: 11, fontWeight: 600, maxWidth: 220, lineHeight: 1.3,
+                          color: tableStatus[t.name] === 'error' ? '#DC2626' : '#15803D',
+                          background: tableStatus[t.name] === 'error' ? '#FEF2F2' : 'transparent',
+                          padding: tableStatus[t.name] === 'error' ? '3px 6px' : '0',
+                          borderRadius: 4, border: tableStatus[t.name] === 'error' ? '1px solid #FECACA' : 'none'
+                        }}>
+                          {tableMsg[t.name]}
+                        </div>
+                      )}
+                      {(tableStatus[t.name] === 'done' || tableStatus[t.name] === 'error') && (
+                        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                          {selectedFiles[t.name] && (
+                            <button
+                              onClick={() => handleMapColumns(t.name)}
+                              title='Map columns'
+                              style={{
+                                fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4,
+                                background: tableStatus[t.name] === 'error' ? '#FEF2F2' : '#EDFAF4',
+                                color: tableStatus[t.name] === 'error' ? '#DC2626' : '#065F46',
+                                border: tableStatus[t.name] === 'error' ? '1px solid #FCA5A5' : '1px solid #6EE7B7',
+                                cursor: 'pointer'
+                              }}
+                              onMouseOver={e => e.currentTarget.style.background = tableStatus[t.name] === 'error' ? '#FECACA' : '#D1FAE5'}
+                              onMouseOut={e => e.currentTarget.style.background = tableStatus[t.name] === 'error' ? '#FEF2F2' : '#EDFAF4'}>
+                              Map Columns
+                            </button>
+                          )}
                           <button
-                            onClick={() => handleMapColumns(t.name)}
-                            title='Map columns'
-                            style={{
-                              fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4,
-                              background: tableStatus[t.name] === 'error' ? '#FEF2F2' : '#EDFAF4',
-                              color: tableStatus[t.name] === 'error' ? '#DC2626' : '#065F46',
-                              border: tableStatus[t.name] === 'error' ? '1px solid #FCA5A5' : '1px solid #6EE7B7',
-                              cursor: 'pointer'
+                            onClick={() => {
+                              fetch(`${API}/o2c/transform/clear_table?table_name=${t.name}&username=${encodeURIComponent(currentUser || 'Unknown')}`, { method: 'DELETE' }).catch(console.error);
+                              setTableStatus(p => ({ ...p, [t.name]: 'idle' }));
+                              setTableMsg(p => ({ ...p, [t.name]: '' }));
+                              setSelectedFiles(p => { const copy = { ...p }; delete copy[t.name]; return copy; });
+                              setAppliedMappings(p => { const copy = { ...p }; delete copy[t.name]; return copy; });
+                              if (fileRefs.current[t.name]?.current) fileRefs.current[t.name].current.value = '';
                             }}
-                            onMouseOver={e => e.currentTarget.style.background = tableStatus[t.name] === 'error' ? '#FECACA' : '#D1FAE5'}
-                            onMouseOut={e => e.currentTarget.style.background = tableStatus[t.name] === 'error' ? '#FEF2F2' : '#EDFAF4'}>
-                            Map Columns
+                            title='Clear to re-upload'
+                            style={{
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              width: 18, height: 18, borderRadius: '50%', border: '1.5px solid #FCA5A5',
+                              background: '#FEE2E2', color: '#DC2626', cursor: 'pointer',
+                              fontWeight: 800, fontSize: 10, padding: 0, lineHeight: 1, flexShrink: 0
+                            }}
+                            onMouseOver={e => e.currentTarget.style.background = '#FECACA'}
+                            onMouseOut={e => e.currentTarget.style.background = '#FEE2E2'}>
+                            ✕
                           </button>
-                        )}
-                        <button
-                          onClick={() => {
-                            fetch(`${API}/o2c/transform/clear_table?table_name=${t.name}&username=${encodeURIComponent(currentUser || 'Unknown')}`, { method: 'DELETE' }).catch(console.error);
-                            setTableStatus(p => ({ ...p, [t.name]: 'idle' }));
-                            setTableMsg(p => ({ ...p, [t.name]: '' }));
-                            setSelectedFiles(p => { const copy = { ...p }; delete copy[t.name]; return copy; });
-                            setAppliedMappings(p => { const copy = { ...p }; delete copy[t.name]; return copy; });
-                            if (fileRefs.current[t.name]?.current) fileRefs.current[t.name].current.value = '';
-                          }}
-                          title='Clear to re-upload'
-                          style={{
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            width: 18, height: 18, borderRadius: '50%', border: '1.5px solid #FCA5A5',
-                            background: '#FEE2E2', color: '#DC2626', cursor: 'pointer',
-                            fontWeight: 800, fontSize: 10, padding: 0, lineHeight: 1, flexShrink: 0
-                          }}
-                          onMouseOver={e => e.currentTarget.style.background = '#FECACA'}
-                          onMouseOut={e => e.currentTarget.style.background = '#FEE2E2'}>
-                          ✕
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              );
-            })}
-          </motion.div>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </motion.div>
+          ) : (
+            <div style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              padding: '40px 20px', border: '1px dashed #E2E8F0', borderRadius: 8, background: '#F8FAFC',
+              color: '#64748b', gap: 10
+            }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.6 }}>
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <line x1="9" y1="3" x2="9" y2="21" />
+                <line x1="15" y1="3" x2="15" y2="21" />
+                <line x1="3" y1="9" x2="21" y2="9" />
+                <line x1="3" y1="15" x2="21" y2="15" />
+              </svg>
+              <div style={{ fontSize: 13, fontWeight: 600 }}>
+                {erpSystem ? `No tables configured for ${erpSystem} yet.` : 'Select an ERP System to load required tables'}
+              </div>
+            </div>
+          )}
+
           <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'space-between', flexWrap: 'wrap' }}>
-            <div style={{ fontSize: 12, color: allDone ? '#107C10' : '#94a3b8', fontWeight: allDone ? 700 : 400 }}>
-              {allDone ? '✓ All 9 tables uploaded — ready to build' : `${tables.filter(t => tableStatus[t.name] === 'done').length} / ${tables.length} tables uploaded`}
+            <div style={{ fontSize: 11, color: '#64748b' }}>
+              <span style={{ fontWeight: 700, color: '#DC2626' }}>*</span> Mandatory table
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
               {buildMsg && <div style={{ fontSize: 12, color: buildMsg.startsWith('Error') ? '#D13438' : '#107C10', fontWeight: 600 }}>{buildMsg}</div>}
@@ -2776,8 +3039,7 @@ const O2CTableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, m
   );
 };
 
-const UploadBanner = ({ onUploaded, serverOk, onLoadingChange, currentUser, myFiles, fetchingFiles, handleLoadOldFile, defaultStep }) => {
-  const [step, setStep] = useState(defaultStep || 'info');
+const UploadBanner = ({ onUploaded, serverOk, onLoadingChange, currentUser, myFiles, fetchingFiles, handleLoadOldFile, step, setStep, introStep, setIntroStep }) => {
   const [dragging, setDragging] = useState(false);
   const [status, setStatus] = useState('idle');
   const [msg, setMsg] = useState('');
@@ -2801,7 +3063,7 @@ const UploadBanner = ({ onUploaded, serverOk, onLoadingChange, currentUser, myFi
       const d = await r.json(); clearInterval(ticker);
       if (!r.ok) throw new Error(d.detail || `HTTP ${r.status}`);
       onLoadingChange(true, 100, 'Dashboard Created');
-      setTimeout(() => { setStatus('done'); setMsg(`✓ ${Number(d.rows).toLocaleString()} rows · ${Number(d.unique_cases).toLocaleString()} unique cases`); onUploaded(null, 'upload'); setTimeout(() => { onLoadingChange(false, 0, ''); }, 500); }, 800);
+      setTimeout(() => { setStatus('done'); setMsg(`✓ ${Number(d.rows).toLocaleString()} rows · ${Number(d.unique_cases).toLocaleString()} unique cases`); onUploaded(null, 'upload'); }, 800);
     } catch (e) {
       clearInterval(ticker); onLoadingChange(false, 0, '');
       const isMappingErr = e.message.includes('Column mapping is incorrect');
@@ -2819,7 +3081,12 @@ const UploadBanner = ({ onUploaded, serverOk, onLoadingChange, currentUser, myFi
 
   /* Page 1: Info/landing */
   if (step === 'info') return (
-    <O2CIntroScreen onGoTableBuild={() => setStep('table')} onGoCsvUpload={() => setStep('upload')} />
+    <O2CIntroScreen
+      onGoTableBuild={() => setStep('table')}
+      onGoCsvUpload={() => setStep('upload')}
+      introStep={introStep}
+      setIntroStep={setIntroStep}
+    />
   );
 
   /* Page 2: Table upload → Build Event Log */
@@ -2974,7 +3241,7 @@ const UploadBanner = ({ onUploaded, serverOk, onLoadingChange, currentUser, myFi
             onMouseOut={e => e.currentTarget.style.background = 'none'}>
             ← Back
           </button>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#006B3C', textTransform: 'uppercase', letterSpacing: 0.8 }}>Upload Pre-built CSV</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#006B3C', textTransform: 'uppercase', letterSpacing: 0.8 }}>Upload Pre-built CSV or Excel</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: C.slate, marginLeft: 'auto' }}>
             <div style={{
               width: 7, height: 7, borderRadius: '50%', background: serverOk ? '#107C10' : '#D13438',
@@ -3099,14 +3366,185 @@ const UploadBanner = ({ onUploaded, serverOk, onLoadingChange, currentUser, myFi
 export default function O2CDashboard({ currentUser, onSignOut, onBackHome }) {
   const [serverOk, setServerOk] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [uploadStep, setUploadStep] = useState('info');
+  const [introStep, setIntroStep] = useState('overview');
   const [mappingError, setMappingError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [dashboardLoading, setDashboardLoading] = useState(false);
+  const [dashboardLoading, setDashboardLoading] = useState(true);
 
   const [chartsReady, setChartsReady] = useState(false);
   const [pmReady, setPmReady] = useState(false);
 
   const intentToUpload = useRef(true);
+  const screenshotRef = useRef(null);
+  const [screenshotting, setScreenshotting] = useState(false);
+
+  const handleScreenshot = async () => {
+    if (!screenshotRef.current || screenshotting) return;
+    setScreenshotting(true);
+    const el = screenshotRef.current;
+
+    const originalRootStyle = {
+      height: el.style.height,
+      overflow: el.style.overflow,
+    };
+
+    el.style.setProperty('height', 'auto', 'important');
+    el.style.setProperty('overflow', 'visible', 'important');
+
+    const scrollContainers = [];
+    const allElements = el.querySelectorAll('*');
+    allElements.forEach((node) => {
+      const style = window.getComputedStyle(node);
+      if (
+        style.overflowY === 'auto' ||
+        style.overflowY === 'scroll' ||
+        style.overflow === 'auto' ||
+        style.overflow === 'scroll'
+      ) {
+        scrollContainers.push({
+          node,
+          overflow: node.style.overflow,
+          overflowY: node.style.overflowY,
+          height: node.style.height,
+          maxHeight: node.style.maxHeight,
+        });
+        node.style.setProperty('overflow', 'visible', 'important');
+        node.style.setProperty('overflow-y', 'visible', 'important');
+        node.style.setProperty('height', 'auto', 'important');
+        node.style.setProperty('max-height', 'none', 'important');
+      }
+    });
+
+    try {
+      await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 800)));
+
+      const canvas = await html2canvas(el, {
+        scale: window.devicePixelRatio || 2,
+        foreignObjectRendering: false,
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: '#F0F2F5',
+        logging: false,
+        scrollX: -window.scrollX,
+        scrollY: -window.scrollY,
+        windowWidth: el.scrollWidth,
+        windowHeight: el.scrollHeight,
+        width: el.scrollWidth,
+        height: el.scrollHeight,
+        ignoreElements: (node) => {
+          if (node.id && node.id.includes('screenshot-btn')) return true;
+          if (node.id === 'screenshot-loading-overlay') return true;
+          if (node.classList && (node.classList.contains('no-screenshot') || node.classList.contains('screenshot-btn'))) return true;
+          if (node.style?.position === 'fixed' || window.getComputedStyle(node).position === 'fixed') return true;
+          return false;
+        },
+        onclone: (clonedDoc, clonedEl) => {
+          const overlay = clonedDoc.getElementById('screenshot-loading-overlay');
+          if (overlay && overlay.parentNode) {
+            overlay.parentNode.removeChild(overlay);
+          }
+          const anims = clonedDoc.querySelectorAll('animateMotion, animate');
+          for (let i = 0; i < anims.length; i++) {
+            const node = anims[i];
+            if (node && node.parentNode) {
+              node.parentNode.removeChild(node);
+            }
+          }
+
+          // Traverse up to clear layout boundaries in the clone
+          let curr = clonedEl;
+          while (curr && curr.style) {
+            curr.style.setProperty('height', 'auto', 'important');
+            curr.style.setProperty('overflow', 'visible', 'important');
+            curr.style.setProperty('max-height', 'none', 'important');
+            curr = curr.parentNode;
+          }
+
+          const copyStyles = (selector) => {
+            const originalEls = el.querySelectorAll(selector);
+            const clonedEls = clonedDoc.querySelectorAll(selector);
+            for (let i = 0; i < originalEls.length && i < clonedEls.length; i++) {
+              const oEl = originalEls[i];
+              const cEl = clonedEls[i];
+              const oStyle = window.getComputedStyle(oEl);
+
+              // Copy layout & positioning styles
+              cEl.style.position = oStyle.position;
+              cEl.style.width = oStyle.width;
+              cEl.style.height = oStyle.height;
+              cEl.style.top = oStyle.top;
+              cEl.style.left = oStyle.left;
+              cEl.style.transform = oStyle.transform;
+              cEl.style.transformOrigin = oStyle.transformOrigin;
+              cEl.style.display = oStyle.display;
+              cEl.style.opacity = oStyle.opacity;
+              cEl.style.overflow = oStyle.overflow;
+
+              // SVG specific styles
+              if (oStyle.stroke) cEl.style.stroke = oStyle.stroke;
+              if (oStyle.strokeWidth) cEl.style.strokeWidth = oStyle.strokeWidth;
+              if (oStyle.fill) cEl.style.fill = oStyle.fill;
+
+              // Styling details
+              cEl.style.background = oStyle.background;
+              cEl.style.backgroundColor = oStyle.backgroundColor;
+              cEl.style.color = oStyle.color;
+              cEl.style.border = oStyle.border;
+              cEl.style.borderRadius = oStyle.borderRadius;
+              cEl.style.boxShadow = oStyle.boxShadow;
+              cEl.style.padding = oStyle.padding;
+            }
+          };
+
+          copyStyles('.react-flow__renderer');
+          copyStyles('.react-flow__viewport');
+          copyStyles('.react-flow__edges');
+          copyStyles('.react-flow__nodes');
+          copyStyles('.react-flow__edge');
+          copyStyles('.react-flow__edge-path');
+          copyStyles('.react-flow__node');
+          copyStyles('.react-flow__background');
+          copyStyles('.react-flow__container');
+        }
+      });
+
+      await new Promise((resolve, reject) => {
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            reject(new Error('Canvas toBlob returned null'));
+            return;
+          }
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.download = `O2C_Dashboard_Report_${new Date().toISOString().slice(0, 10)}.png`;
+          link.href = url;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setTimeout(() => {
+            URL.revokeObjectURL(url);
+          }, 1000);
+          resolve();
+        }, 'image/png');
+      });
+    } catch (err) {
+      console.error('Screenshot failed:', err);
+      alert('Screenshot failed: ' + err.message);
+    } finally {
+      el.style.setProperty('height', originalRootStyle.height || '');
+      el.style.setProperty('overflow', originalRootStyle.overflow || '');
+
+      scrollContainers.forEach(({ node, overflow, overflowY, height, maxHeight }) => {
+        node.style.overflow = overflow;
+        node.style.overflowY = overflowY;
+        node.style.height = height;
+        node.style.maxHeight = maxHeight;
+      });
+
+      setScreenshotting(false);
+    }
+  };
 
   const [loadProg, setLoadProg] = useState(0);
   const [loadLabel, setLoadLabel] = useState('');
@@ -3117,13 +3555,16 @@ export default function O2CDashboard({ currentUser, onSignOut, onBackHome }) {
   const [layoutDir, setLayoutDir] = useState('TB');
 
   const [selected, setSelected] = useState({
-    case_id: 'ALL', customer: 'ALL', vkorg: 'ALL', auart: 'ALL', matkl: 'ALL', werks: 'ALL',
-    year: 'ALL', quarter: 'ALL', month: 'ALL', ernam: 'ALL', status: 'ALL', lead_time: 'ALL'
+    case_id: 'ALL', customer: 'ALL', vkorg: 'ALL', auart: 'ALL', matkl: 'ALL',
+    quarter: 'ALL', month: 'ALL', ernam: 'ALL', lead_time: 'ALL', events: 'ALL',
+    start_date: '', end_date: ''
   });
   const [crossFilter, setCrossFilter] = useState(null);
   const [hoverInfo, setHoverInfo] = useState(null);
+  const hasActiveFilters = Object.entries(selected).some(([k, v]) => (k === 'start_date' || k === 'end_date') ? v !== '' : v !== 'ALL') || !!crossFilter;
 
   const [kpis, setKpis] = useState(null);
+  const [dateRange, setDateRange] = useState({ min_date: null, max_date: null });
   const [actData, setActData] = useState([]);
   const [monData, setMonData] = useState([]);
   const [custData, setCustData] = useState([]);
@@ -3169,7 +3610,42 @@ export default function O2CDashboard({ currentUser, onSignOut, onBackHome }) {
     }
   }, [currentUser, dataLoaded, refreshTrigger]);
 
+  useEffect(() => {
+    if (uploadStepOverride) {
+      setUploadStep(uploadStepOverride);
+    }
+  }, [uploadStepOverride]);
+
+  useEffect(() => {
+    const current = window.history.state;
+    if (current && current.activeModule === 'o2c') {
+      if (current.dataLoaded !== undefined) setDataLoaded(current.dataLoaded);
+      if (current.uploadStep !== undefined) setUploadStep(current.uploadStep);
+      if (current.introStep !== undefined) setIntroStep(current.introStep);
+    }
+
+    const handlePopState = (event) => {
+      if (event.state && event.state.activeModule === 'o2c') {
+        if (event.state.dataLoaded !== undefined) setDataLoaded(event.state.dataLoaded);
+        if (event.state.uploadStep !== undefined) setUploadStep(event.state.uploadStep);
+        if (event.state.introStep !== undefined) setIntroStep(event.state.introStep);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  useEffect(() => {
+    const current = window.history.state;
+    if (!current || current.activeModule !== 'o2c' || current.dataLoaded !== dataLoaded || current.uploadStep !== uploadStep || current.introStep !== introStep) {
+      window.history.pushState({ activeModule: 'o2c', dataLoaded, uploadStep, introStep }, '');
+    }
+  }, [dataLoaded, uploadStep, introStep]);
+
   const handleLoadOldFile = async (file_id) => {
+    setChartsReady(false);
+    setPmReady(false);
     handleLoadingChange(true, 50, 'Loading previous dashboard...');
     try {
       const res = await fetch(`${API}/o2c/load_file`, {
@@ -3183,8 +3659,7 @@ export default function O2CDashboard({ currentUser, onSignOut, onBackHome }) {
       handleRefresh();
     } catch (e) {
       alert("Error loading dashboard: " + e.message);
-    } finally {
-      setTimeout(() => handleLoadingChange(false, 100, ''), 500);
+      handleLoadingChange(false, 100, '');
     }
   };
 
@@ -3205,6 +3680,12 @@ export default function O2CDashboard({ currentUser, onSignOut, onBackHome }) {
     if (source) setUploadStepOverride(source);
     setMappingError(err || null);
     intentToUpload.current = false;
+    if (err) {
+      handleLoadingChange(false, 100, '');
+    } else {
+      setChartsReady(false);
+      setPmReady(false);
+    }
     setDataLoaded(true);
     handleRefresh();
   };
@@ -3248,8 +3729,9 @@ export default function O2CDashboard({ currentUser, onSignOut, onBackHome }) {
     setCaseEvents([]);
     setErnamData([]);
     setSelected({
-      case_id: 'ALL', customer: 'ALL', vkorg: 'ALL', auart: 'ALL', matkl: 'ALL', werks: 'ALL',
-      year: 'ALL', quarter: 'ALL', month: 'ALL', ernam: 'ALL', status: 'ALL', lead_time: 'ALL'
+      case_id: 'ALL', customer: 'ALL', vkorg: 'ALL', auart: 'ALL', matkl: 'ALL',
+      quarter: 'ALL', month: 'ALL', ernam: 'ALL', lead_time: 'ALL', events: 'ALL',
+      start_date: '', end_date: ''
     });
     setCrossFilter(null);
   };
@@ -3322,6 +3804,14 @@ export default function O2CDashboard({ currentUser, onSignOut, onBackHome }) {
 
   useEffect(() => {
     if (!dataLoaded) return;
+    fetch(`${API}/o2c/date_range?username=${encodeURIComponent(currentUser || 'Unknown')}`)
+      .then(r => r.ok ? r.json() : {})
+      .then(d => setDateRange(d && d.min_date ? d : { min_date: null, max_date: null }))
+      .catch(() => setDateRange({ min_date: null, max_date: null }));
+  }, [dataLoaded, refreshTrigger, currentUser]);
+
+  useEffect(() => {
+    if (!dataLoaded) return;
     if (selected.case_id !== 'ALL' && selected.case_id != null) {
       fetch(`${API}/o2c/case_events?case_id=${encodeURIComponent(selected.case_id)}&username=${encodeURIComponent(currentUser || 'Unknown')}`)
         .then(r => r.ok ? r.json() : [])
@@ -3334,58 +3824,59 @@ export default function O2CDashboard({ currentUser, onSignOut, onBackHome }) {
 
   useEffect(() => {
     if (!dataLoaded) return;
-    if (chartsReady) setDashboardLoading(true);
+    setDashboardLoading(true);
+    if (pmReady) setPmLoading(true);
+    setPmError('');
+    const startTime = Date.now();
 
     const cq = effectiveQStr();
 
-    // Timeout wrapper — every fetch resolves within 60s max (never hangs Promise.all)
-    const ft = (url, ms = 60000) => Promise.race([
-      fetch(url),
-      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))
-    ]);
-    const arr = (u, s) => ft(u).then(r => r.ok ? r.json() : []).then(d => s(Array.isArray(d) ? d : [])).catch(() => s([]));
-    const obj = (u, s) => ft(u).then(r => r.ok ? r.json() : null).then(d => s(d && typeof d === 'object' && !Array.isArray(d) ? d : null)).catch(() => s(null));
-
-    const chartPromises = [
-      fetch(`${API}/o2c/kpis${cq}`).then(r => { if (!r.ok) return { total_cases: 0 }; return r.json(); }).then(d => setKpis(d)).catch(() => setKpis({ total_cases: 0 })),
-      arr(`${API}/o2c/charts/activity${cq}`, setActData),
-      arr(`${API}/o2c/charts/monthly${cq}`, setMonData),
-      arr(`${API}/o2c/charts/customer${cq}`, setCustData),
-      arr(`${API}/o2c/charts/auart${cq}`, setAuartData),
-      arr(`${API}/o2c/charts/matkl${cq}`, setMatklData),
-      arr(`${API}/o2c/charts/ernam${cq}`, setErnamData),
-      arr(`${API}/o2c/charts/vkorg${cq}`, setVkorgData),
-      arr(`${API}/o2c/charts/leadtime${cq}`, setLtData),
-      arr(`${API}/o2c/charts/bottleneck${cq}`, setBottleneckData),
-      arr(`${API}/o2c/charts/sod${cq}`, setSodData),
-      arr(`${API}/o2c/charts/inv_rev_ernam${cq}`, setInvRevErnam),
-      arr(`${API}/o2c/charts/inv_rev_timeline${cq}`, setInvRevTimeline),
-      arr(`${API}/o2c/charts/customer_lead_time${cq}`, setCustLeadTime),
-      arr(`${API}/o2c/charts/seq_violation_ernam${cq}`, setSeqViolation),
-      arr(`${API}/o2c/charts/happy_path${cq}`, setHappyPathData),
-      arr(`${API}/o2c/charts/deviations_summary${cq}`, setDeviationsSummary),
-      arr(`${API}/o2c/cases${cq}`, setCaseTableData),
-    ];
-
-    // Process-map runs in parallel — always resolves (errors are caught)
-    const pmPromise = ft(`${API}/o2c/process-map${cq}`, 60000)
+    fetch(`${API}/o2c/dashboard-batch${cq}`)
       .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
       .then(d => {
-        setRawGraphData(d);
-        buildFlowMap(d.nodes, d.edges, setRfNodes, setRfEdges, layoutDir);
-        setPmReady(true);
-      })
-      .catch(err => { setPmError(`Failed: ${err.message}`); setPmReady(true); })
-      .finally(() => { setPmLoading(false); });
+        setKpis(d.kpis || { total_cases: 0 });
+        setActData(d.activity || []);
+        setMonData(d.monthly || []);
+        setCustData(d.customer || []);
+        setAuartData(d.auart || []);
+        setMatklData(d.matkl || []);
+        setErnamData(d.ernam || []);
+        setVkorgData(d.vkorg || []);
+        setLtData(d.leadtime || []);
+        setBottleneckData(d.bottleneck || []);
+        setSodData(d.sod || []);
+        setInvRevErnam(d.inv_rev_ernam || []);
+        setInvRevTimeline(d.inv_rev_timeline || []);
+        setCustLeadTime(d.customer_lead_time || []);
+        setSeqViolation(d.seq_violation_ernam || []);
+        setHappyPathData(d.happy_path || []);
+        setDeviationsSummary(d.deviations_summary || []);
+        setCaseTableData(d.cases || []);
 
-    // Single Promise.all — clears the loading overlay only when EVERYTHING is done
-    Promise.all([...chartPromises, pmPromise]).finally(() => {
-      setDashboardLoading(false);
-      setChartsReady(true);
-      setLoading(false);
-      setLoadProg(0);
-      setLoadLabel('');
-    });
+        if (d.process_map) {
+          setRawGraphData(d.process_map);
+        }
+      })
+      .catch(err => {
+        console.error("Failed to load dashboard batch:", err);
+        setKpis({ total_cases: 0 });
+        setActData([]);
+        setPmError(`Failed: ${err.message}`);
+      })
+      .finally(() => {
+        const elapsed = Date.now() - startTime;
+        const minDelay = 1200;
+        const remaining = Math.max(0, minDelay - elapsed);
+        setTimeout(() => {
+          setDashboardLoading(false);
+          setChartsReady(true);
+          setPmLoading(false);
+          setPmReady(true);
+          setLoading(false);
+          setLoadProg(0);
+          setLoadLabel('');
+        }, remaining);
+      });
 
   }, [effectiveQStr, dataLoaded, refreshTrigger]);
 
@@ -3395,7 +3886,7 @@ export default function O2CDashboard({ currentUser, onSignOut, onBackHome }) {
     }
   }, [layoutDir, rawGraphData]);
 
-  const slicer = (key, label, filterKey, wide = false) => {
+  const slicer = (key, label, filterKey, style = {}) => {
     const raw = filters[filterKey];
     const opts = Array.isArray(raw) ? raw : ['ALL'];
     const deduped = opts[0] === 'ALL' ? opts : ['ALL', ...opts];
@@ -3406,17 +3897,17 @@ export default function O2CDashboard({ currentUser, onSignOut, onBackHome }) {
       setCrossFilter(null);
     };
 
-    if (key === 'case_id' || key === 'customer' || key === 'vkorg') {
+    if (key === 'case_id' || key === 'customer' || key === 'vkorg' || key === 'events') {
       return (
         <SearchableSelect key={key} label={label} value={selected[key] || 'ALL'}
-          options={deduped} wide={wide}
+          options={deduped} style={style}
           onChange={handleSlicerChange} />
       );
     }
 
     return (
       <FilterSelect key={key} label={label} value={selected[key] || 'ALL'}
-        options={deduped} wide={wide}
+        options={deduped} style={style}
         onChange={handleSlicerChange} />
     );
   };
@@ -3424,8 +3915,9 @@ export default function O2CDashboard({ currentUser, onSignOut, onBackHome }) {
   const resetAll = () => {
     logAction('FILTER', 'Reset all slicers to ALL');
     setSelected({
-      case_id: 'ALL', customer: 'ALL', vkorg: 'ALL', auart: 'ALL', matkl: 'ALL', werks: 'ALL',
-      year: 'ALL', quarter: 'ALL', month: 'ALL', ernam: 'ALL', status: 'ALL', lead_time: 'ALL'
+      case_id: 'ALL', customer: 'ALL', vkorg: 'ALL', auart: 'ALL', matkl: 'ALL',
+      quarter: 'ALL', month: 'ALL', ernam: 'ALL', lead_time: 'ALL', events: 'ALL',
+      start_date: '', end_date: ''
     });
     setCrossFilter(null);
   };
@@ -3466,10 +3958,11 @@ export default function O2CDashboard({ currentUser, onSignOut, onBackHome }) {
   return (
     <div style={{
       fontFamily: "'Segoe UI',-apple-system,sans-serif",
-      background: C.bg, height: '100vh', display: 'flex', flexDirection: 'column'
+      background: C.bg, height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden'
     }}>
+      <div ref={screenshotRef} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflowY: 'auto' }}>
 
-      <style>{`
+        <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
         *{box-sizing:border-box}
         ::-webkit-scrollbar{width:5px;height:5px}
@@ -3478,547 +3971,702 @@ export default function O2CDashboard({ currentUser, onSignOut, onBackHome }) {
         ::-webkit-scrollbar-thumb:hover{background:#A19F9D}
       `}</style>
 
-      <LoadingOverlay visible={loading} progress={loadProg} label={loadLabel} />
+        <LoadingOverlay visible={loading} progress={loadProg} label={loadLabel} />
 
-      <div style={{
-        background: C.headerBg, padding: '10px 20px', flexShrink: 0,
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        boxShadow: '0 2px 8px rgba(0,0,0,.2)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <img
-            src="/logo.png"
-            alt="AJALabs Logo"
-            onClick={() => onBackHome && onBackHome()}
-            title="Back to Home"
-            style={{ height: '36px', objectFit: 'contain', cursor: 'pointer', borderRadius: 4, transition: 'opacity 0.2s' }}
-            onMouseOver={e => { e.currentTarget.style.opacity = '0.7'; }}
-            onMouseOut={e => { e.currentTarget.style.opacity = '1'; }}
-          />
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 16, color: '#fff' }}>O2C Process Explorer</div>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,.5)' }}>Order-to-Cash Process Mining</div>
-          </div>
-          {crossFilter && (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 6, marginLeft: 16,
-              background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.2)',
-              borderRadius: 6, padding: '4px 12px', fontSize: 12
-            }}>
-              <span style={{ color: '#fff', fontWeight: 600 }}>Filter: {crossFilter.type}: <strong>{crossFilter.value}</strong></span>
-              <button onClick={clearCF} style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: 'rgba(255,255,255,.8)', fontWeight: 700, fontSize: 14, padding: '0 2px'
-              }}>✕</button>
+        <div style={{
+          background: C.headerBg, padding: '10px 20px', flexShrink: 0,
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          boxShadow: '0 2px 8px rgba(0,0,0,.2)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <img
+              src="/logo.png"
+              alt="AJALabs Logo"
+              onClick={() => onBackHome && onBackHome()}
+              title="Back to Home"
+              style={{ height: '36px', objectFit: 'contain', cursor: 'pointer', borderRadius: 4, transition: 'opacity 0.2s' }}
+              onMouseOver={e => { e.currentTarget.style.opacity = '0.7'; }}
+              onMouseOut={e => { e.currentTarget.style.opacity = '1'; }}
+            />
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 16, color: '#fff' }}>O2C Process Explorer</div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,.5)' }}>Order-to-Cash Process Mining</div>
             </div>
-          )}
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {dataLoaded && kpis && (
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,.5)' }}>
-              {Number(kpis.total_cases).toLocaleString()} order{Number(kpis.total_cases) === 1 ? '' : 's'} loaded
-            </div>
-          )}
-
-          {dataLoaded && (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 4,
-              background: 'rgba(255,255,255,0.08)', borderRadius: '24px',
-              padding: '4px', border: '1px solid rgba(255,255,255,0.1)'
-            }}>
-              <button
-                style={getTabStyle(activeTab === 'process')}
-                onClick={() => {
-                  if (activeTab !== 'process') {
-                    logAction('TAB', 'Viewed Process Mining');
-                    setActiveTab('process');
-                    setTabSkeleton(true);
-                    setTimeout(() => setTabSkeleton(false), 500);
-                  }
-                }}
-              >
-                Process Mining
-              </button>
-              <button
-                style={getTabStyle(activeTab === 'dimensions')}
-                onClick={() => {
-                  if (activeTab !== 'dimensions') {
-                    logAction('TAB', 'Viewed Dimensions');
-                    setActiveTab('dimensions');
-                    setTabSkeleton(true);
-                    setTimeout(() => setTabSkeleton(false), 500);
-                  }
-                }}
-              >
-                EDA
-              </button>
-              <button
-                style={{ ...getTabStyle(false), color: '#C8E6DA' }}
-                onClick={handleResetData}
-                onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
-                onMouseOut={e => { e.currentTarget.style.background = 'transparent'; }}
-              >
-                Upload New File
-              </button>
-            </div>
-          )}
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 16 }}>
-            <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.2)' }}></div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>
-              User: <strong style={{ color: '#fff' }}>{currentUser}</strong>
-            </div>
-            <button onClick={handleSignOut} style={{
-              background: 'rgba(209, 52, 56, 0.85)', color: '#fff', border: 'none',
-              padding: '6px 12px', borderRadius: 4, cursor: 'pointer', fontSize: 11, fontWeight: 700,
-              transition: 'all 0.2s'
-            }}
-              onMouseOver={e => e.currentTarget.style.background = '#D13438'}
-              onMouseOut={e => e.currentTarget.style.background = 'rgba(209, 52, 56, 0.85)'}
-            >
-              Sign Out
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div style={{
-        flex: 1, overflowY: 'auto', padding: '12px 14px 40px',
-        display: 'flex', flexDirection: 'column', gap: 10
-      }}>
-
-        {!dataLoaded && (
-          <UploadBanner
-            currentUser={currentUser}
-            onUploaded={onUploaded}
-            serverOk={serverOk}
-            onLoadingChange={handleLoadingChange}
-            myFiles={myFiles}
-            fetchingFiles={fetchingFiles}
-            handleLoadOldFile={handleLoadOldFile}
-            defaultStep={uploadStepOverride} />
-        )}
-
-        {dataLoaded && (mappingError || (kpis && kpis.total_cases === 0)) && (
-          <div style={{
-            background: '#FFF4CE', border: '1px solid #FDE7E9', borderRadius: 8, padding: '12px 20px',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
-            boxShadow: '0 2px 4px rgba(0,0,0,0.05)', marginBottom: 2
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontSize: 20 }}>⚠️</span>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 13, color: '#323130' }}>Column mapping might be wrong</div>
-                <div style={{ fontSize: 12, color: '#605E5C', marginTop: 2 }}>{mappingError || "No cases found. Please check your column mappings."}</div>
+            {crossFilter && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 6, marginLeft: 16,
+                background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.2)',
+                borderRadius: 6, padding: '4px 12px', fontSize: 12
+              }}>
+                <span style={{ color: '#fff', fontWeight: 600 }}>Filter: {crossFilter.type}: <strong>{crossFilter.value}</strong></span>
+                <button onClick={clearCF} style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: 'rgba(255,255,255,.8)', fontWeight: 700, fontSize: 14, padding: '0 2px'
+                }}>✕</button>
               </div>
-            </div>
-            <button onClick={() => handleFixMapping(uploadStepOverride || 'table')}
-              style={{ padding: '8px 20px', background: '#0078D4', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 700, cursor: 'pointer', fontSize: 12, transition: 'all 0.2s' }}
-              onMouseOver={e => e.currentTarget.style.background = '#005A9E'}
-              onMouseOut={e => e.currentTarget.style.background = '#0078D4'}>
-              Fix Mapping
-            </button>
-          </div>
-        )}
-        {dataLoaded && (<>
-          <div style={{
-            background: C.card, borderRadius: 8, padding: '10px 14px',
-            border: `1px solid ${C.border}`, boxShadow: '0 2px 6px rgba(0,0,0,.04)'
-          }}>
-
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-              gap: '8px',
-              alignItems: 'end'
-            }}>
-              {slicer('case_id', 'Sales Order', 'case_ids', true)}
-              {slicer('customer', 'Customer', 'customers')}
-              {slicer('vkorg', 'Sales Org', 'vkorgs')}
-              {slicer('auart', 'Order Type', 'auarts')}
-              {slicer('matkl', 'Material Group', 'matkls')}
-              {slicer('werks', 'Plant', 'werkss')}
-              {slicer('year', 'Year', 'years')}
-              {slicer('status', 'Status', 'statuses')}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, justifyContent: 'flex-end' }}>
-                <div style={{ fontSize: 11, color: 'transparent', fontWeight: 600, userSelect: 'none' }}>.</div>
-                <div style={{ display: 'flex', gap: 4 }}>
-                  <button onClick={resetAll} style={{
-                    padding: '0 8px', fontSize: 11, fontWeight: 700, flex: 1,
-                    background: '#F3F2F1', color: '#323130', border: '1px solid #D2D0CE',
-                    borderRadius: 4, cursor: 'pointer', height: '26px'
-                  }}>Reset</button>
-                  <button onClick={handleRefresh} style={{
-                    padding: '0 8px', fontSize: 11, fontWeight: 700,
-                    background: '#0078D4', color: '#fff', border: 'none',
-                    borderRadius: 4, cursor: 'pointer', height: '26px',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center'
-                  }}>🔄</button>
-                  <button
-                    onClick={() => {
-                      const url = `${API}/o2c/download_output?username=${encodeURIComponent(currentUser || 'Unknown')}`;
-                      const a = document.createElement('a'); a.href = url; a.download = ''; a.click();
-                      logAction('DOWNLOAD', 'Downloaded O2C output CSV');
-                    }}
-                    title="Download CSV"
-                    style={{
-                      padding: '0 8px', fontSize: 11, fontWeight: 700,
-                      background: '#006B3C', color: '#fff', border: 'none',
-                      borderRadius: 4, cursor: 'pointer', height: '26px',
-                      display: 'flex', alignItems: 'center', gap: 3, whiteSpace: 'nowrap'
-                    }}
-                    onMouseOver={e => e.currentTarget.style.background = '#004d2c'}
-                    onMouseOut={e => e.currentTarget.style.background = '#006B3C'}
-                  >⬇ CSV</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <AnimatePresence mode="wait">
-            {kpis ? (
-              <motion.div
-                key={activeTab + "-kpis"}
-                initial="hidden" animate="visible" exit="exit"
-                variants={{
-                  hidden: { opacity: 0 },
-                  visible: { opacity: 1, transition: { duration: 0.4 } },
-                  exit: { opacity: 0, transition: { duration: 0.4 } }
-                }}
-              >
-                <EmptyState condition={kpis.total_cases === 0} message="No valid cases found. The column mapping may be incorrect. Please check your mapping and rebuild the event log.">
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(9,1fr)', gap: 8 }}>
-                    <motion.div><KpiCard label="Sales Orders" value={kpis.total_cases} tooltip={kpiTooltips.total_cases} /></motion.div>
-                    <motion.div><KpiCard label="SO Approved" value={kpis.so_approved} tooltip={kpiTooltips.so_approved} /></motion.div>
-                    <motion.div><KpiCard label="Deliveries" value={kpis.deliveries_created} tooltip={kpiTooltips.deliveries_created} /></motion.div>
-                    <motion.div><KpiCard label="Delivery Posted" value={kpis.deliveries_posted} tooltip={kpiTooltips.deliveries_posted} /></motion.div>
-                    <motion.div><KpiCard label="Goods Issued" value={kpis.goods_issues} tooltip={kpiTooltips.goods_issues} /></motion.div>
-                    <motion.div><KpiCard label="Invoices" value={kpis.invoices_created} tooltip={kpiTooltips.invoices_created} /></motion.div>
-                    <motion.div><KpiCard label="Invoice Posted" value={kpis.invoices_posted} tooltip={kpiTooltips.invoices_posted} /></motion.div>
-                    <motion.div><KpiCard label="Invoice Cleared" value={kpis.invoices_cleared} tooltip={kpiTooltips.invoices_cleared} /></motion.div>
-                    <motion.div><KpiCard label="Avg Life Cycle" value={`${kpis.avg_cycle_days}d`} tooltip={kpiTooltips.avg_cycle_days} /></motion.div>
-                  </div>
-                  {/* ── Deviation KPIs – red border ── */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8,1fr)', gap: 8, marginTop: 8 }}>
-                    <div><ConfKpiCard label="SO Reversed" value={kpis.so_reversals} sub="SO Rejections" tooltip={kpiTooltips.so_reversals} /></div>
-                    <div><ConfKpiCard label="SO Rev After GI" value={kpis.so_rev_after_gi} sub="High-risk reversal" tooltip={kpiTooltips.so_rev_after_gi} /></div>
-                    <div><ConfKpiCard label="GI Reversed" value={kpis.gi_reversals} sub="GI Cancellations" tooltip={kpiTooltips.gi_reversals} /></div>
-                    <div><ConfKpiCard label="Invoice Reversed" value={kpis.invoice_reversals} sub="Invoice Cancellations" tooltip={kpiTooltips.invoice_reversals} /></div>
-                    <div><ConfKpiCard label="Credit Memos" value={kpis.credit_memos} sub="Credits issued" tooltip={kpiTooltips.credit_memos} /></div>
-                    <div><ConfKpiCard label="Debit Memos" value={kpis.debit_memos} sub="Debits issued" tooltip={kpiTooltips.debit_memos} /></div>
-                    <div><ConfKpiCard label="Invoice w/o Delivery" value={kpis.inv_no_del} sub="Missing delivery" tooltip={kpiTooltips.inv_no_del} /></div>
-                    <div><ConfKpiCard label="Invoice Before GI" value={kpis.inv_no_gi} sub="Sequence violation" tooltip={kpiTooltips.inv_no_gi} /></div>
-                  </div>
-                </EmptyState>
-              </motion.div>
-            ) : (
-              dashboardLoading ? (
-                <div style={{ padding: '16px', textAlign: 'center', background: '#fff', borderRadius: 8, color: C.blue700, fontWeight: 600, fontSize: 13, border: `1px solid ${C.border}` }}>
-                  Loading Performance Indicators...
-                </div>
-              ) : null
             )}
-          </AnimatePresence>
+          </div>
 
-          {activeTab === 'process' ? (
-            <div
-              key="process"
-              style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1, paddingBottom: '20px' }}
-            >
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 10 }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {dataLoaded && kpis && (
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,.5)' }}>
+                {Number(kpis.total_cases).toLocaleString()} order{Number(kpis.total_cases) === 1 ? '' : 's'} loaded
+              </div>
+            )}
 
-                  <div style={{
-                    background: C.card, borderRadius: 8, border: `1px solid ${C.border}`,
-                    boxShadow: '0 2px 8px rgba(0,0,0,.05)', overflow: 'hidden',
-                    display: 'flex', flexDirection: 'column', height: 1020
-                  }}>
+            {dataLoaded && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                background: 'rgba(255,255,255,0.08)', borderRadius: '24px',
+                padding: '4px', border: '1px solid rgba(255,255,255,0.1)'
+              }}>
+                <button
+                  style={getTabStyle(activeTab === 'process')}
+                  onClick={() => {
+                    if (activeTab !== 'process') {
+                      logAction('TAB', 'Viewed Process Mining');
+                      setActiveTab('process');
+                      setTabSkeleton(true);
+                      setTimeout(() => setTabSkeleton(false), 500);
+                    }
+                  }}
+                >
+                  Process Mining
+                </button>
+                <button
+                  style={getTabStyle(activeTab === 'dimensions')}
+                  onClick={() => {
+                    if (activeTab !== 'dimensions') {
+                      logAction('TAB', 'Viewed Dimensions');
+                      setActiveTab('dimensions');
+                      setTabSkeleton(true);
+                      setTimeout(() => setTabSkeleton(false), 500);
+                    }
+                  }}
+                >
+                  EDA
+                </button>
+                <button
+                  style={{ ...getTabStyle(false), color: '#C8E6DA' }}
+                  onClick={handleResetData}
+                  onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
+                  onMouseOut={e => { e.currentTarget.style.background = 'transparent'; }}
+                >
+                  Upload New File
+                </button>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 16 }}>
+              <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.2)' }}></div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>
+                User: <strong style={{ color: '#fff' }}>{currentUser}</strong>
+              </div>
+              {dataLoaded && (
+                <button
+                  id="o2c-screenshot-btn"
+                  onClick={handleScreenshot}
+                  title="Download full report screenshot"
+                  style={{
+                    width: 34, height: 34, borderRadius: '50%',
+                    background: screenshotting ? 'rgba(16,107,60,0.5)' : 'linear-gradient(135deg, rgba(16,107,60,0.9) 0%, rgba(10,80,45,0.95) 100%)',
+                    border: '1.5px solid rgba(255,255,255,0.25)',
+                    boxShadow: screenshotting ? '0 0 0 3px rgba(16,107,60,0.4)' : '0 2px 12px rgba(16,107,60,0.45), 0 0 0 1px rgba(255,255,255,0.08)',
+                    cursor: screenshotting ? 'not-allowed' : 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0, transition: 'all 0.22s ease',
+                  }}
+                  onMouseOver={e => { if (!screenshotting) { e.currentTarget.style.transform = 'scale(1.12)'; } }}
+                  onMouseOut={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+                >
+                  {screenshotting ? (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1s linear infinite' }}><path d="M21 12a9 9 0 11-6.219-8.56" /></svg>
+                  ) : (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+                      <circle cx="12" cy="13" r="4" />
+                    </svg>
+                  )}
+                </button>
+              )}
+              <button onClick={handleSignOut} style={{
+                background: 'rgba(209, 52, 56, 0.85)', color: '#fff', border: 'none',
+                padding: '6px 12px', borderRadius: 4, cursor: 'pointer', fontSize: 11, fontWeight: 700,
+                transition: 'all 0.2s'
+              }}
+                onMouseOver={e => e.currentTarget.style.background = '#D13438'}
+                onMouseOut={e => e.currentTarget.style.background = 'rgba(209, 52, 56, 0.85)'}
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div style={{
+          flex: 1, overflowY: 'auto', padding: '12px 14px 40px',
+          display: 'flex', flexDirection: 'column', gap: 10
+        }}>
+
+          {!dataLoaded && (
+            <UploadBanner
+              currentUser={currentUser}
+              onUploaded={onUploaded}
+              serverOk={serverOk}
+              onLoadingChange={handleLoadingChange}
+              myFiles={myFiles}
+              fetchingFiles={fetchingFiles}
+              handleLoadOldFile={handleLoadOldFile}
+              step={uploadStep}
+              setStep={setUploadStep}
+              introStep={introStep}
+              setIntroStep={setIntroStep} />
+          )}
+
+          {dataLoaded && (mappingError || (kpis && kpis.total_cases === 0 && !hasActiveFilters)) && (
+            <div style={{
+              background: '#FFF4CE', border: '1px solid #FDE7E9', borderRadius: 8, padding: '12px 20px',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
+              boxShadow: '0 2px 4px rgba(0,0,0,0.05)', marginBottom: 2
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ fontSize: 20 }}>⚠️</span>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: '#323130' }}>Column mapping might be wrong</div>
+                  <div style={{ fontSize: 12, color: '#605E5C', marginTop: 2 }}>{mappingError || "No cases found. Please check your column mappings."}</div>
+                </div>
+              </div>
+              <button onClick={() => handleFixMapping(uploadStepOverride || 'table')}
+                style={{ padding: '8px 20px', background: '#0078D4', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 700, cursor: 'pointer', fontSize: 12, transition: 'all 0.2s' }}
+                onMouseOver={e => e.currentTarget.style.background = '#005A9E'}
+                onMouseOut={e => e.currentTarget.style.background = '#0078D4'}>
+                Fix Mapping
+              </button>
+            </div>
+          )}
+          {dataLoaded && (<>
+            <div style={{
+              background: C.card, borderRadius: 8, padding: '10px 14px',
+              border: `1px solid ${C.border}`, boxShadow: '0 2px 6px rgba(0,0,0,.04)'
+            }}>
+
+              <div style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '12px',
+                alignItems: 'end'
+              }}>
+                {slicer('case_id', 'Sales Order', 'case_ids', { flex: '1.5 1 180px' })}
+                {slicer('customer', 'Customer', 'customers', { flex: '1.5 1 180px' })}
+                {slicer('vkorg', 'Sales Org', 'vkorgs', { flex: '1 1 140px' })}
+                {slicer('auart', 'Order Type', 'auarts', { flex: '1 1 140px' })}
+                {slicer('matkl', 'Material Group', 'matkls', { flex: '1 1 140px' })}
+                <FilterSelect
+                  key="lead_time"
+                  label="Lead Time"
+                  value={selected.lead_time || 'ALL'}
+                  options={["ALL", "0-5 Days", "5-10 Days", "10-20 Days", "20-50 Days", "50+ Days"]}
+                  style={{ flex: '1 1 120px' }}
+                  onChange={(val) => {
+                    logAction('FILTER', `Changed slicer lead_time to ${val}`);
+                    setSelected(prev => ({ ...prev, lead_time: val }));
+                    setCrossFilter(null);
+                  }}
+                />
+                {slicer('events', 'Events', 'events', { flex: '1 1 140px' })}
+                <DateRangeFilter
+                  label="Date Range"
+                  fromValue={selected.start_date}
+                  toValue={selected.end_date}
+                  minDate={dateRange.min_date}
+                  maxDate={dateRange.max_date}
+                  onFromChange={(val) => {
+                    logAction('FILTER', `Changed start_date to ${val}`);
+                    setSelected(prev => ({ ...prev, start_date: val }));
+                  }}
+                  onToChange={(val) => {
+                    logAction('FILTER', `Changed end_date to ${val}`);
+                    setSelected(prev => ({ ...prev, end_date: val }));
+                  }}
+                />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, justifyContent: 'flex-end' }}>
+                  <div style={{ fontSize: 11, color: 'transparent', fontWeight: 600, userSelect: 'none' }}>.</div>
+                  <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                    {/* Reset Button – premium SVG */}
+                    <button
+                      onClick={resetAll}
+                      title="Reset all filters"
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        width: 28, height: 26, padding: 0,
+                        background: 'linear-gradient(135deg, #EDFAF4 0%, #D4F4E4 100%)',
+                        border: '1px solid #A5D6C8', borderRadius: 5, cursor: 'pointer',
+                        boxShadow: '0 1px 3px rgba(0,107,60,0.15)', transition: 'all 0.2s',
+                        flexShrink: 0,
+                      }}
+                      onMouseOver={e => { e.currentTarget.style.background = 'linear-gradient(135deg,#D4F4E4 0%,#BCECD4 100%)'; e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,107,60,0.25)'; }}
+                      onMouseOut={e => { e.currentTarget.style.background = 'linear-gradient(135deg,#EDFAF4 0%,#D4F4E4 100%)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,107,60,0.15)'; }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#006B3C" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                        <path d="M3 3v5h5" />
+                      </svg>
+                    </button>
+                    {/* Refresh Button – premium SVG */}
+                    <button
+                      onClick={handleRefresh}
+                      title="Refresh data"
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        width: 28, height: 26, padding: 0,
+                        background: 'linear-gradient(135deg, #006B3C 0%, #00542F 100%)',
+                        border: 'none', borderRadius: 5, cursor: 'pointer',
+                        boxShadow: '0 1px 3px rgba(0,107,60,0.35)', transition: 'all 0.2s',
+                        flexShrink: 0,
+                      }}
+                      onMouseOver={e => { e.currentTarget.style.background = 'linear-gradient(135deg,#00542F 0%,#003F24 100%)'; e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,107,60,0.5)'; }}
+                      onMouseOut={e => { e.currentTarget.style.background = 'linear-gradient(135deg,#006B3C 0%,#00542F 100%)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,107,60,0.35)'; }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="23 4 23 10 17 10" />
+                        <polyline points="1 20 1 14 7 14" />
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                      </svg>
+                    </button>
+                    {/* Download CSV Button */}
+                    <button
+                      onClick={() => {
+                        const url = `${API}/o2c/download_output?username=${encodeURIComponent(currentUser || 'Unknown')}`;
+                        const a = document.createElement('a'); a.href = url; a.download = ''; a.click();
+                        logAction('DOWNLOAD', 'Downloaded O2C output CSV');
+                      }}
+                      title="Download CSV"
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                        padding: '0 8px', height: 26,
+                        background: 'linear-gradient(135deg, #107C10 0%, #0B590B 100%)',
+                        color: '#fff', border: 'none', borderRadius: 5, cursor: 'pointer',
+                        fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap',
+                        boxShadow: '0 1px 3px rgba(16,124,16,0.35)', transition: 'all 0.2s',
+                        flexShrink: 0,
+                      }}
+                      onMouseOver={e => { e.currentTarget.style.background = 'linear-gradient(135deg,#0B590B 0%,#073B07 100%)'; e.currentTarget.style.boxShadow = '0 2px 6px rgba(16,124,16,0.5)'; }}
+                      onMouseOut={e => { e.currentTarget.style.background = 'linear-gradient(135deg,#107C10 0%,#0B590B 100%)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(16,124,16,0.35)'; }}
+                    >
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                      </svg>
+                      CSV
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <AnimatePresence mode="wait">
+              {kpis ? (
+                <motion.div
+                  key={activeTab + "-kpis"}
+                  initial="hidden" animate="visible" exit="exit"
+                  variants={{
+                    hidden: { opacity: 0 },
+                    visible: { opacity: 1, transition: { duration: 0.4 } },
+                    exit: { opacity: 0, transition: { duration: 0.4 } }
+                  }}
+                >
+                  <EmptyState condition={kpis.total_cases === 0} message="No valid cases found. The column mapping may be incorrect. Please check your mapping and rebuild the event log.">
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(9,1fr)', gap: 8 }}>
+                      <motion.div><KpiCard label="Sales Orders" value={kpis.total_cases} tooltip={kpiTooltips.total_cases} /></motion.div>
+                      <motion.div><KpiCard label="SO Approved" value={kpis.so_approved} tooltip={kpiTooltips.so_approved} /></motion.div>
+                      <motion.div><KpiCard label="Deliveries" value={kpis.deliveries_created} tooltip={kpiTooltips.deliveries_created} /></motion.div>
+                      <motion.div><KpiCard label="Delivery Posted" value={kpis.deliveries_posted} tooltip={kpiTooltips.deliveries_posted} /></motion.div>
+                      <motion.div><KpiCard label="Goods Issued" value={kpis.goods_issues} tooltip={kpiTooltips.goods_issues} /></motion.div>
+                      <motion.div><KpiCard label="Invoices" value={kpis.invoices_created} tooltip={kpiTooltips.invoices_created} /></motion.div>
+                      <motion.div><KpiCard label="Invoice Posted" value={kpis.invoices_posted} tooltip={kpiTooltips.invoices_posted} /></motion.div>
+                      <motion.div><KpiCard label="Invoice Cleared" value={kpis.invoices_cleared} tooltip={kpiTooltips.invoices_cleared} /></motion.div>
+                      <motion.div><KpiCard label="Avg Life Cycle" value={`${kpis.avg_cycle_days}d`} tooltip={kpiTooltips.avg_cycle_days} /></motion.div>
+                    </div>
+                    {/* ── Deviation KPIs – red border ── */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8,1fr)', gap: 8, marginTop: 8 }}>
+                      <div><ConfKpiCard label="SO Reversed" value={kpis.so_reversals} sub="SO Rejections" tooltip={kpiTooltips.so_reversals} /></div>
+                      <div><ConfKpiCard label="SO Rev After GI" value={kpis.so_rev_after_gi} sub="High-risk reversal" tooltip={kpiTooltips.so_rev_after_gi} /></div>
+                      <div><ConfKpiCard label="GI Reversed" value={kpis.gi_reversals} sub="GI Cancellations" tooltip={kpiTooltips.gi_reversals} /></div>
+                      <div><ConfKpiCard label="Invoice Reversed" value={kpis.invoice_reversals} sub="Invoice Cancellations" tooltip={kpiTooltips.invoice_reversals} /></div>
+                      <div><ConfKpiCard label="Credit Memos" value={kpis.credit_memos} sub="Credits issued" tooltip={kpiTooltips.credit_memos} /></div>
+                      <div><ConfKpiCard label="Debit Memos" value={kpis.debit_memos} sub="Debits issued" tooltip={kpiTooltips.debit_memos} /></div>
+                      <div><ConfKpiCard label="Invoice w/o Delivery" value={kpis.inv_no_del} sub="Missing delivery" tooltip={kpiTooltips.inv_no_del} /></div>
+                      <div><ConfKpiCard label="Invoice Before GI" value={kpis.inv_no_gi} sub="Sequence violation" tooltip={kpiTooltips.inv_no_gi} /></div>
+                    </div>
+                  </EmptyState>
+                </motion.div>
+              ) : (
+                dashboardLoading ? (
+                  <div style={{ padding: '16px', textAlign: 'center', background: '#fff', borderRadius: 8, color: C.blue700, fontWeight: 600, fontSize: 13, border: `1px solid ${C.border}` }}>
+                    Loading Performance Indicators...
+                  </div>
+                ) : null
+              )}
+            </AnimatePresence>
+
+            {activeTab === 'process' ? (
+              <div
+                key="process"
+                style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1, paddingBottom: '20px' }}
+              >
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 10 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
 
                     <div style={{
-                      padding: '12px 14px 8px', borderBottom: `1px solid ${C.border}`,
-                      background: C.jkBlue,
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0
+                      background: C.card, borderRadius: 8, border: `1px solid ${C.border}`,
+                      boxShadow: '0 2px 8px rgba(0,0,0,.05)', overflow: 'hidden',
+                      display: 'flex', flexDirection: 'column', height: 1020
                     }}>
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Process Map</div>
-                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)' }}>O2C Flow & Frequency Analysis</div>
+
+                      <div style={{
+                        padding: '12px 14px 8px', borderBottom: `1px solid ${C.border}`,
+                        background: C.jkBlue,
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0
+                      }}>
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Process Map</div>
+                          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)' }}>O2C Flow & Frequency Analysis</div>
+                        </div>
+                        <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.2)', padding: 2, borderRadius: 4 }}>
+                          <button
+                            onClick={() => setLayoutDir('LR')}
+                            style={{
+                              fontSize: 11, padding: '4px 8px', border: 'none', cursor: 'pointer', borderRadius: 3,
+                              background: layoutDir === 'LR' ? '#fff' : 'transparent',
+                              color: layoutDir === 'LR' ? C.jkBlue : '#fff',
+                              fontWeight: layoutDir === 'LR' ? 700 : 400
+                            }}>Horizontal</button>
+                          <button
+                            onClick={() => setLayoutDir('TB')}
+                            style={{
+                              fontSize: 11, padding: '4px 8px', border: 'none', cursor: 'pointer', borderRadius: 3,
+                              background: layoutDir === 'TB' ? '#fff' : 'transparent',
+                              color: layoutDir === 'TB' ? C.jkBlue : '#fff',
+                              fontWeight: layoutDir === 'TB' ? 700 : 400
+                            }}>Vertical</button>
+                        </div>
                       </div>
-                      <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.2)', padding: 2, borderRadius: 4 }}>
-                        <button
-                          onClick={() => setLayoutDir('LR')}
-                          style={{
-                            fontSize: 11, padding: '4px 8px', border: 'none', cursor: 'pointer', borderRadius: 3,
-                            background: layoutDir === 'LR' ? '#fff' : 'transparent',
-                            color: layoutDir === 'LR' ? C.jkBlue : '#fff',
-                            fontWeight: layoutDir === 'LR' ? 700 : 400
-                          }}>Horizontal</button>
-                        <button
-                          onClick={() => setLayoutDir('TB')}
-                          style={{
-                            fontSize: 11, padding: '4px 8px', border: 'none', cursor: 'pointer', borderRadius: 3,
-                            background: layoutDir === 'TB' ? '#fff' : 'transparent',
-                            color: layoutDir === 'TB' ? C.jkBlue : '#fff',
-                            fontWeight: layoutDir === 'TB' ? 700 : 400
-                          }}>Vertical</button>
+
+                      <div style={{ flex: 1, position: 'relative' }}>
+                        {pmError && (
+                          <div style={{
+                            position: 'absolute', top: 8, left: 8, right: 8, zIndex: 10,
+                            fontSize: 11, color: '#A4262C', background: '#FDE7E9',
+                            border: '1px solid #FBC5C9', borderRadius: 4, padding: '6px 12px'
+                          }}>
+                            Error: {pmError}
+                          </div>
+                        )}
+
+                        {(pmLoading || tabSkeleton) && (
+                          <div style={{
+                            position: 'absolute', inset: 0, zIndex: 20,
+                            background: 'rgba(248,250,255,0.88)', backdropFilter: 'blur(4px)',
+                            display: 'flex', flexDirection: 'column',
+                            alignItems: 'center', justifyContent: 'center', gap: 14, borderRadius: 6
+                          }}>
+                            <div style={{ textAlign: 'center' }}>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: '#323130', marginBottom: 4 }}>
+                                Building Process Map
+                              </div>
+                              <div style={{ fontSize: 11, color: C.slate }}>
+                                Analysing transitions and paths…
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        <div style={{ position: 'absolute', inset: 0, background: '#FAFAFA' }}>
+                          <AnimatePresence mode="wait">
+                            <motion.div
+                              key={layoutDir}
+                              initial={{ opacity: 0, scale: 0.98, filter: 'blur(10px)' }}
+                              animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                              exit={{ opacity: 0, scale: 1.02, filter: 'blur(10px)' }}
+                              transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+                              style={{ width: '100%', height: '100%' }}
+                            >
+                              <ReactFlow
+                                nodes={rfNodes} edges={rfEdges}
+                                onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
+                                nodeTypes={nodeTypes} edgeTypes={edgeTypes}
+                                fitView fitViewOptions={{ padding: .18 }}
+                                minZoom={0.1} maxZoom={4}
+                                proOptions={{ hideAttribution: true }}
+                                onNodeMouseEnter={(e, n) => setHoverInfo({
+                                  x: e.clientX, y: e.clientY,
+                                  title: n.data?.label || '', value: n.data?.frequency || 0
+                                })}
+                                onNodeMouseLeave={() => setHoverInfo(null)}
+                                onEdgeMouseEnter={(e, ed) => setHoverInfo({
+                                  x: e.clientX, y: e.clientY,
+                                  title: `${ed.source} → ${ed.target}`,
+                                  value: ed.data?.frequency || 0, isEdge: true, avgDays: ed.data?.avg_days
+                                })}
+                                onEdgeMouseLeave={() => setHoverInfo(null)}
+                                defaultEdgeOptions={{ type: 'freqEdge' }}>
+                                <Background color="#C8E6DA" gap={24} size={1.5} variant="dots" />
+                                <Controls showInteractive={false}
+                                  style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 6 }} />
+                                <MiniMap zoomable pannable
+                                  nodeColor={C.mapNodeBg}
+                                  maskColor="rgba(240,244,250,.85)"
+                                  style={{ border: `1px solid ${C.border}`, borderRadius: 6 }} />
+                              </ReactFlow>
+                            </motion.div>
+                          </AnimatePresence>
+                        </div>
+
+                        {hoverInfo && (
+                          <div style={{
+                            position: 'fixed', left: hoverInfo.x + 16, top: hoverInfo.y + 16,
+                            zIndex: 99999, pointerEvents: 'none',
+                            background: 'rgba(255,255,255,.98)', border: `1px solid ${C.border}`,
+                            borderRadius: 6, padding: '10px 14px',
+                            boxShadow: '0 4px 12px rgba(0,0,0,.15)', fontSize: 12, color: '#323130', minWidth: 160
+                          }}>
+                            <div style={{ fontWeight: 700, color: '#006B3C', marginBottom: 6 }}>{hoverInfo.title}</div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+                              <span style={{ color: C.slate }}>{hoverInfo.isEdge ? 'Transitions:' : 'Unique Cases:'}</span>
+                              <strong>{Number(hoverInfo.value).toLocaleString()}</strong>
+                            </div>
+                            {hoverInfo.avgDays != null && (
+                              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginTop: 4 }}>
+                                <span style={{ color: C.slate }}>Avg Duration:</span>
+                                <strong>{hoverInfo.avgDays}d</strong>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    <div style={{ flex: 1, position: 'relative' }}>
-                      {pmError && (
-                        <div style={{
-                          position: 'absolute', top: 8, left: 8, right: 8, zIndex: 10,
-                          fontSize: 11, color: '#A4262C', background: '#FDE7E9',
-                          border: '1px solid #FBC5C9', borderRadius: 4, padding: '6px 12px'
-                        }}>
-                          Error: {pmError}
-                        </div>
-                      )}
-
-                      {(pmLoading || tabSkeleton) && (
-                        <div style={{
-                          position: 'absolute', inset: 0, zIndex: 20,
-                          background: 'rgba(248,250,255,0.88)', backdropFilter: 'blur(4px)',
-                          display: 'flex', flexDirection: 'column',
-                          alignItems: 'center', justifyContent: 'center', gap: 14, borderRadius: 6
-                        }}>
-                          <div style={{ textAlign: 'center' }}>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: '#323130', marginBottom: 4 }}>
-                              Building Process Map
-                            </div>
-                            <div style={{ fontSize: 11, color: C.slate }}>
-                              Analysing transitions and paths…
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      <div style={{ position: 'absolute', inset: 0, background: '#FAFAFA' }}>
-                        <AnimatePresence mode="wait">
-                          <motion.div
-                            key={layoutDir}
-                            initial={{ opacity: 0, scale: 0.98, filter: 'blur(10px)' }}
-                            animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-                            exit={{ opacity: 0, scale: 1.02, filter: 'blur(10px)' }}
-                            transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-                            style={{ width: '100%', height: '100%' }}
-                          >
-                            <ReactFlow
-                              nodes={rfNodes} edges={rfEdges}
-                              onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
-                              nodeTypes={nodeTypes} edgeTypes={edgeTypes}
-                              fitView fitViewOptions={{ padding: .18 }}
-                              minZoom={0.1} maxZoom={4}
-                              proOptions={{ hideAttribution: true }}
-                              onNodeMouseEnter={(e, n) => setHoverInfo({
-                                x: e.clientX, y: e.clientY,
-                                title: n.data?.label || '', value: n.data?.frequency || 0
-                              })}
-                              onNodeMouseLeave={() => setHoverInfo(null)}
-                              onEdgeMouseEnter={(e, ed) => setHoverInfo({
-                                x: e.clientX, y: e.clientY,
-                                title: `${ed.source} → ${ed.target}`,
-                                value: ed.data?.frequency || 0, isEdge: true, avgDays: ed.data?.avg_days
-                              })}
-                              onEdgeMouseLeave={() => setHoverInfo(null)}
-                              defaultEdgeOptions={{ type: 'freqEdge' }}>
-                              <Background color="#C8E6DA" gap={24} size={1.5} variant="dots" />
-                              <Controls showInteractive={false}
-                                style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 6 }} />
-                              <MiniMap zoomable pannable
-                                nodeColor={C.mapNodeBg}
-                                maskColor="rgba(240,244,250,.85)"
-                                style={{ border: `1px solid ${C.border}`, borderRadius: 6 }} />
-                            </ReactFlow>
-                          </motion.div>
-                        </AnimatePresence>
-                      </div>
-
-                      {hoverInfo && (
-                        <div style={{
-                          position: 'fixed', left: hoverInfo.x + 16, top: hoverInfo.y + 16,
-                          zIndex: 99999, pointerEvents: 'none',
-                          background: 'rgba(255,255,255,.98)', border: `1px solid ${C.border}`,
-                          borderRadius: 6, padding: '10px 14px',
-                          boxShadow: '0 4px 12px rgba(0,0,0,.15)', fontSize: 12, color: '#323130', minWidth: 160
-                        }}>
-                          <div style={{ fontWeight: 700, color: '#006B3C', marginBottom: 6 }}>{hoverInfo.title}</div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
-                            <span style={{ color: C.slate }}>{hoverInfo.isEdge ? 'Transitions:' : 'Unique Cases:'}</span>
-                            <strong>{Number(hoverInfo.value).toLocaleString()}</strong>
-                          </div>
-                          {hoverInfo.avgDays != null && (
-                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginTop: 4 }}>
-                              <span style={{ color: C.slate }}>Avg Duration:</span>
-                              <strong>{hoverInfo.avgDays}d</strong>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
                   </div>
 
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, height: '100%' }}>
+
+                    <ChartCard title="Happy Path vs Deviations" loading={dashboardLoading || tabSkeleton} highlighted={crossFilter?.type === 'status'} onClear={clearCF} skeletonType="pie">
+                      <StatusDonutChart data={happyPathData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
+                    </ChartCard>
+
+                    <ChartCard title="Activity Frequency" skeletonType="bar-horizontal"
+                      loading={dashboardLoading || tabSkeleton}
+                      highlighted={crossFilter?.type === 'activity'} onClear={clearCF}>
+                      <ActivityChart data={actData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
+                    </ChartCard>
+
+                    <ChartCard title="O2C Bottleneck Analysis" subtitle="Average vs Median days per process step" loading={dashboardLoading || tabSkeleton}>
+                      <BottleneckChart data={bottleneckData} isAnimationActive={false} />
+                    </ChartCard>
+                  </div>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, height: '100%' }}>
+                <div style={{ marginTop: '2px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
 
-                  <ChartCard title="Happy Path vs Deviations" loading={dashboardLoading || tabSkeleton} highlighted={crossFilter?.type === 'status'} onClear={clearCF} skeletonType="pie">
-                    <StatusDonutChart data={happyPathData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
+                    <ChartCard title="Deviations Summary" subtitle="All deviation types by case count" loading={dashboardLoading || tabSkeleton} skeletonType="bar-horizontal">
+                      <EmptyState condition={!dashboardLoading && deviationsSummary.length === 0} message="No deviations found (or delivery/invoice data is not uploaded).">
+                        <DeviationsSummaryChart data={deviationsSummary} isAnimationActive={false} />
+                      </EmptyState>
+                    </ChartCard>
+
+                    <ChartCard title="Segregation of Duties (SoD)" subtitle="Internal control violations (same user doing multiple actions)" loading={dashboardLoading || tabSkeleton} skeletonType="bar-horizontal">
+                      <EmptyState condition={!dashboardLoading && sodData.length === 0} message="No SoD violations found.">
+                        <SodChart data={sodData} isAnimationActive={false} />
+                      </EmptyState>
+                    </ChartCard>
+
+                    <ChartCard title="Invoice Reversals Timeline" subtitle="Trend of Invoice reversals over time" loading={dashboardLoading || tabSkeleton} highlighted={crossFilter?.type === 'month'} onClear={clearCF}>
+                      <EmptyState condition={!dashboardLoading && invRevTimeline.length === 0} message="No Invoice reversals found.">
+                        <MonthlyChart data={invRevTimeline} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
+                      </EmptyState>
+                    </ChartCard>
+
+                    <ChartCard title="Invoice Reversals (by User)" subtitle="Users reversing the most Invoices" loading={dashboardLoading || tabSkeleton} highlighted={crossFilter?.type === 'ernam'} onClear={clearCF} skeletonType="bar-horizontal">
+                      <EmptyState condition={!dashboardLoading && invRevErnam.length === 0} message="No Invoice reversals found.">
+                        <ScrollableHBarChart data={invRevErnam} dataKey="count" labelKey="ernam" color="#5aabee" crossFilter={crossFilter} crossKey="ernam" onSelect={handleSelect} isAnimationActive={false} />
+                      </EmptyState>
+                    </ChartCard>
+
+                    <ChartCard title="Invoice Before GI (By User)" subtitle="Sequence violation: Invoice posted before Goods Issue" loading={dashboardLoading || tabSkeleton} highlighted={crossFilter?.type === 'ernam'} onClear={clearCF} skeletonType="bar-horizontal">
+                      <EmptyState condition={!dashboardLoading && seqViolation.length === 0} message="No sequence violations found (or delivery/invoice data is not uploaded).">
+                        <ScrollableHBarChart data={seqViolation} dataKey="count" labelKey="ernam" color="#CA5010" crossFilter={crossFilter} crossKey="ernam" onSelect={handleSelect} isAnimationActive={false} />
+                      </EmptyState>
+                    </ChartCard>
+
+                    <ChartCard title="SO → GI Lead Time Distribution"
+                      loading={dashboardLoading || tabSkeleton}
+                      highlighted={crossFilter?.type === 'lead_time'} onClear={clearCF}>
+                      <EmptyState condition={!dashboardLoading && ltData.length === 0} message="No delivery data found to calculate lead time.">
+                        <LeadTimeChart data={ltData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
+                      </EmptyState>
+                    </ChartCard>
+
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10, marginTop: '10px' }}>
+                  <ChartCard title="Case Details" subtitle="Click a Sales Order to view its chronological event log" loading={dashboardLoading || tabSkeleton} skeletonType="timeline">
+                    <CaseTable
+                      data={caseTableData}
+                      events={caseEvents}
+                      selectedId={selected.case_id}
+                      onSelect={(id) => {
+                        const newId = selected.case_id === id ? 'ALL' : id;
+                        setSelected(prev => ({ ...prev, case_id: newId }));
+                        setCrossFilter(null);
+                        logAction('FILTER', `Clicked case row: ${newId}`);
+                      }}
+                    />
                   </ChartCard>
-
-                  <ChartCard title="Activity Frequency" skeletonType="bar-horizontal"
+                </div>
+              </div>
+            ) : (
+              <div
+                key="dimensions"
+                style={{
+                  display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10,
+                  gridAutoRows: 'minmax(280px, auto)', alignItems: 'stretch', paddingBottom: '24px'
+                }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <ChartCard title="Sales Org Distribution (VKORG)" subtitle="Cases per Sales Organisation" skeletonType="pie"
                     loading={dashboardLoading || tabSkeleton}
-                    highlighted={crossFilter?.type === 'activity'} onClear={clearCF}>
-                    <ActivityChart data={actData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
-                  </ChartCard>
-
-                  <ChartCard title="O2C Bottleneck Analysis" subtitle="Average vs Median days per process step" loading={dashboardLoading || tabSkeleton}>
-                    <BottleneckChart data={bottleneckData} isAnimationActive={false} />
+                    highlighted={crossFilter?.type === 'vkorg'} onClear={clearCF}>
+                    <GenericPieChart data={vkorgData} nameKey="vkorg" dataKey="count" crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
                   </ChartCard>
                 </div>
-              </div>
 
-              <div style={{ marginTop: '2px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
-
-                  <ChartCard title="Deviations Summary" subtitle="All deviation types by case count" loading={dashboardLoading || tabSkeleton} skeletonType="bar-horizontal">
-                    <EmptyState condition={!dashboardLoading && deviationsSummary.length === 0} message="No deviations found (or delivery/invoice data is not uploaded).">
-                      <DeviationsSummaryChart data={deviationsSummary} isAnimationActive={false} />
-                    </EmptyState>
-                  </ChartCard>
-
-                  <ChartCard title="Segregation of Duties (SoD)" subtitle="Internal control violations (same user doing multiple actions)" loading={dashboardLoading || tabSkeleton} skeletonType="bar-horizontal">
-                    <EmptyState condition={!dashboardLoading && sodData.length === 0} message="No SoD violations found.">
-                      <SodChart data={sodData} isAnimationActive={false} />
-                    </EmptyState>
-                  </ChartCard>
-
-                  <ChartCard title="Invoice Reversals Timeline" subtitle="Trend of Invoice reversals over time" loading={dashboardLoading || tabSkeleton} highlighted={crossFilter?.type === 'month'} onClear={clearCF}>
-                    <EmptyState condition={!dashboardLoading && invRevTimeline.length === 0} message="No Invoice reversals found.">
-                      <MonthlyChart data={invRevTimeline} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
-                    </EmptyState>
-                  </ChartCard>
-
-                  <ChartCard title="Invoice Reversals (by User)" subtitle="Users reversing the most Invoices" loading={dashboardLoading || tabSkeleton} highlighted={crossFilter?.type === 'ernam'} onClear={clearCF} skeletonType="bar-horizontal">
-                    <EmptyState condition={!dashboardLoading && invRevErnam.length === 0} message="No Invoice reversals found.">
-                      <ScrollableHBarChart data={invRevErnam} dataKey="count" labelKey="ernam" color="#5aabee" crossFilter={crossFilter} crossKey="ernam" onSelect={handleSelect} isAnimationActive={false} />
-                    </EmptyState>
-                  </ChartCard>
-
-                  <ChartCard title="Invoice Before GI (By User)" subtitle="Sequence violation: Invoice posted before Goods Issue" loading={dashboardLoading || tabSkeleton} highlighted={crossFilter?.type === 'ernam'} onClear={clearCF} skeletonType="bar-horizontal">
-                    <EmptyState condition={!dashboardLoading && seqViolation.length === 0} message="No sequence violations found (or delivery/invoice data is not uploaded).">
-                      <ScrollableHBarChart data={seqViolation} dataKey="count" labelKey="ernam" color="#CA5010" crossFilter={crossFilter} crossKey="ernam" onSelect={handleSelect} isAnimationActive={false} />
-                    </EmptyState>
-                  </ChartCard>
-
-                  <ChartCard title="SO → GI Lead Time Distribution"
+                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, height: '100%' }}>
+                  <ChartCard title="Monthly Trend (Unique Cases)" subtitle="Unique active cases per month"
                     loading={dashboardLoading || tabSkeleton}
-                    highlighted={crossFilter?.type === 'lead_time'} onClear={clearCF}>
-                    <EmptyState condition={!dashboardLoading && ltData.length === 0} message="No delivery data found to calculate lead time.">
-                      <LeadTimeChart data={ltData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
+                    highlighted={crossFilter?.type === 'month'} onClear={clearCF}>
+                    <MonthlyChart data={monData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
+                  </ChartCard>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, height: '100%' }}>
+                  <ChartCard title="User Activity (Order Creator)" subtitle="Who created Sales Orders (Unique Cases)" skeletonType="bar-horizontal"
+                    loading={dashboardLoading || tabSkeleton}
+                    highlighted={crossFilter?.type === 'ernam'} onClear={clearCF}>
+                    <ErnamChart data={ernamData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
+                  </ChartCard>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, height: '100%' }}>
+                  <ChartCard title="Order Type (AUART)" subtitle="Distribution by order document type"
+                    loading={dashboardLoading || tabSkeleton}
+                    highlighted={crossFilter?.type === 'auart'} onClear={clearCF}>
+                    <ScrollableVBarChart data={auartData} crossFilter={crossFilter} onSelect={handleSelect} dataKey="count" labelKey="auart" isAnimationActive={false} />
+                  </ChartCard>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, height: '100%' }}>
+                  <ChartCard title="Material Group (MATKL)" subtitle="Sales activity by material category" skeletonType="bar-horizontal"
+                    loading={dashboardLoading || tabSkeleton}
+                    highlighted={crossFilter?.type === 'matkl'} onClear={clearCF}>
+                    <ScrollableHBarChart data={matklData} dataKey="count" labelKey="matkl"
+                      color="#107C10" crossFilter={crossFilter} crossKey="matkl" onSelect={handleSelect} isAnimationActive={false} />
+                  </ChartCard>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, height: '100%' }}>
+                  <ChartCard title="Top Customers by Volume" subtitle="Customers by number of Sales Orders" skeletonType="bar-horizontal"
+                    loading={dashboardLoading || tabSkeleton}
+                    highlighted={crossFilter?.type === 'customer'} onClear={clearCF}>
+                    <ScrollableHBarChart data={custData} dataKey="count" labelKey="customer"
+                      color="#006B3C" crossFilter={crossFilter} crossKey="customer" onSelect={handleSelect} isAnimationActive={false} />
+                  </ChartCard>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gridColumn: '1 / -1', minWidth: 0, minHeight: 0, height: '100%' }}>
+                  <ChartCard title="Avg SO → Cleared Days by Customer" subtitle="End-to-end cycle time per customer — click to filter" skeletonType="bar-horizontal"
+                    loading={dashboardLoading || tabSkeleton}
+                    highlighted={crossFilter?.type === 'customer'} onClear={clearCF}
+                    style={{ gridColumn: '1 / -1' }}>
+                    <EmptyState condition={!dashboardLoading && custLeadTime.length === 0} message="No cycle time data found.">
+                      <CustomerAvgDaysChart data={custLeadTime} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
                     </EmptyState>
                   </ChartCard>
-
                 </div>
-              </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10, marginTop: '10px' }}>
-                <ChartCard title="Case Details" subtitle="Click a Sales Order to view its chronological event log" loading={dashboardLoading || tabSkeleton} skeletonType="timeline">
-                  <CaseTable
-                    data={caseTableData}
-                    events={caseEvents}
-                    selectedId={selected.case_id}
-                    onSelect={(id) => {
-                      const newId = selected.case_id === id ? 'ALL' : id;
-                      setSelected(prev => ({ ...prev, case_id: newId }));
-                      setCrossFilter(null);
-                      logAction('FILTER', `Clicked case row: ${newId}`);
-                    }}
-                  />
-                </ChartCard>
+                <div style={{ gridColumn: '1 / -1', marginTop: '10px' }}>
+                  <ChartCard title="Case Details (EDA)" subtitle="Click a Case ID to view its chronological event log" loading={dashboardLoading || tabSkeleton} skeletonType="timeline">
+                    <CaseTableEda
+                      data={caseTableData}
+                      events={caseEvents}
+                      selectedId={selected.case_id}
+                      onSelect={(id) => {
+                        const newId = selected.case_id === id ? 'ALL' : id;
+                        setSelected(prev => ({ ...prev, case_id: newId }));
+                        setCrossFilter(null);
+                        logAction('FILTER', `Clicked case row (EDA): ${newId}`);
+                      }}
+                    />
+                  </ChartCard>
+                </div>
+
               </div>
+            )}
+
+          </>)}
+
+          {/* --- NEW FILE HUB UI INSTEAD OF "NO DATA LOADED" --- */}
+        </div>
+
+        {screenshotting && (
+          <div
+            id="screenshot-loading-overlay"
+            className="no-screenshot"
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 99999,
+              background: 'rgba(15, 23, 42, 0.75)',
+              backdropFilter: 'blur(4px)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 16
+            }}
+          >
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              background: 'rgba(30, 41, 59, 0.9)',
+              padding: '30px 50px',
+              borderRadius: '12px',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)',
+              color: '#fff',
+              gap: 12
+            }}>
+              <div style={{
+                width: 36, height: 36,
+                border: '3px solid rgba(255,255,255,0.2)',
+                borderTop: `3px solid ${C.amber}`,
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite'
+              }} />
+              <div style={{ fontSize: 16, fontWeight: 700 }}>Generating Screenshot...</div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>Please wait while we capture the dashboard.</div>
             </div>
-          ) : (
-            <div
-              key="dimensions"
-              style={{
-                display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10,
-                gridAutoRows: 'minmax(280px, auto)', alignItems: 'stretch', paddingBottom: '24px'
-              }}
-            >
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <ChartCard title="Sales Org Distribution (VKORG)" subtitle="Cases per Sales Organisation" skeletonType="pie"
-                  loading={dashboardLoading || tabSkeleton}
-                  highlighted={crossFilter?.type === 'vkorg'} onClear={clearCF}>
-                  <GenericPieChart data={vkorgData} nameKey="vkorg" dataKey="count" crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
-                </ChartCard>
-              </div>
+          </div>
+        )}
 
-              <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, height: '100%' }}>
-                <ChartCard title="Monthly Trend (Unique Cases)" subtitle="Unique active cases per month"
-                  loading={dashboardLoading || tabSkeleton}
-                  highlighted={crossFilter?.type === 'month'} onClear={clearCF}>
-                  <MonthlyChart data={monData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
-                </ChartCard>
-              </div>
+        <div style={{ textAlign: 'center', fontSize: '12px', color: '#605E5C', padding: '10px 0', borderTop: '1px solid #E1DFDD', flexShrink: 0, zIndex: 100 }}>
+          ©2023 <a href="https://ajalabs.ai" target="_blank" rel="noopener noreferrer" style={{ color: '#323130', textDecoration: 'none', fontWeight: 'bold' }}>ajalabs.ai</a> All rights reserved - <a href="#" style={{ color: '#0078D4', textDecoration: 'none' }}>Data Privacy</a>
+        </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, height: '100%' }}>
-                <ChartCard title="User Activity (Order Creator)" subtitle="Who created Sales Orders (Unique Cases)" skeletonType="bar-horizontal"
-                  loading={dashboardLoading || tabSkeleton}
-                  highlighted={crossFilter?.type === 'ernam'} onClear={clearCF}>
-                  <ErnamChart data={ernamData} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
-                </ChartCard>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, height: '100%' }}>
-                <ChartCard title="Order Type (AUART)" subtitle="Distribution by order document type"
-                  loading={dashboardLoading || tabSkeleton}
-                  highlighted={crossFilter?.type === 'auart'} onClear={clearCF}>
-                  <ScrollableVBarChart data={auartData} crossFilter={crossFilter} onSelect={handleSelect} dataKey="count" labelKey="auart" isAnimationActive={false} />
-                </ChartCard>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, height: '100%' }}>
-                <ChartCard title="Material Group (MATKL)" subtitle="Sales activity by material category" skeletonType="bar-horizontal"
-                  loading={dashboardLoading || tabSkeleton}
-                  highlighted={crossFilter?.type === 'matkl'} onClear={clearCF}>
-                  <ScrollableHBarChart data={matklData} dataKey="count" labelKey="matkl"
-                    color="#107C10" crossFilter={crossFilter} crossKey="matkl" onSelect={handleSelect} isAnimationActive={false} />
-                </ChartCard>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, height: '100%' }}>
-                <ChartCard title="Top Customers by Volume" subtitle="Customers by number of Sales Orders" skeletonType="bar-horizontal"
-                  loading={dashboardLoading || tabSkeleton}
-                  highlighted={crossFilter?.type === 'customer'} onClear={clearCF}>
-                  <ScrollableHBarChart data={custData} dataKey="count" labelKey="customer"
-                    color="#006B3C" crossFilter={crossFilter} crossKey="customer" onSelect={handleSelect} isAnimationActive={false} />
-                </ChartCard>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gridColumn: '1 / -1', minWidth: 0, minHeight: 0, height: '100%' }}>
-                <ChartCard title="Avg SO → Cleared Days by Customer" subtitle="End-to-end cycle time per customer — click to filter" skeletonType="bar-horizontal"
-                  loading={dashboardLoading || tabSkeleton}
-                  highlighted={crossFilter?.type === 'customer'} onClear={clearCF}
-                  style={{ gridColumn: '1 / -1' }}>
-                  <EmptyState condition={!dashboardLoading && custLeadTime.length === 0} message="No cycle time data found.">
-                    <CustomerAvgDaysChart data={custLeadTime} crossFilter={crossFilter} onSelect={handleSelect} isAnimationActive={false} />
-                  </EmptyState>
-                </ChartCard>
-              </div>
-
-            </div>
-          )}
-
-        </>)}
-
-        {/* --- NEW FILE HUB UI INSTEAD OF "NO DATA LOADED" --- */}
       </div>
-
-      <div style={{ textAlign: 'center', fontSize: '12px', color: '#605E5C', padding: '10px 0', borderTop: '1px solid #E1DFDD', flexShrink: 0, zIndex: 100 }}>
-        ©2023 <a href="https://ajalabs.ai" target="_blank" rel="noopener noreferrer" style={{ color: '#323130', textDecoration: 'none', fontWeight: 'bold' }}>ajalabs.ai</a> All rights reserved - <a href="#" style={{ color: '#0078D4', textDecoration: 'none' }}>Data Privacy</a>
-      </div>
-
     </div>
   );
 }
