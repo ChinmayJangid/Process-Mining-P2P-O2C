@@ -12,6 +12,7 @@ import {
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, Legend
 } from 'recharts';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
+import html2canvas from 'html2canvas';
 import './App.css';
 
 const API = 'http://localhost:8000';
@@ -205,7 +206,8 @@ const FreqEdge = React.memo(({ id, sourceX, sourceY, targetX, targetY, sourcePos
   const freq = data?.frequency || 0;
   const max = data?.maxFreq || 1;
   const width = 1 + (freq / max) * 4;
-  const arcColor = '#605E5C';
+  const arcColor = data?.edgeColor || '#605E5C';
+  const flowColor = data?.edgeColor || '#d97706';
   let edgePath, labelX, labelY;
   if (sweepSide) {
     let cx1, cy1, cx2, cy2;
@@ -236,9 +238,9 @@ const FreqEdge = React.memo(({ id, sourceX, sourceY, targetX, targetY, sourcePos
   return (
     <>
       <BaseEdge id={id} path={edgePath} markerEnd={markerEnd} style={{ ...style, stroke: arcColor, strokeWidth: width, opacity: .85 }} />
-      <path d={edgePath} fill="none" stroke="#d97706" strokeWidth={Math.max(4, width / 1.5)} strokeDasharray="1 20" strokeLinecap="round" style={{ opacity: 0.6, animation: `cometFlow ${duration}s linear infinite` }} />
+      <path d={edgePath} fill="none" stroke={flowColor} strokeWidth={Math.max(4, width / 1.5)} strokeDasharray="1 20" strokeLinecap="round" style={{ opacity: 0.6, animation: `cometFlow ${duration}s linear infinite` }} />
       {[0, 1, 2].map((i) => (
-        <path key={i} d="M -8,-6 L 8,0 L -8,6 Z" fill="#d97706" style={{ opacity: 0 }}>
+        <path key={i} d="M -8,-6 L 8,0 L -8,6 Z" fill={flowColor} style={{ opacity: 0 }}>
           <animateMotion dur={`${duration}s`} repeatCount="indefinite" path={edgePath} rotate="auto" begin={`${i * (duration / 3)}s`} />
           <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur={`${duration}s`} repeatCount="indefinite" begin={`${i * (duration / 3)}s`} />
         </path>
@@ -461,9 +463,12 @@ const buildFlowMap = (bNodes, bEdges, setRfNodes, setRfEdges, dir) => {
     const tN = nodes.find(n => n.id === e.target);
     if (!sN || !tN) return null;
     const { sh, th, curvature, sweepSide, sweepDist } = classifyEdge(e.source, e.target, sN.position, tN.position, dir);
+    const sIdx = HAPPY_IDX[e.source];
+    const tIdx = HAPPY_IDX[e.target];
+    const isSkipped = sIdx !== undefined && tIdx !== undefined && (tIdx !== sIdx + 1);
     const isHappyEdge = HAPPY_PATH_NODES.has(e.source) && HAPPY_PATH_NODES.has(e.target);
     const isRevEdge = REVERSAL_NODES.has(e.source) || REVERSAL_NODES.has(e.target);
-    const ec = isRevEdge ? '#e74c3c' : (isHappyEdge ? '#d97706' : '#605E5C');
+    const ec = isSkipped ? '#E81123' : (isRevEdge ? '#e74c3c' : (isHappyEdge ? '#d97706' : '#605E5C'));
     return {
       id: e.id || `${e.source}--${e.target}`, source: e.source, target: e.target,
       sourceHandle: sh, targetHandle: th, type: 'freqEdge',
@@ -863,7 +868,16 @@ const P2I_FAQS = [
   { q: 'What is Plan-to-Inventory (P2I)?', a: 'P2I is the end-to-end manufacturing workflow from production planning to finished goods in inventory. It integrates production orders, material reservations, shop-floor confirmations, and goods movements to ensure efficient production execution.', bullets: [{ bold: 'Production Planning:', rest: ' Creating production orders with scheduled dates' }, { bold: 'Material Staging:', rest: ' Reserving components and issuing goods to the order' }, { bold: 'Shop Floor Execution:', rest: ' Confirming operations and recording actual times' }, { bold: 'Goods Receipt & Inspection:', rest: ' Posting finished goods into inventory and quality inspection' }, { bold: 'Procurement Link:', rest: ' Procuring raw materials via PR/PO/GR/Invoice' }] },
   { q: 'What SAP tables does P2I Process Mining use?', a: 'The P2I module draws from production and procurement SAP tables:', bullets: [{ bold: 'AUFK (Optional):', rest: ' Production Order Header — Creation date (ERDAT) and Order Creator (ERNAM) (highly recommended)' }, { bold: 'AFKO (Optional):', rest: ' Production Order Header Scheduling — Basic/Scheduled/Actual dates' }, { bold: 'AFPO:', rest: ' Production Order Items — material, plant, quantities (mandatory)' }, { bold: 'AFRU:', rest: ' Operation Confirmations — execution start, finish, and reversals' }, { bold: 'RESB:', rest: ' Production Reservations — component requirements' }, { bold: 'MKPF/MSEG:', rest: ' Material Documents — goods movements (261/101/131/262/102/132/541)' }, { bold: 'EKKO/EKPO/EBAN/EKBE:', rest: ' Standard P2P procurement chain' }] },
   { q: 'What are the key P2I activities tracked?', a: 'Activities span the full production lifecycle:', bullets: ['Production Order Creation (from AUFK)', 'Order Confirmation & Execution (from AFRU)', 'Goods Issued to Order (BWART 261) — materials consumed', 'Finished Goods Receipt (BWART 101) — completed products received', 'Finished Goods to Quality Inspection (BWART 131) — quality checks', 'Operation Reversed / Goods Issued Reversed / Goods transferred to subcontractor / Finished Goods Reversed / Quality Inspection to Finished Goods'] },
-  { q: 'What is the P2I Happy Path?', a: 'The standard (Happy Path) P2I process follows this sequence without any reversals:', bullets: ['1. Production Order Creation', '2. Order Confirmation', '3. Basic Start', '4. Scheduled Start', '5. Actual Start', '6. Goods Issued to Order', '7. Finished Goods Receipt', '8. Finished Goods to Quality Inspection', 'Any deviation (reversal, sequence violation, missing step) is flagged as a process deviation.'] },
+  {
+    q: 'What makes ALTeX Hub process mining different?',
+    a: 'The process mining done under ALTeX Hub is different from traditional process mining tools because:',
+    bullets: [
+      'Runs in parallel to the CompliBear ACM engine',
+      'It uses machine learning to analyze and interpret process data',
+      'CoSaas: Each run is customised to the business, rather than relying on the data or standard happy path guidelines for the processes',
+      'Interconnected to other processes and systems to bring all the touchpoints as a single source of truth.',
+    ],
+  }, ,
   { q: 'What KPIs does P2I Process Mining track?', a: 'Key metrics include:', bullets: [{ bold: 'Orders Confirmed:', rest: ' Orders with an Operation Confirmation' }, { bold: 'Goods Issued / FG Receipts:', rest: ' Completion of goods movements' }, { bold: 'GI Before Confirmation:', rest: ' Goods issued before order was confirmed (sequence violation)' }, { bold: 'FG Without GI:', rest: ' Finished goods received without goods issue (data gap)' }, { bold: 'Avg Completion Days:', rest: ' Creation Date to Quality Inspection finish' }] },
   { q: 'How does the Transformer work?', a: 'The P2I Transformer replicates the KNIME P2I_4 workflow in Python. Upload the raw SAP CSVs. AFPO is mandatory. Upload AUFK to get order creation date and creator (ERNAM). Upload AFKO to get scheduling details (Basic Start, etc.). All other tables add material movements and procurement activities. The transformer joins them, classifies movements by BWART, applies deletion-flag reversal rules, and outputs a single wide-format event log with one row per production order.', bullets: [] },
 ];
@@ -1027,9 +1041,10 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
 
   const uploadTable = async (tableName, file) => {
     if (!file) return;
-    if (!file.name.toLowerCase().endsWith('.csv')) {
+    const ext = file.name.toLowerCase();
+    if (!ext.endsWith('.csv') && !ext.endsWith('.xlsx') && !ext.endsWith('.xls')) {
       setTableStatus(p => ({ ...p, [tableName]: 'error' }));
-      setTableMsg(p => ({ ...p, [tableName]: 'Only .csv accepted.' }));
+      setTableMsg(p => ({ ...p, [tableName]: 'Only .csv or Excel files accepted.' }));
       return;
     }
     setSelectedFiles(p => ({ ...p, [tableName]: file }));
@@ -1225,15 +1240,6 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
       <div style={{ maxWidth: 820, width: '100%', display: 'flex', flexDirection: 'column', gap: 20 }}>
         {/* Back + header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button onClick={onBack}
-            style={{
-              background: 'none', border: '1px solid #E2E8F0', padding: '6px 14px', borderRadius: 6,
-              fontSize: 12, cursor: 'pointer', color: '#64748b', fontWeight: 600
-            }}
-            onMouseOver={e => e.currentTarget.style.background = '#F8FAFC'}
-            onMouseOut={e => e.currentTarget.style.background = 'none'}>
-            ← Back
-          </button>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: C.amber, textTransform: 'uppercase', letterSpacing: 0.8 }}>Build Event Log</div>
             <div style={{ fontSize: 13, color: '#64748b' }}>Upload SAP tables below, then click Build. AFPO is mandatory; AFKO is optional but recommended for production dates.</div>
@@ -1244,7 +1250,7 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
         <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 10, padding: '20px 22px', boxShadow: '0 2px 6px rgba(0,0,0,0.04)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.8 }}>SAP Tables</div>
-            <div style={{ fontSize: 11, color: '#94a3b8' }}>Upload each as <strong style={{ color: '#475569' }}>.csv</strong></div>
+            <div style={{ fontSize: 11, color: '#94a3b8' }}>Upload each as <strong style={{ color: '#475569' }}>.csv or Excel</strong></div>
           </div>
           <motion.div
             variants={{
@@ -1274,7 +1280,7 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
                     background: tableStatus[t.name] === 'done' ? '#F0FAF0' : tableStatus[t.name] === 'error' ? '#FDE7E9' : i % 2 === 0 ? '#F8FAFC' : '#fff',
                     borderBottom: i < tables.length - 1 ? '1px solid #E2E8F0' : 'none', transition: 'background 0.2s'
                   }}>
-                  <input ref={ref} type="file" accept=".csv" style={{ display: 'none' }}
+                  <input ref={ref} type="file" accept=".csv,.xlsx,.xls" style={{ display: 'none' }}
                     onChange={e => {
                       const f = e.target.files[0]; e.target.value = '';
                       if (f) uploadTable(t.name, f);
@@ -1293,9 +1299,12 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
                   <div style={{
                     minWidth: 52, fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: C.amberDark,
                     background: C.amberLight, padding: '3px 8px', borderRadius: 4, textAlign: 'center', flexShrink: 0
-                  }}>{t.name}</div>
+                  }}>{t.isMandatory ? '* ' : ''}{t.name}</div>
                   <div style={{ fontSize: 13, color: '#475569', flex: 1 }}>
                     {t.desc}
+                    {t.isMandatory && (
+                      <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 700, color: '#DC2626', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 4, padding: '1px 6px', letterSpacing: 0.3 }}>Mandatory</span>
+                    )}
                     {appliedMappings[t.name] && Object.keys(appliedMappings[t.name]).length > 0 && (
                       <div style={{ fontSize: 11, color: '#006B3C', marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                         {Object.entries(appliedMappings[t.name]).map(([k, v]) => (
@@ -1363,8 +1372,8 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
             })}
           </motion.div>
           <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'space-between', flexWrap: 'wrap' }}>
-            <div style={{ fontSize: 12, color: allDone ? '#107C10' : '#94a3b8', fontWeight: allDone ? 700 : 400 }}>
-              {allDone ? `✓ ${tables.filter(t => tableStatus[t.name] === 'done').length} table(s) uploaded — ready to build` : `${tables.filter(t => tableStatus[t.name] === 'done').length} / ${tables.length} tables uploaded — AFPO mandatory, AFKO optional`}
+            <div style={{ fontSize: 11, color: '#64748b' }}>
+              <span style={{ fontWeight: 700, color: '#DC2626' }}>*</span> Mandatory table
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
               {buildMsg && <div style={{ fontSize: 12, color: buildMsg.startsWith('Error') ? '#D13438' : '#107C10', fontWeight: 600 }}>{buildMsg}</div>}
@@ -1531,8 +1540,7 @@ const KpiWheel = ({ colors, label, height = 302, width = 140 }) => {
 };
 
 /* ─── P2I INTRO SCREEN ──────────────────────────────────────────────────────── */
-const P2IIntroScreen = ({ onGoTableBuild, onGoCsvUpload, currentUser }) => {
-  const [introStep, setIntroStep] = useState('overview'); // 'overview' | 'choose'
+const P2IIntroScreen = ({ onGoTableBuild, onGoCsvUpload, currentUser, introStep, setIntroStep }) => {
   const [hoveredSide, setHoveredSide] = useState(null);
   const [showFaqModal, setShowFaqModal] = useState(false);
 
@@ -1741,12 +1749,23 @@ const P2IIntroScreen = ({ onGoTableBuild, onGoCsvUpload, currentUser }) => {
 
         <div className="process-ribbon-container">
           <div className="process-ribbon-content">
-            {[...shortSteps, ...shortSteps, ...shortSteps, ...shortSteps].map((s, i) => (
-              <React.Fragment key={i}>
-                <div className="process-ribbon-item">{s.icon}<span style={{ marginLeft: 4 }}>{s.text}</span></div>
-                {i < shortSteps.length * 4 - 1 && <div className="process-ribbon-arrow">→</div>}
-              </React.Fragment>
-            ))}
+            {[...shortSteps, ...shortSteps, ...shortSteps, ...shortSteps].map((s, i) => {
+              const isFirst = i % shortSteps.length === 0;
+              return (
+                <React.Fragment key={i}>
+                  <div
+                    className="process-ribbon-item"
+                    style={isFirst ? { background: C.headerBg, color: '#fff', borderColor: C.headerBg, boxShadow: `0 4px 12px ${C.headerBg}33` } : {}}
+                  >
+                    <span style={{ display: 'inline-flex', alignItems: 'center', color: isFirst ? '#fff' : 'inherit' }}>
+                      {s.icon}
+                    </span>
+                    <span style={{ marginLeft: 4 }}>{s.text}</span>
+                  </div>
+                  {i < shortSteps.length * 4 - 1 && <div className="process-ribbon-arrow">→</div>}
+                </React.Fragment>
+              );
+            })}
           </div>
         </div>
 
@@ -1791,24 +1810,30 @@ const P2IIntroScreen = ({ onGoTableBuild, onGoCsvUpload, currentUser }) => {
   }
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '36px 24px 48px', overflowY: 'auto' }}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem', overflowY: 'auto', position: 'relative' }}>
+      {/* Snapshot Button */}
+      <button
+        onClick={() => window.open('/snapshot p2i.pdf', '_blank')}
+        style={{
+          position: 'absolute',
+          top: '24px',
+          right: '24px',
+          background: '#D97706', color: '#fff', border: 'none',
+          padding: '9px 18px', borderRadius: '8px', fontSize: '12px',
+          fontWeight: 700, cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: '6px',
+          boxShadow: '0 4px 12px rgba(217,119,6,0.3)',
+          transition: 'all 0.2s',
+          zIndex: 10
+        }}
+        onMouseOver={e => { e.currentTarget.style.filter = 'brightness(1.1)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+        onMouseOut={e => { e.currentTarget.style.filter = 'none'; e.currentTarget.style.transform = 'none'; }}
+      >
+        📸 Snapshot
+      </button>
+
       <div style={{ maxWidth: 880, width: '100%', display: 'flex', flexDirection: 'column', gap: 24 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-          <button onClick={() => setIntroStep('overview')} style={{ background: 'none', border: '1px solid #E2E8F0', padding: '6px 14px', borderRadius: 6, fontSize: 12, cursor: 'pointer', color: '#64748b', fontWeight: 600 }} onMouseOver={e => e.currentTarget.style.background = '#F8FAFC'} onMouseOut={e => e.currentTarget.style.background = 'none'}>← Back to Overview</button>
-          <button
-            onClick={() => window.open('/snapshot p2i.pdf', '_blank')}
-            style={{
-              background: '#D97706', color: '#fff', border: 'none',
-              padding: '7px 18px', borderRadius: 7, fontSize: 12,
-              fontWeight: 700, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: 6,
-              boxShadow: '0 2px 8px rgba(217,119,6,0.25)'
-            }}
-            onMouseOver={e => e.currentTarget.style.background = '#b45309'}
-            onMouseOut={e => e.currentTarget.style.background = '#d97706'}>
-            📸 Snapshot
-          </button>
-        </div>
+
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 }}>Get Started</div>
           <h2 style={{ margin: '0 0 6px', fontSize: 20, fontWeight: 700, color: '#1e293b' }}>Choose how to load your data</h2>
@@ -1816,13 +1841,22 @@ const P2IIntroScreen = ({ onGoTableBuild, onGoCsvUpload, currentUser }) => {
         </div>
         <div style={{ display: 'flex', width: '100%', height: 320, gap: 16 }}>
           <motion.div layout style={{ flex: hoveredSide === 'build' ? 1.7 : (hoveredSide === 'csv' ? 0.6 : 1), background: '#fff', border: '2px solid #E2E8F0', borderRadius: 16, padding: '28px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.03)', cursor: 'pointer', overflow: 'hidden' }} onClick={onGoTableBuild} onMouseEnter={() => setHoveredSide('build')} onMouseLeave={() => setHoveredSide(null)} animate={{ borderColor: hoveredSide === 'build' ? C.amber : '#E2E8F0' }}>
-            <motion.div layout style={{ width: 60, height: 60, borderRadius: 14, background: '#FFFBEB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, flexShrink: 0 }}>🏭</motion.div>
+            <motion.div layout style={{ width: 60, height: 60, borderRadius: 14, background: '#FFFBEB', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={C.amber} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="3" width="6" height="6" rx="1" />
+                <rect x="16" y="3" width="6" height="6" rx="1" />
+                <rect x="16" y="15" width="6" height="6" rx="1" />
+                <rect x="2" y="15" width="6" height="6" rx="1" />
+                <path d="M8 6h8M19 9v6M16 18H8M5 15V9" />
+              </svg>
+            </motion.div>
             <motion.div layout style={{ flex: 1 }}>
               <motion.div layout style={{ fontSize: 18, fontWeight: 700, color: '#1e293b', marginBottom: 8, whiteSpace: hoveredSide === 'csv' ? 'nowrap' : 'normal' }}>SAP Table Upload</motion.div>
               <AnimatePresence>
                 {hoveredSide !== 'csv' && (
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ fontSize: 13, color: '#64748b', lineHeight: 1.65 }}>
-                    Upload AFPO, AFKO (optional), AFRU, MSEG and other raw SAP tables. The transformer builds the event log automatically.
+                    Upload raw ERP tables  and let the system
+                    automatically build the process event log.
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -1831,20 +1865,25 @@ const P2IIntroScreen = ({ onGoTableBuild, onGoCsvUpload, currentUser }) => {
               {hoveredSide === 'csv' ? 'Upload' : 'Upload Tables'}
             </motion.button>
           </motion.div>
-          <motion.div layout style={{ flex: hoveredSide === 'csv' ? 1.7 : (hoveredSide === 'build' ? 0.6 : 1), background: '#fff', border: '2px solid #E2E8F0', borderRadius: 16, padding: '28px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.03)', cursor: 'pointer', overflow: 'hidden' }} onClick={onGoCsvUpload} onMouseEnter={() => setHoveredSide('csv')} onMouseLeave={() => setHoveredSide(null)} animate={{ borderColor: hoveredSide === 'csv' ? '#475569' : '#E2E8F0' }}>
-            <motion.div layout style={{ width: 60, height: 60, borderRadius: 14, background: '#F8FAFC', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, flexShrink: 0 }}>📄</motion.div>
+          <motion.div layout style={{ flex: hoveredSide === 'csv' ? 1.7 : (hoveredSide === 'build' ? 0.6 : 1), background: '#fff', border: '2px solid #E2E8F0', borderRadius: 16, padding: '28px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.03)', cursor: 'pointer', overflow: 'hidden' }} onClick={onGoCsvUpload} onMouseEnter={() => setHoveredSide('csv')} onMouseLeave={() => setHoveredSide(null)} animate={{ borderColor: hoveredSide === 'csv' ? C.amber : '#E2E8F0' }}>
+            <motion.div layout style={{ width: 60, height: 60, borderRadius: 14, background: '#fffbeb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                <polyline points="14 2 14 8 20 8" />
+                <path d="M8 13h8M8 17h8" />
+              </svg>
+            </motion.div>
             <motion.div layout style={{ flex: 1 }}>
-              <motion.div layout style={{ fontSize: 18, fontWeight: 700, color: '#1e293b', marginBottom: 8, whiteSpace: hoveredSide === 'build' ? 'nowrap' : 'normal' }}>Pre-built CSV Upload</motion.div>
+              <motion.div layout style={{ fontSize: 18, fontWeight: 700, color: '#1e293b', marginBottom: 8, whiteSpace: hoveredSide === 'build' ? 'nowrap' : 'normal' }}>Upload Pre-built CSV or Excel</motion.div>
               <AnimatePresence>
                 {hoveredSide !== 'build' && (
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ fontSize: 13, color: '#64748b', lineHeight: 1.65 }}>
-                    Upload a wide-format event log already processed by KNIME or a previous build — one row per production order.
-                  </motion.div>
+                    Already have a formatted event log? Upload your pre-built wide-format CSV or Excel directly to launch the dashboard.                  </motion.div>
                 )}
               </AnimatePresence>
             </motion.div>
-            <motion.button layout onClick={e => { e.stopPropagation(); onGoCsvUpload(); }} style={{ background: '#475569', color: '#fff', border: 'none', padding: '11px 28px', borderRadius: 7, fontSize: 13, fontWeight: 700, cursor: 'pointer', width: '100%', marginTop: 'auto' }} onMouseOver={e => e.currentTarget.style.background = '#334155'} onMouseOut={e => e.currentTarget.style.background = '#475569'}>
-              {hoveredSide === 'build' ? 'Upload' : 'Upload CSV'}
+            <motion.button layout onClick={e => { e.stopPropagation(); onGoCsvUpload(); }} style={{ background: C.amber, color: '#fff', border: 'none', padding: '11px 28px', borderRadius: 7, fontSize: 13, fontWeight: 700, cursor: 'pointer', width: '100%', marginTop: 'auto' }} onMouseOver={e => e.currentTarget.style.background = C.amberDark} onMouseOut={e => e.currentTarget.style.background = C.amber}>
+              {hoveredSide === 'build' ? 'Upload' : 'Upload CSV or Excel'}
             </motion.button>
           </motion.div>
         </div>
@@ -1854,8 +1893,7 @@ const P2IIntroScreen = ({ onGoTableBuild, onGoCsvUpload, currentUser }) => {
 };
 
 /* ─── UPLOAD BANNER (Intro + Route Selection) ─────────────────────────────────── */
-const UploadBanner = React.memo(({ currentUser, onUploaded, serverOk, onLoadingChange, myFiles, fetchingFiles, handleLoadOldFile, defaultStep }) => {
-  const [step, setStep] = useState(defaultStep || 'info');
+const UploadBanner = React.memo(({ currentUser, onUploaded, serverOk, onLoadingChange, myFiles, fetchingFiles, handleLoadOldFile, step, setStep, introStep, setIntroStep }) => {
   const [dragging, setDragging] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [status, setStatus] = useState('idle');
@@ -1863,8 +1901,6 @@ const UploadBanner = React.memo(({ currentUser, onUploaded, serverOk, onLoadingC
   const [colMapping, setColMapping] = useState(null);
   const [showAvailablePopup, setShowAvailablePopup] = useState(false);
   const inputRef = useRef(null);
-
-  useEffect(() => { if (defaultStep) setStep(defaultStep); }, [defaultStep]);
 
   const P2I_SCHEMA_COLS = [
     { col: 'AUFNR', desc: 'Production Order Number', req: true },
@@ -1906,7 +1942,7 @@ const UploadBanner = React.memo(({ currentUser, onUploaded, serverOk, onLoadingC
       setStatus('done');
       setMsg(`Loaded ${d.unique_cases} orders (${d.input_format} format).`);
       onLoadingChange(true, 60, 'Processing event log...');
-      setTimeout(() => { onUploaded(null, 'upload'); onLoadingChange(false, 100, ''); }, 800);
+      setTimeout(() => { onUploaded(null, 'upload'); }, 800);
     } catch (e) {
       const isMappingErr = e.message?.toLowerCase().includes('missing') || e.message?.toLowerCase().includes('column');
       setStatus('error');
@@ -1982,13 +2018,16 @@ const UploadBanner = React.memo(({ currentUser, onUploaded, serverOk, onLoadingC
                   🔒
                 </div>
                 <h3 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 1rem', letterSpacing: '-0.3px', color: '#fff' }}>
-                  Uploading Unavailable
+                  Uploading Restricted
                 </h3>
                 <p style={{ fontSize: '14px', color: '#cbd5e1', lineHeight: '1.5', margin: '0 0 1.5rem' }}>
-                  Uploading is not available in the current environment. It is available in the production environment. Kindly contact administrator to get access.
+                  Uploading is Restricted in the current environment. Kindly contact administrator to get access.
                 </p>
                 <button
-                  onClick={() => setShowAvailablePopup(false)}
+                  onClick={() => {
+                    window.open('https://ajalabs.ai/', '_blank', 'noopener,noreferrer');
+                    setShowAvailablePopup(false);
+                  }}
                   style={{
                     background: C.amber,
                     color: '#fff',
@@ -2016,6 +2055,8 @@ const UploadBanner = React.memo(({ currentUser, onUploaded, serverOk, onLoadingC
           onGoTableBuild={() => setShowAvailablePopup(true)}
           onGoCsvUpload={() => setShowAvailablePopup(true)}
           currentUser={currentUser}
+          introStep={introStep}
+          setIntroStep={setIntroStep}
         />
       </>
     );
@@ -2072,15 +2113,15 @@ const UploadBanner = React.memo(({ currentUser, onUploaded, serverOk, onLoadingC
       )}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <button onClick={() => setStep('info')} style={{ background: 'none', border: '1px solid #E2E8F0', padding: '5px 12px', borderRadius: 6, fontSize: 12, cursor: 'pointer', color: '#64748b', fontWeight: 600 }} onMouseOver={e => e.currentTarget.style.background = '#F8FAFC'} onMouseOut={e => e.currentTarget.style.background = 'none'}>← Back</button>
-        <div style={{ fontSize: 11, fontWeight: 700, color: C.amber, textTransform: 'uppercase', letterSpacing: 0.8 }}>Upload Pre-built P2I CSV</div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: C.amber, textTransform: 'uppercase', letterSpacing: 0.8 }}>Upload Pre-built P2I CSV/Excel</div>
       </div>
       <div onDragOver={e => { e.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={e => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f) { setSelectedFile(f); setStatus('idle'); setMsg(''); } }} onClick={() => { if (status !== 'uploading' && inputRef.current) { inputRef.current.value = ''; inputRef.current.click(); } }} style={{ border: `2px dashed ${bc}`, borderRadius: 8, padding: '14px 24px', background: bg, cursor: 'pointer', textAlign: 'center', transition: 'all .2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, flexDirection: selectedFile ? 'column' : 'row' }}>
-        <input ref={inputRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={e => { const f = e.target.files[0]; if (f) { setSelectedFile(f); setStatus('idle'); setMsg(''); } }} />
+        <input ref={inputRef} type="file" accept=".csv,.xlsx,.xls" style={{ display: 'none' }} onChange={e => { const f = e.target.files[0]; if (f) { setSelectedFile(f); setStatus('idle'); setMsg(''); } }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <div style={{ fontSize: 22, fontWeight: 'bold', color: status === 'done' ? '#107C10' : status === 'error' ? '#D13438' : C.amber }}>{status === 'done' ? '✓' : status === 'error' ? '✕' : '⬆'}</div>
           <div style={{ textAlign: 'left' }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#323130' }}>{selectedFile ? selectedFile.name : 'Click or drag & drop a CSV file here'}</div>
-            <div style={{ fontSize: 11, color: C.slate, marginTop: 2 }}>{msg || 'Wide-format or KNIME long-format CSV — one row per AUFNR'}</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#323130' }}>{selectedFile ? selectedFile.name : 'Click or drag & drop a CSV or Excel file here'}</div>
+            <div style={{ fontSize: 11, color: C.slate, marginTop: 2 }}>{msg || 'Wide-format or KNIME long-format CSV/Excel — one row per AUFNR'}</div>
           </div>
         </div>
         {selectedFile && status !== 'uploading' && (
@@ -2093,7 +2134,7 @@ const UploadBanner = React.memo(({ currentUser, onUploaded, serverOk, onLoadingC
       </div>
       {csvUploads.length > 0 && (
         <div style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 10, padding: '18px 20px' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 12 }}>Previous CSV Uploads</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 12 }}>Previous CSV/Excel Uploads</div>
           <div style={{ border: '1px solid #E2E8F0', borderRadius: 8, overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead style={{ background: '#F3F2F1', textAlign: 'left' }}>
@@ -2239,12 +2280,182 @@ const P2pProcessModal = React.memo(({ onClose }) => {
 export default function P2IDashboard({ currentUser, onSignOut, onBackHome }) {
   const [serverOk, setServerOk] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [uploadStep, setUploadStep] = useState('info');
+  const [introStep, setIntroStep] = useState('overview');
   const [mappingError, setMappingError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [dashboardLoading, setDashboardLoading] = useState(false);
+  const [dashboardLoading, setDashboardLoading] = useState(true);
   const [chartsReady, setChartsReady] = useState(false);
   const [pmReady, setPmReady] = useState(false);
   const intentToUpload = useRef(true);
+  const screenshotRef = useRef(null);
+  const [screenshotting, setScreenshotting] = useState(false);
+
+  const handleScreenshot = async () => {
+    if (!screenshotRef.current || screenshotting) return;
+    setScreenshotting(true);
+    const el = screenshotRef.current;
+
+    const originalRootStyle = {
+      height: el.style.height,
+      overflowX: el.style.overflowX,
+      overflowY: el.style.overflowY,
+      maxHeight: el.style.maxHeight,
+    };
+
+    el.style.setProperty('height', 'auto', 'important');
+    el.style.setProperty('overflow-x', 'visible', 'important');
+    el.style.setProperty('overflow-y', 'visible', 'important');
+    el.style.setProperty('max-height', 'none', 'important');
+
+    const scrollContainers = [];
+    const allElements = el.querySelectorAll('div[style*="overflow"]');
+    allElements.forEach((node) => {
+      const style = window.getComputedStyle(node);
+      if (
+        style.overflowY === 'auto' ||
+        style.overflowY === 'scroll' ||
+        style.overflowX === 'auto' ||
+        style.overflowX === 'scroll' ||
+        style.overflow === 'auto' ||
+        style.overflow === 'scroll'
+      ) {
+        scrollContainers.push({
+          node,
+          overflowX: node.style.overflowX,
+          overflowY: node.style.overflowY,
+          height: node.style.height,
+          maxHeight: node.style.maxHeight,
+        });
+        node.style.setProperty('overflow-x', 'visible', 'important');
+        node.style.setProperty('overflow-y', 'visible', 'important');
+        node.style.setProperty('height', 'auto', 'important');
+        node.style.setProperty('max-height', 'none', 'important');
+      }
+    });
+
+    try {
+      await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 100)));
+
+      const canvas = await html2canvas(el, {
+        scale: 1,
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: '#F0F2F5',
+        logging: false,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: el.scrollWidth,
+        windowHeight: el.scrollHeight,
+        width: el.scrollWidth,
+        height: el.scrollHeight,
+        ignoreElements: (node) => {
+          if (node.id && node.id.includes('screenshot-btn')) return true;
+          if (node.classList && (node.classList.contains('no-screenshot') || node.classList.contains('screenshot-btn'))) return true;
+          return false;
+        },
+        onclone: (clonedDoc) => {
+          const copyStyles = (selector) => {
+            const originalEls = el.querySelectorAll(selector);
+            const clonedEls = clonedDoc.querySelectorAll(selector);
+            for (let i = 0; i < originalEls.length && i < clonedEls.length; i++) {
+              const oEl = originalEls[i];
+              const cEl = clonedEls[i];
+              const oStyle = window.getComputedStyle(oEl);
+
+              // Copy layout & positioning styles
+              cEl.style.position = oStyle.position;
+              cEl.style.width = oStyle.width;
+              cEl.style.height = oStyle.height;
+              cEl.style.top = oStyle.top;
+              cEl.style.left = oStyle.left;
+              cEl.style.transform = oStyle.transform;
+              cEl.style.transformOrigin = oStyle.transformOrigin;
+              cEl.style.display = oStyle.display;
+              cEl.style.opacity = oStyle.opacity;
+              cEl.style.overflow = oStyle.overflow;
+
+              // SVG specific styles
+              if (oStyle.stroke) cEl.style.stroke = oStyle.stroke;
+              if (oStyle.strokeWidth) cEl.style.strokeWidth = oStyle.strokeWidth;
+              if (oStyle.fill) cEl.style.fill = oStyle.fill;
+
+              // Styling details
+              cEl.style.background = oStyle.background;
+              cEl.style.backgroundColor = oStyle.backgroundColor;
+              cEl.style.color = oStyle.color;
+              cEl.style.border = oStyle.border;
+              cEl.style.borderRadius = oStyle.borderRadius;
+              cEl.style.boxShadow = oStyle.boxShadow;
+              cEl.style.padding = oStyle.padding;
+            }
+          };
+
+          copyStyles('.react-flow__renderer');
+          copyStyles('.react-flow__viewport');
+          copyStyles('.react-flow__edges');
+          copyStyles('.react-flow__nodes');
+          copyStyles('.react-flow__edge');
+          copyStyles('.react-flow__edge-path');
+          copyStyles('.react-flow__node');
+          copyStyles('.react-flow__background');
+          copyStyles('.react-flow__container');
+        }
+      });
+
+      await new Promise((resolve, reject) => {
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            reject(new Error('Canvas toBlob returned null'));
+            return;
+          }
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.download = `P2I_Dashboard_Report_${new Date().toISOString().slice(0, 10)}.png`;
+          link.href = url;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setTimeout(() => {
+            URL.revokeObjectURL(url);
+          }, 1000);
+          resolve();
+        }, 'image/png');
+      });
+    } catch (err) {
+      console.error('Screenshot failed:', err);
+    } finally {
+      // Restore root element style
+      if (originalRootStyle.height) el.style.setProperty('height', originalRootStyle.height);
+      else el.style.removeProperty('height');
+
+      if (originalRootStyle.overflowX) el.style.setProperty('overflow-x', originalRootStyle.overflowX);
+      else el.style.removeProperty('overflow-x');
+
+      if (originalRootStyle.overflowY) el.style.setProperty('overflow-y', originalRootStyle.overflowY);
+      else el.style.removeProperty('overflow-y');
+
+      if (originalRootStyle.maxHeight) el.style.setProperty('max-height', originalRootStyle.maxHeight);
+      else el.style.removeProperty('max-height');
+
+      // Restore scroll containers style
+      scrollContainers.forEach(({ node, overflowX, overflowY, height, maxHeight }) => {
+        if (overflowX) node.style.setProperty('overflow-x', overflowX);
+        else node.style.removeProperty('overflow-x');
+
+        if (overflowY) node.style.setProperty('overflow-y', overflowY);
+        else node.style.removeProperty('overflow-y');
+
+        if (height) node.style.setProperty('height', height);
+        else node.style.removeProperty('height');
+
+        if (maxHeight) node.style.setProperty('max-height', maxHeight);
+        else node.style.removeProperty('max-height');
+      });
+
+      setScreenshotting(false);
+    }
+  };
   const [loadProg, setLoadProg] = useState(0);
   const [loadLabel, setLoadLabel] = useState('');
   const [filters, setFilters] = useState({});
@@ -2295,7 +2506,42 @@ export default function P2IDashboard({ currentUser, onSignOut, onBackHome }) {
     }
   }, [currentUser, dataLoaded, refreshTrigger]);
 
+  useEffect(() => {
+    if (uploadStepOverride) {
+      setUploadStep(uploadStepOverride);
+    }
+  }, [uploadStepOverride]);
+
+  useEffect(() => {
+    const current = window.history.state;
+    if (current && current.activeModule === 'p2i') {
+      if (current.dataLoaded !== undefined) setDataLoaded(current.dataLoaded);
+      if (current.uploadStep !== undefined) setUploadStep(current.uploadStep);
+      if (current.introStep !== undefined) setIntroStep(current.introStep);
+    }
+
+    const handlePopState = (event) => {
+      if (event.state && event.state.activeModule === 'p2i') {
+        if (event.state.dataLoaded !== undefined) setDataLoaded(event.state.dataLoaded);
+        if (event.state.uploadStep !== undefined) setUploadStep(event.state.uploadStep);
+        if (event.state.introStep !== undefined) setIntroStep(event.state.introStep);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  useEffect(() => {
+    const current = window.history.state;
+    if (!current || current.activeModule !== 'p2i' || current.dataLoaded !== dataLoaded || current.uploadStep !== uploadStep || current.introStep !== introStep) {
+      window.history.pushState({ activeModule: 'p2i', dataLoaded, uploadStep, introStep }, '');
+    }
+  }, [dataLoaded, uploadStep, introStep]);
+
   const handleLoadOldFile = async (file_id) => {
+    setChartsReady(false);
+    setPmReady(false);
     handleLoadingChange(true, 50, 'Loading previous dashboard...');
     try {
       const r = await fetch(`${API}/p2i/load_file`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: currentUser, file_id }) });
@@ -2303,8 +2549,10 @@ export default function P2IDashboard({ currentUser, onSignOut, onBackHome }) {
       intentToUpload.current = false;
       setDataLoaded(true);
       handleRefresh();
-    } catch (e) { alert('Error loading dashboard: ' + e.message); }
-    finally { setTimeout(() => handleLoadingChange(false, 100, ''), 500); }
+    } catch (e) {
+      alert('Error loading dashboard: ' + e.message);
+      handleLoadingChange(false, 100, '');
+    }
   };
 
   const logAction = useCallback((action, details) => {
@@ -2318,6 +2566,12 @@ export default function P2IDashboard({ currentUser, onSignOut, onBackHome }) {
     if (source) setUploadStepOverride(source);
     setMappingError(err || null);
     intentToUpload.current = false;
+    if (err) {
+      handleLoadingChange(false, 100, '');
+    } else {
+      setChartsReady(false);
+      setPmReady(false);
+    }
     setDataLoaded(true);
     handleRefresh();
   };
@@ -2402,37 +2656,54 @@ export default function P2IDashboard({ currentUser, onSignOut, onBackHome }) {
 
   useEffect(() => {
     if (!dataLoaded) return;
-    if (chartsReady) setDashboardLoading(true);
-    const cq = effectiveQStr();
-    const arr = (u, s) => fetch(u).then(r => r.ok ? r.json() : []).then(d => s(Array.isArray(d) ? d : [])).catch(() => s([]));
-    const promises = [
-      fetch(`${API}/p2i/kpis${cq}`).then(r => { if (!r.ok) return {}; return r.json(); }).then(d => setKpis(d)).catch(() => setKpis({})),
-      arr(`${API}/p2i/charts/activity${cq}`, setActData),
-      arr(`${API}/p2i/charts/monthly${cq}`, setMonData),
-      arr(`${API}/p2i/charts/company${cq}`, setCompData),
-      arr(`${API}/p2i/charts/plant${cq}`, setPlantData),
-      arr(`${API}/p2i/charts/material${cq}`, setMatnrData),
-      arr(`${API}/p2i/charts/vendors${cq}`, setVendData),
-      arr(`${API}/p2i/charts/leadtime${cq}`, setLtData),
-      arr(`${API}/p2i/charts/ernam${cq}`, setErnamData),
-      arr(`${API}/p2i/cases${cq}`, setCaseTableData),
-      arr(`${API}/p2i/charts/happy_path${cq}`, setHappyPathData),
-      arr(`${API}/p2i/charts/bottleneck${cq}`, setBottleneckData),
-      arr(`${API}/p2i/charts/operation_reversals${cq}`, setOpReversalData),
-      arr(`${API}/p2i/charts/gi_before_confirm_ernam${cq}`, setGiConfirmData),
-      arr(`${API}/p2i/charts/plant_lead_time${cq}`, setPlantLtData),
-      arr(`${API}/p2i/charts/po_rev_timeline${cq}`, setPoRevTimeline),
-    ];
-    Promise.all(promises).finally(() => { setDashboardLoading(false); setChartsReady(true); });
-  }, [effectiveQStr, dataLoaded, refreshTrigger]);
-
-  useEffect(() => {
-    if (!dataLoaded) return;
-    const qStr = effectiveQStr();
+    setDashboardLoading(true);
     if (pmReady) setPmLoading(true);
     setPmError('');
-    fetch(`${API}/p2i/process-map${qStr}`).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }).then(d => { setRawGraphData(d); buildFlowMap(d.nodes, d.edges, setRfNodes, setRfEdges, layoutDir); }).catch(err => setPmError(`Failed: ${err.message}`)).finally(() => { setPmLoading(false); setPmReady(true); });
-  }, [effectiveQStr, dataLoaded, refreshTrigger]);
+    const startTime = Date.now();
+    const cq = effectiveQStr();
+
+    fetch(`${API}/p2i/dashboard-batch${cq}`)
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then(d => {
+        setKpis(d.kpis || { total_orders: 0 });
+        setActData(d.activity || []);
+        setMonData(d.monthly || []);
+        setCompData(d.company || []);
+        setPlantData(d.plant || []);
+        setMatnrData(d.material || []);
+        setVendData(d.vendors || []);
+        setLtData(d.leadtime || []);
+        setErnamData(d.ernam || []);
+        setCaseTableData(d.cases || []);
+        setHappyPathData(d.happy_path || []);
+        setBottleneckData(d.bottleneck || []);
+        setOpReversalData(d.operation_reversals || []);
+        setGiConfirmData(d.gi_before_confirm_ernam || []);
+        setPlantLtData(d.plant_lead_time || []);
+        setPoRevTimeline(d.po_rev_timeline || []);
+
+        if (d.process_map) {
+          setRawGraphData(d.process_map);
+        }
+      })
+      .catch(err => {
+        console.error("Failed to load dashboard batch:", err);
+        setKpis({ total_orders: 0 });
+        setActData([]);
+        setPmError(`Failed: ${err.message}`);
+      })
+      .finally(() => {
+        const elapsed = Date.now() - startTime;
+        const minDelay = 1200;
+        const remaining = Math.max(0, minDelay - elapsed);
+        setTimeout(() => {
+          setDashboardLoading(false);
+          setChartsReady(true);
+          setPmLoading(false);
+          setPmReady(true);
+        }, remaining);
+      });
+  }, [effectiveQStr, dataLoaded, refreshTrigger, pmReady]);
 
   useEffect(() => { if (dataLoaded && chartsReady && pmReady && loading) setLoading(false); }, [dataLoaded, chartsReady, pmReady, loading]);
   useEffect(() => { if (rawGraphData) buildFlowMap(rawGraphData.nodes, rawGraphData.edges, setRfNodes, setRfEdges, layoutDir); }, [layoutDir, rawGraphData]);
@@ -2455,7 +2726,7 @@ export default function P2IDashboard({ currentUser, onSignOut, onBackHome }) {
   const hasActiveFilters = Object.values(selected).some(v => v && v !== 'ALL') || !!crossFilter;
 
   return (
-    <div style={{ fontFamily: "'Segoe UI',-apple-system,sans-serif", background: C.bg, height: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div ref={screenshotRef} style={{ fontFamily: "'Segoe UI',-apple-system,sans-serif", background: C.bg, height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes cometFlow{from{stroke-dashoffset:200}to{stroke-dashoffset:0}}
@@ -2502,6 +2773,40 @@ export default function P2IDashboard({ currentUser, onSignOut, onBackHome }) {
               <button onClick={handleResetData} style={{ fontSize: 11, fontWeight: 600, background: 'transparent', color: 'rgba(255,255,255,0.75)', border: 'none', borderLeft: '1px solid rgba(255,255,255,0.15)', padding: '8px 14px', cursor: 'pointer', whiteSpace: 'nowrap' }} onMouseOver={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = '#fff'; }} onMouseOut={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.75)'; }}>📂 Upload New File</button>
             </div>
           )}
+          {dataLoaded && (
+            <button
+              id="p2i-screenshot-btn"
+              onClick={handleScreenshot}
+              title="Download full report screenshot"
+              style={{
+                width: 36, height: 36, borderRadius: '50%',
+                background: screenshotting
+                  ? 'rgba(217,119,6,0.5)'
+                  : 'linear-gradient(135deg, rgba(217,119,6,0.9) 0%, rgba(160,80,0,0.95) 100%)',
+                border: '1.5px solid rgba(255,255,255,0.25)',
+                boxShadow: screenshotting
+                  ? '0 0 0 3px rgba(217,119,6,0.4)'
+                  : '0 2px 12px rgba(217,119,6,0.45), 0 0 0 1px rgba(255,255,255,0.08)',
+                cursor: screenshotting ? 'not-allowed' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0, transition: 'all 0.22s ease',
+                marginLeft: 8,
+              }}
+              onMouseOver={e => { if (!screenshotting) { e.currentTarget.style.transform = 'scale(1.12)'; e.currentTarget.style.boxShadow = '0 4px 18px rgba(217,119,6,0.7), 0 0 0 1px rgba(255,255,255,0.15)'; } }}
+              onMouseOut={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(217,119,6,0.45), 0 0 0 1px rgba(255,255,255,0.08)'; }}
+            >
+              {screenshotting ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1s linear infinite' }}>
+                  <path d="M21 12a9 9 0 11-6.219-8.56" />
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+                  <circle cx="12" cy="13" r="4" />
+                </svg>
+              )}
+            </button>
+          )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 16 }}>
             <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.2)' }} />
             <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>User: <strong style={{ color: '#fff' }}>{currentUser}</strong></div>
@@ -2514,10 +2819,22 @@ export default function P2IDashboard({ currentUser, onSignOut, onBackHome }) {
       <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px 40px', display: 'flex', flexDirection: 'column', gap: 10 }}>
 
         {!dataLoaded && (
-          <UploadBanner currentUser={currentUser} onUploaded={onUploaded} serverOk={serverOk} onLoadingChange={handleLoadingChange} myFiles={myFiles} fetchingFiles={fetchingFiles} handleLoadOldFile={handleLoadOldFile} defaultStep={uploadStepOverride} />
+          <UploadBanner
+            currentUser={currentUser}
+            onUploaded={onUploaded}
+            serverOk={serverOk}
+            onLoadingChange={handleLoadingChange}
+            myFiles={myFiles}
+            fetchingFiles={fetchingFiles}
+            handleLoadOldFile={handleLoadOldFile}
+            step={uploadStep}
+            setStep={setUploadStep}
+            introStep={introStep}
+            setIntroStep={setIntroStep}
+          />
         )}
 
-        {dataLoaded && (mappingError || (kpis && kpis.total_orders === 0)) && (
+        {dataLoaded && (mappingError || (kpis && kpis.total_orders === 0 && !hasActiveFilters)) && (
           <div style={{ background: '#FFF4CE', border: '1px solid #FDE7E9', borderRadius: 8, padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <span style={{ fontSize: 20 }}>⚠️</span>
@@ -2692,6 +3009,47 @@ export default function P2IDashboard({ currentUser, onSignOut, onBackHome }) {
           )}
         </>)}
       </div>
+      {screenshotting && (
+        <div
+          id="screenshot-loading-overlay"
+          className="no-screenshot"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 99999,
+            background: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 16
+          }}
+        >
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            background: 'rgba(30, 41, 59, 0.9)',
+            padding: '30px 50px',
+            borderRadius: '12px',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)',
+            color: '#fff',
+            gap: 12
+          }}>
+            <div style={{
+              width: 36, height: 36,
+              border: '3px solid rgba(255,255,255,0.2)',
+              borderTop: `3px solid ${C.amber}`,
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite'
+            }} />
+            <div style={{ fontSize: 16, fontWeight: 700 }}>Generating Screenshot...</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>Please wait while we capture the dashboard.</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
