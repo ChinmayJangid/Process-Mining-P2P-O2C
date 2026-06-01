@@ -10,6 +10,7 @@ import {
   CartesianGrid
 } from 'recharts';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
+import html2canvas from 'html2canvas';
 import './App.css';
 
 const C = {
@@ -104,7 +105,54 @@ const FilterSelect = ({ label, value, options, onChange }) => (
   </div>
 );
 
-const ChartCard = React.memo(({ title, subtitle, children, highlighted, onClear, style = {}, loading = false }) => (
+const renderSkeleton = (type) => {
+  if (type === 'pie') {
+    return (
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 10 }}>
+        <div className="chart-skeleton-bar" style={{ width: 140, height: 140, borderRadius: '50%', background: 'transparent', border: '30px solid #eaecef' }} />
+      </div>
+    );
+  }
+  if (type === 'bar-horizontal') {
+    return (
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-around', gap: 12, marginTop: 10, paddingRight: 20 }}>
+        {[85, 45, 65, 30, 75].map((w, i) => (
+          <div key={i} className="chart-skeleton-bar" style={{ height: 20, width: `${w}%` }} />
+        ))}
+      </div>
+    );
+  }
+  if (type === 'timeline') {
+    return (
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16, marginTop: 10 }}>
+        {[1, 2, 3, 4].map((_, i) => (
+          <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <div className="chart-skeleton-bar" style={{ width: 16, height: 16, borderRadius: '50%', flexShrink: 0 }} />
+            <div className="chart-skeleton-bar" style={{ height: 12, width: `${60 + (i % 3) * 15}%` }} />
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (type === 'line') {
+    return (
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', marginTop: 10, position: 'relative' }}>
+        <svg width="100%" height="80%" viewBox="0 0 100 50" preserveAspectRatio="none">
+          <path d="M 0 40 Q 25 10 50 30 T 100 10" fill="none" stroke="#eaecef" strokeWidth="3" />
+        </svg>
+      </div>
+    );
+  }
+  return (
+    <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', gap: 8, marginTop: 10 }}>
+      {[35, 65, 40, 80, 55, 90].map((h, i) => (
+        <div key={i} className="chart-skeleton-bar" style={{ flex: 1, height: `${h}%` }} />
+      ))}
+    </div>
+  );
+};
+
+const ChartCard = React.memo(({ title, subtitle, children, highlighted, onClear, style = {}, loading = false, skeletonType = 'bar-vertical' }) => (
   <div style={{ background: C.card, borderRadius: 8, padding: '12px 14px', border: highlighted ? `1.5px solid ${C.green}` : `1px solid ${C.border}`, boxShadow: '0 2px 8px rgba(0,0,0,.05)', transition: 'all .2s', display: 'flex', flexDirection: 'column', ...style }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
       <div>
@@ -114,6 +162,12 @@ const ChartCard = React.memo(({ title, subtitle, children, highlighted, onClear,
       {highlighted && onClear && (<button onClick={onClear} style={{ fontSize: 11, color: '#fff', background: C.green, border: 'none', borderRadius: 4, padding: '3px 9px', cursor: 'pointer', fontWeight: 600, flexShrink: 0 }}>Clear</button>)}
     </div>
     <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
+      {loading && (
+        <div className="chart-skeleton-container" style={{ position: 'absolute', inset: 0, zIndex: 10, background: C.card, display: 'flex', flexDirection: 'column', gap: 12, padding: 10 }}>
+          <div className="chart-skeleton-bar" style={{ width: '40%', height: 14 }} />
+          {renderSkeleton(skeletonType)}
+        </div>
+      )}
       <div style={{ opacity: loading ? 0 : 1, transition: 'opacity 0.3s', height: '100%' }}>{children}</div>
     </div>
   </div>
@@ -342,6 +396,209 @@ export default function HRJDashboard({ currentUser, onSignOut, onBackHome }) {
   const [showAvailablePopup, setShowAvailablePopup] = useState(false);
   const [hoveredSide, setHoveredSide] = useState(null);
   const [showFaqModal, setShowFaqModal] = useState(false);
+  const [chartsLoading, setChartsLoading] = useState(true);
+
+  useEffect(() => {
+    if (step === 'dashboard') {
+      setChartsLoading(true);
+      const timer = setTimeout(() => {
+        setChartsLoading(false);
+      }, 1200);
+      return () => clearTimeout(timer);
+    }
+  }, [step]);
+
+  useEffect(() => {
+    const current = window.history.state;
+    if (current && current.activeModule === 'hrj') {
+      if (current.step !== undefined) setStep(current.step);
+    }
+
+    const handlePopState = (event) => {
+      if (event.state && event.state.activeModule === 'hrj') {
+        if (event.state.step !== undefined) setStep(event.state.step);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  useEffect(() => {
+    const current = window.history.state;
+    if (!current || current.activeModule !== 'hrj' || current.step !== step) {
+      window.history.pushState({ activeModule: 'hrj', step }, '');
+    }
+  }, [step]);
+
+  const screenshotRef = useRef(null);
+  const [screenshotting, setScreenshotting] = useState(false);
+
+  const handleScreenshot = async () => {
+    if (!screenshotRef.current || screenshotting) return;
+    setScreenshotting(true);
+    const el = screenshotRef.current;
+
+    const originalRootStyle = {
+      height: el.style.height,
+      overflowX: el.style.overflowX,
+      overflowY: el.style.overflowY,
+      maxHeight: el.style.maxHeight,
+    };
+
+    el.style.setProperty('height', 'auto', 'important');
+    el.style.setProperty('overflow-x', 'visible', 'important');
+    el.style.setProperty('overflow-y', 'visible', 'important');
+    el.style.setProperty('max-height', 'none', 'important');
+
+    const scrollContainers = [];
+    const allElements = el.querySelectorAll('div[style*="overflow"]');
+    allElements.forEach((node) => {
+      const style = window.getComputedStyle(node);
+      if (
+        style.overflowY === 'auto' ||
+        style.overflowY === 'scroll' ||
+        style.overflowX === 'auto' ||
+        style.overflowX === 'scroll' ||
+        style.overflow === 'auto' ||
+        style.overflow === 'scroll'
+      ) {
+        scrollContainers.push({
+          node,
+          overflowX: node.style.overflowX,
+          overflowY: node.style.overflowY,
+          height: node.style.height,
+          maxHeight: node.style.maxHeight,
+        });
+        node.style.setProperty('overflow-x', 'visible', 'important');
+        node.style.setProperty('overflow-y', 'visible', 'important');
+        node.style.setProperty('height', 'auto', 'important');
+        node.style.setProperty('max-height', 'none', 'important');
+      }
+    });
+
+    try {
+      await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 100)));
+
+      const canvas = await html2canvas(el, {
+        scale: 1,
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: '#F0F2F5',
+        logging: false,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: el.scrollWidth,
+        windowHeight: el.scrollHeight,
+        width: el.scrollWidth,
+        height: el.scrollHeight,
+        ignoreElements: (node) => {
+          if (node.id && node.id.includes('screenshot-btn')) return true;
+          if (node.classList && (node.classList.contains('no-screenshot') || node.classList.contains('screenshot-btn'))) return true;
+          return false;
+        },
+        onclone: (clonedDoc) => {
+          const copyStyles = (selector) => {
+            const originalEls = el.querySelectorAll(selector);
+            const clonedEls = clonedDoc.querySelectorAll(selector);
+            for (let i = 0; i < originalEls.length && i < clonedEls.length; i++) {
+              const oEl = originalEls[i];
+              const cEl = clonedEls[i];
+              const oStyle = window.getComputedStyle(oEl);
+
+              // Copy layout & positioning styles
+              cEl.style.position = oStyle.position;
+              cEl.style.width = oStyle.width;
+              cEl.style.height = oStyle.height;
+              cEl.style.top = oStyle.top;
+              cEl.style.left = oStyle.left;
+              cEl.style.transform = oStyle.transform;
+              cEl.style.transformOrigin = oStyle.transformOrigin;
+              cEl.style.display = oStyle.display;
+              cEl.style.opacity = oStyle.opacity;
+              cEl.style.overflow = oStyle.overflow;
+
+              // SVG specific styles
+              if (oStyle.stroke) cEl.style.stroke = oStyle.stroke;
+              if (oStyle.strokeWidth) cEl.style.strokeWidth = oStyle.strokeWidth;
+              if (oStyle.fill) cEl.style.fill = oStyle.fill;
+
+              // Styling details
+              cEl.style.background = oStyle.background;
+              cEl.style.backgroundColor = oStyle.backgroundColor;
+              cEl.style.color = oStyle.color;
+              cEl.style.border = oStyle.border;
+              cEl.style.borderRadius = oStyle.borderRadius;
+              cEl.style.boxShadow = oStyle.boxShadow;
+              cEl.style.padding = oStyle.padding;
+            }
+          };
+
+          copyStyles('.react-flow__renderer');
+          copyStyles('.react-flow__viewport');
+          copyStyles('.react-flow__edges');
+          copyStyles('.react-flow__nodes');
+          copyStyles('.react-flow__edge');
+          copyStyles('.react-flow__edge-path');
+          copyStyles('.react-flow__node');
+          copyStyles('.react-flow__background');
+          copyStyles('.react-flow__container');
+        }
+      });
+
+      await new Promise((resolve, reject) => {
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            reject(new Error('Canvas toBlob returned null'));
+            return;
+          }
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.download = `HRJ_Dashboard_Report_${new Date().toISOString().slice(0, 10)}.png`;
+          link.href = url;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setTimeout(() => {
+            URL.revokeObjectURL(url);
+          }, 1000);
+          resolve();
+        }, 'image/png');
+      });
+    } catch (err) {
+      console.error('Screenshot failed:', err);
+    } finally {
+      // Restore root element style
+      if (originalRootStyle.height) el.style.setProperty('height', originalRootStyle.height);
+      else el.style.removeProperty('height');
+
+      if (originalRootStyle.overflowX) el.style.setProperty('overflow-x', originalRootStyle.overflowX);
+      else el.style.removeProperty('overflow-x');
+
+      if (originalRootStyle.overflowY) el.style.setProperty('overflow-y', originalRootStyle.overflowY);
+      else el.style.removeProperty('overflow-y');
+
+      if (originalRootStyle.maxHeight) el.style.setProperty('max-height', originalRootStyle.maxHeight);
+      else el.style.removeProperty('max-height');
+
+      // Restore scroll containers style
+      scrollContainers.forEach(({ node, overflowX, overflowY, height, maxHeight }) => {
+        if (overflowX) node.style.setProperty('overflow-x', overflowX);
+        else node.style.removeProperty('overflow-x');
+
+        if (overflowY) node.style.setProperty('overflow-y', overflowY);
+        else node.style.removeProperty('overflow-y');
+
+        if (height) node.style.setProperty('height', height);
+        else node.style.removeProperty('height');
+
+        if (maxHeight) node.style.setProperty('max-height', maxHeight);
+        else node.style.removeProperty('max-height');
+      });
+
+      setScreenshotting(false);
+    }
+  };
 
   const [selected, setSelected] = useState({
     case_id: 'ALL',
@@ -784,11 +1041,12 @@ export default function HRJDashboard({ currentUser, onSignOut, onBackHome }) {
   };
 
   return (
-    <div style={{
+    <div ref={screenshotRef} style={{
       fontFamily: "'Segoe UI', -apple-system, sans-serif",
       background: C.bg, height: '100vh', display: 'flex', flexDirection: 'column'
     }}>
       <style>{`
+        @keyframes spin{to{transform:rotate(360deg)}}
         *{box-sizing:border-box}
         ::-webkit-scrollbar{width:5px;height:5px}
         ::-webkit-scrollbar-track{background:transparent}
@@ -849,13 +1107,16 @@ export default function HRJDashboard({ currentUser, onSignOut, onBackHome }) {
                 🔒
               </div>
               <h3 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 1rem', letterSpacing: '-0.3px', color: '#fff' }}>
-                Uploading Unavailable
+                Uploading Restricted
               </h3>
               <p style={{ fontSize: '14px', color: '#cbd5e1', lineHeight: '1.5', margin: '0 0 1.5rem' }}>
-                Uploading is not available in the current environment. It is available in the production environment. Kindly contact administrator to get access.
+                Uploading is Restricted in the current environment. Kindly contact administrator to get access.
               </p>
               <button
-                onClick={() => setShowAvailablePopup(false)}
+                onClick={() => {
+                  window.open('https://ajalabs.ai/', '_blank', 'noopener,noreferrer');
+                  setShowAvailablePopup(false);
+                }}
                 style={{
                   background: C.green,
                   color: '#fff',
@@ -903,6 +1164,33 @@ export default function HRJDashboard({ currentUser, onSignOut, onBackHome }) {
           <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>
             User: <strong style={{ color: '#fff' }}>{currentUser}</strong>
           </div>
+          {step === 'dashboard' && (
+            <button
+              id="hrj-screenshot-btn"
+              onClick={handleScreenshot}
+              title="Download full report screenshot"
+              style={{
+                width: 34, height: 34, borderRadius: '50%',
+                background: screenshotting ? 'rgba(46,10,74,0.5)' : 'linear-gradient(135deg, rgba(80,30,120,0.9) 0%, rgba(46,10,74,0.95) 100%)',
+                border: '1.5px solid rgba(255,255,255,0.25)',
+                boxShadow: screenshotting ? '0 0 0 3px rgba(80,30,120,0.4)' : '0 2px 12px rgba(80,30,120,0.45), 0 0 0 1px rgba(255,255,255,0.08)',
+                cursor: screenshotting ? 'not-allowed' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0, transition: 'all 0.22s ease',
+              }}
+              onMouseOver={e => { if (!screenshotting) { e.currentTarget.style.transform = 'scale(1.12)'; } }}
+              onMouseOut={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+            >
+              {screenshotting ? (
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1s linear infinite' }}><path d="M21 12a9 9 0 11-6.219-8.56" /></svg>
+              ) : (
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+                  <circle cx="12" cy="13" r="4" />
+                </svg>
+              )}
+            </button>
+          )}
           <button onClick={onSignOut} style={{
             background: 'rgba(209, 52, 56, 0.85)', color: '#fff', border: 'none',
             padding: '6px 12px', borderRadius: 4, cursor: 'pointer', fontSize: 11, fontWeight: 700,
@@ -924,12 +1212,23 @@ export default function HRJDashboard({ currentUser, onSignOut, onBackHome }) {
           </AnimatePresence>
           <div className="process-ribbon-container">
             <div className="process-ribbon-content">
-              {[...hrjShortSteps, ...hrjShortSteps, ...hrjShortSteps, ...hrjShortSteps].map((s, i) => (
-                <React.Fragment key={i}>
-                  <div className="process-ribbon-item">{s.icon}<span style={{ marginLeft: 4 }}>{s.text}</span></div>
-                  {i < hrjShortSteps.length * 4 - 1 && <div className="process-ribbon-arrow">→</div>}
-                </React.Fragment>
-              ))}
+              {[...hrjShortSteps, ...hrjShortSteps, ...hrjShortSteps, ...hrjShortSteps].map((s, i) => {
+                const isFirst = i % hrjShortSteps.length === 0;
+                return (
+                  <React.Fragment key={i}>
+                    <div
+                      className="process-ribbon-item"
+                      style={isFirst ? { background: C.headerBg, color: '#fff', borderColor: C.headerBg, boxShadow: `0 4px 12px ${C.headerBg}33` } : {}}
+                    >
+                      <span style={{ display: 'inline-flex', alignItems: 'center', color: isFirst ? '#fff' : 'inherit' }}>
+                        {s.icon}
+                      </span>
+                      <span style={{ marginLeft: 4 }}>{s.text}</span>
+                    </div>
+                    {i < hrjShortSteps.length * 4 - 1 && <div className="process-ribbon-arrow">→</div>}
+                  </React.Fragment>
+                );
+              })}
             </div>
           </div>
           <div style={{ maxWidth: 1100, width: '100%', display: 'flex', flexDirection: 'column', gap: 16, padding: '20px 24px 30px' }}>
@@ -1072,11 +1371,16 @@ export default function HRJDashboard({ currentUser, onSignOut, onBackHome }) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '24px',
                 border: `1.5px solid ${C.green}30`,
                 flexShrink: 0
               }}>
-                🔌
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="3" width="6" height="6" rx="1" />
+                  <rect x="16" y="3" width="6" height="6" rx="1" />
+                  <rect x="16" y="15" width="6" height="6" rx="1" />
+                  <rect x="2" y="15" width="6" height="6" rx="1" />
+                  <path d="M8 6h8M19 9v6M16 18H8M5 15V9" />
+                </svg>
               </motion.div>
               <motion.div layout style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <motion.div layout style={{ fontSize: '1.15rem', fontWeight: 700, color: '#1B2A4A', marginBottom: '0.75rem', whiteSpace: hoveredSide === 'csv' ? 'nowrap' : 'normal' }}>
@@ -1090,8 +1394,8 @@ export default function HRJDashboard({ currentUser, onSignOut, onBackHome }) {
                       exit={{ opacity: 0 }}
                       style={{ fontSize: '12.5px', color: '#605E5C', lineHeight: '1.5', margin: 0 }}
                     >
-                      Connect directly to your HR database. Query and consolidate transaction tables such as <strong>HR_APPLICANTS</strong>, <strong>HR_OFFERS</strong>, and <strong>HR_PROVISIONING</strong> automatically.
-                    </motion.p>
+                      Upload raw ERP tables  and let the system
+                      automatically build the process event log.                    </motion.p>
                   )}
                 </AnimatePresence>
               </motion.div>
@@ -1099,26 +1403,26 @@ export default function HRJDashboard({ currentUser, onSignOut, onBackHome }) {
                 layout
                 onClick={(e) => { e.stopPropagation(); setShowAvailablePopup(true); }}
                 style={{
-                  background: 'transparent',
-                  color: C.green,
-                  border: `1.5px solid ${C.green}`,
-                  padding: '10px 20px',
-                  borderRadius: '6px',
+                  background: C.green,
+                  color: '#fff',
+                  border: 'none',
+                  padding: '11px 28px',
+                  borderRadius: '7px',
                   fontWeight: 700,
-                  fontSize: '12.5px',
+                  fontSize: '13px',
                   cursor: 'pointer',
                   width: '100%',
                   marginTop: 'auto',
                   transition: 'all 0.2s'
                 }}
-                onMouseOver={e => { e.currentTarget.style.background = `${C.green}10`; }}
-                onMouseOut={e => { e.currentTarget.style.background = 'transparent'; }}
+                onMouseOver={e => { e.currentTarget.style.background = C.greenDark; }}
+                onMouseOut={e => { e.currentTarget.style.background = C.green; }}
               >
                 {hoveredSide === 'csv' ? 'Connect' : 'Connect Database'}
               </motion.button>
             </motion.div>
 
-            {/* Card 2: Upload Pre-built CSV */}
+            {/* Card 2: Upload Pre-built CSV or Excel */}
             <motion.div
               layout
               whileHover={{ y: -4, boxShadow: '0 12px 30px rgba(0,0,0,0.08)' }}
@@ -1150,15 +1454,18 @@ export default function HRJDashboard({ currentUser, onSignOut, onBackHome }) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '24px',
                 border: `1.5px solid ${C.green}30`,
                 flexShrink: 0
               }}>
-                📁
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <path d="M8 13h8M8 17h8" />
+                </svg>
               </motion.div>
               <motion.div layout style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <motion.div layout style={{ fontSize: '1.15rem', fontWeight: 700, color: '#1B2A4A', marginBottom: '0.75rem', whiteSpace: hoveredSide === 'build' ? 'nowrap' : 'normal' }}>
-                  Upload Pre-built CSV
+                  Upload Pre-built CSV or Excel
                 </motion.div>
                 <AnimatePresence>
                   {hoveredSide !== 'build' && (
@@ -1168,8 +1475,7 @@ export default function HRJDashboard({ currentUser, onSignOut, onBackHome }) {
                       exit={{ opacity: 0 }}
                       style={{ fontSize: '12.5px', color: '#605E5C', lineHeight: '1.5', margin: 0 }}
                     >
-                      Import a local CSV file with event logs. Maps columns for Candidate ID, Activity Name, Timestamp, and Operator resources.
-                    </motion.p>
+                      Already have a formatted event log? Upload your pre-built wide-format CSV or Excel directly to launch the dashboard.                    </motion.p>
                   )}
                 </AnimatePresence>
               </motion.div>
@@ -1177,25 +1483,26 @@ export default function HRJDashboard({ currentUser, onSignOut, onBackHome }) {
                 layout
                 onClick={(e) => { e.stopPropagation(); setShowAvailablePopup(true); }}
                 style={{
-                  background: 'transparent',
-                  color: C.green,
-                  border: `1.5px solid ${C.green}`,
-                  padding: '10px 20px',
-                  borderRadius: '6px',
+                  background: C.green,
+                  color: '#fff',
+                  border: 'none',
+                  padding: '11px 28px',
+                  borderRadius: '7px',
                   fontWeight: 700,
-                  fontSize: '12.5px',
+                  fontSize: '13px',
                   cursor: 'pointer',
                   width: '100%',
                   marginTop: 'auto',
                   transition: 'all 0.2s'
                 }}
-                onMouseOver={e => { e.currentTarget.style.background = `${C.green}10`; }}
-                onMouseOut={e => { e.currentTarget.style.background = 'transparent'; }}
+                onMouseOver={e => { e.currentTarget.style.background = C.greenDark; }}
+                onMouseOut={e => { e.currentTarget.style.background = C.green; }}
               >
-                {hoveredSide === 'build' ? 'Upload' : 'Upload CSV File'}
+                {hoveredSide === 'build' ? 'Upload' : 'Upload CSV or Excel'}
               </motion.button>
             </motion.div>
           </div>
+
         </div>
       )}
 
@@ -1287,7 +1594,7 @@ export default function HRJDashboard({ currentUser, onSignOut, onBackHome }) {
 
             {/* Core Analytics Charts */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, height: 600 }}>
-              <ChartCard title="Onboarding Funnel status" style={{ flex: 1 }}>
+              <ChartCard title="Onboarding Funnel status" loading={chartsLoading} skeletonType="pie" style={{ flex: 1 }}>
                 <ResponsiveContainer width="100%" height={180}>
                   <PieChart>
                     <Pie data={donutData} dataKey="value" cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={3}>
@@ -1301,7 +1608,7 @@ export default function HRJDashboard({ currentUser, onSignOut, onBackHome }) {
                 </ResponsiveContainer>
               </ChartCard>
 
-              <ChartCard title="Activity Occurrence" style={{ flex: 1.2 }}>
+              <ChartCard title="Activity Occurrence" loading={chartsLoading} skeletonType="bar-horizontal" style={{ flex: 1.2 }}>
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={barChartData} layout="vertical" margin={{ left: 10, right: 10, top: 5, bottom: 5 }}>
                     <XAxis type="number" stroke="#888" fontSize={9} />
@@ -1316,7 +1623,7 @@ export default function HRJDashboard({ currentUser, onSignOut, onBackHome }) {
 
           {/* Hiring Volume + Case Table */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <ChartCard title="Monthly Hiring Trend">
+            <ChartCard title="Monthly Hiring Trend" loading={chartsLoading} skeletonType="line">
               <ResponsiveContainer width="100%" height={260}>
                 <LineChart data={monthlyData} margin={{ left: 5, right: 20, top: 10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
@@ -1328,7 +1635,7 @@ export default function HRJDashboard({ currentUser, onSignOut, onBackHome }) {
               </ResponsiveContainer>
             </ChartCard>
 
-            <ChartCard title="Hiring Cases List & Checklist">
+            <ChartCard title="Hiring Cases List & Checklist" loading={chartsLoading} skeletonType="timeline">
               {selectedCaseId === 'ALL' ? (
                 <div style={{ overflowY: 'auto', height: 260 }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
@@ -1389,6 +1696,48 @@ export default function HRJDashboard({ currentUser, onSignOut, onBackHome }) {
                 </div>
               )}
             </ChartCard>
+          </div>
+        </div>
+      )}
+
+      {screenshotting && (
+        <div
+          id="screenshot-loading-overlay"
+          className="no-screenshot"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 99999,
+            background: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 16
+          }}
+        >
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            background: 'rgba(30, 41, 59, 0.9)',
+            padding: '30px 50px',
+            borderRadius: '12px',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)',
+            color: '#fff',
+            gap: 12
+          }}>
+            <div style={{
+              width: 36, height: 36,
+              border: '3px solid rgba(255,255,255,0.2)',
+              borderTop: `3px solid ${C.green}`,
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite'
+            }} />
+            <div style={{ fontSize: 16, fontWeight: 700 }}>Generating Screenshot...</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>Please wait while we capture the dashboard.</div>
           </div>
         </div>
       )}
