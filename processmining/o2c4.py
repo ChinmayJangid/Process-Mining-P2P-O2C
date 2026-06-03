@@ -353,24 +353,37 @@ def load_specific_file(req: LoadFileReq):
 
 @router.post("/upload")
 async def upload_csv(file: UploadFile = File(...), username: str = Form("Unknown"), column_mapping: str = Form("{}")):
-    if not file.filename.lower().endswith(".csv"):
-        raise HTTPException(400, "Only CSV files are supported")
+    fn = file.filename.lower()
+    is_excel = fn.endswith(".xlsx") or fn.endswith(".xls")
+    if not (fn.endswith(".csv") or is_excel):
+        raise HTTPException(400, "Only CSV and Excel files are supported")
     content = await file.read()
     try:
-        df = pd.read_csv(io.BytesIO(content), low_memory=False)
+        if is_excel:
+            df = pd.read_excel(io.BytesIO(content))
+            df = df.dropna(how="all")
+        else:
+            for enc in ("utf-8", "latin-1", "windows-1252"):
+                try:
+                    df = pd.read_csv(io.BytesIO(content), encoding=enc, low_memory=False)
+                    break
+                except (UnicodeDecodeError, pd.errors.ParserError, Exception):
+                    continue
+            else:
+                raise ValueError("Could not decode CSV with any supported encoding.")
         
         try:
             import json
             mapping = json.loads(column_mapping)
             if mapping:
                 df = df.rename(columns=mapping)
-                print(f"Applied column mapping for prebuilt CSV: {mapping}")
+                print(f"Applied column mapping for prebuilt file: {mapping}")
         except Exception as e:
             print(f"Error applying column mapping: {e}")
 
         print(f"[O2C INFO] {username} uploaded {file.filename}: {len(df):,} rows")
     except Exception as e:
-        raise HTTPException(400, f"Failed to read CSV: {e}")
+        raise HTTPException(400, f"Failed to read file: {e}")
 
     df = process_df(df)
     USER_DFS[username]  = df
