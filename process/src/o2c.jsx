@@ -193,7 +193,7 @@ const ProcessNode = React.memo(({ data }) => {
         width: 170,
         height: 165,
         borderRadius: '60%',
-        background: isHappyPath ? '#006B3C' : '#877b6fff',
+        background: freq === 0 ? '#D13438' : (isHappyPath ? '#006B3C' : '#877b6fff'),
         color: '#ffffff',
         display: 'flex',
         alignItems: 'center',
@@ -494,13 +494,18 @@ const buildFlowMap = (bNodes, bEdges, setRfNodes, setRfEdges, dir) => {
   const mxF = Math.max(1, ...(bNodes || []).map(n => n.frequency || 0));
   const mxE = Math.max(1, ...(bEdges || []).map(e => e.frequency || 0));
 
-  const nodes = (bNodes || []).map(n => {
-    let pos = dir === 'LR' ? (n.position_h || { x: 0, y: 0 }) : (n.position_v || { x: 0, y: 0 });
+  const nodes = (bNodes || []).map((n, index) => {
+    let basePos = dir === 'LR' ? (n.position_h || { x: 0, y: 0 }) : (n.position_v || { x: 0, y: 0 });
 
     // Scale horizontal spacing to accommodate the massive 700px width
     if (dir === 'LR') {
-      pos = { x: pos.x * 2.8, y: pos.y };
+      basePos = { x: basePos.x * 2.8, y: basePos.y };
     }
+
+    const pos = {
+      x: basePos.x + (index * 0.1),
+      y: basePos.y + (index * 0.1)
+    };
 
     return {
       id: n.id, type: 'processNode',
@@ -2242,15 +2247,23 @@ const O2CIntroScreen = ({ onGoTableBuild, onGoCsvUpload, introStep, setIntroStep
         <div className="process-ribbon-container">
           <div className="process-ribbon-content">
             {/* Render multiple times for seamless looping */}
-            {[...shortSteps, ...shortSteps, ...shortSteps, ...shortSteps].map((s, i) => (
-              <React.Fragment key={i}>
-                <div className="process-ribbon-item">
-                  {s.icon}
-                  <span style={{ marginLeft: 4 }}>{s.text}</span>
-                </div>
-                {i < shortSteps.length * 4 - 1 && <div className="process-ribbon-arrow">→</div>}
-              </React.Fragment>
-            ))}
+            {[...shortSteps, ...shortSteps, ...shortSteps, ...shortSteps].map((s, i) => {
+              const isFirst = i % shortSteps.length === 0;
+              return (
+                <React.Fragment key={i}>
+                  <div
+                    className="process-ribbon-item"
+                    style={isFirst ? { background: C.headerBg, color: '#fff', borderColor: C.headerBg, boxShadow: `0 4px 12px ${C.headerBg}33` } : {}}
+                  >
+                    <span style={{ display: 'inline-flex', alignItems: 'center', color: isFirst ? '#fff' : 'inherit' }}>
+                      {s.icon}
+                    </span>
+                    <span style={{ marginLeft: 4 }}>{s.text}</span>
+                  </div>
+                  {i < shortSteps.length * 4 - 1 && <div className="process-ribbon-arrow">→</div>}
+                </React.Fragment>
+              );
+            })}
           </div>
         </div>
 
@@ -2462,7 +2475,7 @@ const O2CIntroScreen = ({ onGoTableBuild, onGoCsvUpload, introStep, setIntroStep
 
 /* ── O2C Table Upload Screen ─────────────────────────────────────────────── */
 const O2CTableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFiles, fetchingFiles, handleLoadOldFile }) => {
-  const tables = [
+  const sapTables = [
     {
       name: 'VBAK', desc: 'Sales Document Header', isMandatory: true, required: [
         { col: 'VBELN', note: 'Sales order number — join key' },
@@ -2549,19 +2562,176 @@ const O2CTableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, m
       ]
     },
   ];
+
+  const oracleTables = [
+    {
+      name: 'OE_ORDER_HEADERS_ALL',
+      desc: 'Sales Order Header',
+      isMandatory: true,
+    },
+    {
+      name: 'OE_ORDER_LINES_ALL',
+      desc: 'Sales Order Line',
+      isMandatory: true,
+    },
+    {
+      name: 'WSH_DELIVERY_ASSIGNMENTS',
+      desc: 'Delivery Assignments',
+    },
+    {
+      name: 'WSH_NEW_DELIVERIES',
+      desc: 'Delivery Header',
+    },
+    {
+      name: 'WSH_DELIVERY_DETAILS',
+      desc: 'Delivery Line',
+    },
+    {
+      name: 'RA_CUSTOMER_TRX_ALL',
+      desc: 'Invoice Header',
+    },
+    {
+      name: 'RA_CUSTOMER_TRX_LINES_ALL',
+      desc: 'Invoice Line',
+    },
+    {
+      name: 'AR_RECEIVABLE_APPLICATIONS_ALL',
+      desc: 'Payment Application',
+    },
+    {
+      name: 'HZ_PARTIES',
+      desc: 'Customer Master',
+    },
+    {
+      name: 'AR_CASH_RECEIPTS_ALL',
+      desc: 'Cash Receipts',
+    }
+  ];
+
+  const d365Tables = [
+    {
+      name: 'SalesTable',
+      desc: 'Sales Order Header',
+      isMandatory: true,
+    },
+    {
+      name: 'SalesLine',
+      desc: 'Sales Order Line',
+      isMandatory: true,
+    },
+    {
+      name: 'CustPackingSlipJour',
+      desc: 'Packing Slip Header',
+    },
+    {
+      name: 'CustPackingSlipTrans',
+      desc: 'Packing Slip Line',
+    },
+    {
+      name: 'CustInvoiceJour',
+      desc: 'Invoice Header',
+    },
+    {
+      name: 'CustInvoiceTrans',
+      desc: 'Invoice Line',
+    },
+    {
+      name: 'CustSettlement',
+      desc: 'Payment Application',
+    },
+    {
+      name: 'CustTable',
+      desc: 'Customer Master',
+    },
+    {
+      name: 'CustTrans',
+      desc: 'Customer Transactions',
+    },
+    {
+      name: 'DirPartyTable',
+      desc: 'Party Directory',
+    }
+  ];
+
+  const zohoTables = [
+    {
+      name: 'Sales Document Header/Sales Document Item',
+      isMandatory: true,
+      desc: '',
+    },
+    {
+      name: 'Delivery Header/Delivery Item',
+      desc: '',
+    },
+    {
+      name: 'Billing Document Header/Billing Document Item',
+      desc: '',
+    },
+    {
+      name: 'Cleared Customer Items (FI)',
+      desc: '',
+    },
+    {
+      name: 'Customer Master — General',
+      desc: '',
+    }
+  ];
+
+  const othersTables = [
+    {
+      name: 'Sales Document Header/Sales Document Item',
+      isMandatory: true,
+      desc: '',
+    },
+    {
+      name: 'Delivery Header/Delivery Item',
+      desc: '',
+    },
+    {
+      name: 'Billing Document Header/Billing Document Item',
+      desc: '',
+    },
+    {
+      name: 'Cleared Customer Items (FI)',
+      desc: '',
+    },
+    {
+      name: 'Customer Master — General',
+      desc: '',
+    }
+  ];
+
   const [erpSystem, setErpSystem] = useState('');
-  const [tableStatus, setTableStatus] = useState(Object.fromEntries(tables.map(t => [t.name, 'idle'])));
-  const [tableMsg, setTableMsg] = useState(Object.fromEntries(tables.map(t => [t.name, ''])));
+  const activeTables = erpSystem === 'Oracle'
+    ? oracleTables
+    : erpSystem === 'Microsoft Dynamic 365'
+      ? d365Tables
+      : erpSystem === 'Zoho'
+        ? zohoTables
+        : erpSystem === 'Others'
+          ? othersTables
+          : sapTables;
+
+  const allTableNames = [
+    'VBAK', 'VBAP', 'VBFA', 'LIKP', 'LIPS', 'VBRK', 'VBRP', 'BSAD', 'KNA1',
+    'OE_ORDER_HEADERS_ALL', 'OE_ORDER_LINES_ALL', 'WSH_NEW_DELIVERIES', 'WSH_DELIVERY_DETAILS', 'WSH_DELIVERY_ASSIGNMENTS',
+    'RA_CUSTOMER_TRX_ALL', 'RA_CUSTOMER_TRX_LINES_ALL', 'AR_CASH_RECEIPTS_ALL', 'AR_RECEIVABLE_APPLICATIONS_ALL', 'HZ_PARTIES',
+    'SalesTable', 'SalesLine', 'CustPackingSlipJour', 'CustPackingSlipTrans', 'CustInvoiceJour', 'CustInvoiceTrans', 'CustSettlement', 'CustTable', 'CustTrans', 'DirPartyTable',
+    'Sales Document Header/Sales Document Item', 'Delivery Header/Delivery Item', 'Billing Document Header/Billing Document Item', 'Cleared Customer Items (FI)', 'Customer Master — General'
+  ];
+
+  const [tableStatus, setTableStatus] = useState(Object.fromEntries(allTableNames.map(name => [name, 'idle'])));
+  const [tableMsg, setTableMsg] = useState(Object.fromEntries(allTableNames.map(name => [name, ''])));
   const [appliedMappings, setAppliedMappings] = useState({});
   const [building, setBuilding] = useState(false);
   const [buildMsg, setBuildMsg] = useState('');
   const [colMapping, setColMapping] = useState(null);
   const [tableCols, setTableCols] = useState({});
   const [selectedFiles, setSelectedFiles] = useState({});
-  const fileRefs = useRef(Object.fromEntries(tables.map(t => [t.name, React.createRef()])));
+  const fileRefs = useRef(Object.fromEntries(allTableNames.map(name => [name, React.createRef()])));
 
-  const allDone = tables.filter(t => t.isMandatory).every(t => tableStatus[t.name] === 'done');
-  const anyUploading = tables.some(t => tableStatus[t.name] === 'uploading') || building;
+  const allDone = activeTables.filter(t => t.isMandatory).every(t => tableStatus[t.name] === 'done');
+  const anyUploading = activeTables.some(t => tableStatus[t.name] === 'uploading') || building;
   const tableBuilds = (myFiles || []).filter(f => f.source === 'table_build');
 
   // ── Restore already-uploaded tables from server on mount ──────────────────
@@ -2570,9 +2740,25 @@ const O2CTableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, m
       .then(r => r.ok ? r.json() : null)
       .then(d => {
         if (!d || !d.loaded) return;
-        d.loaded.forEach(tName => {
-          setTableStatus(p => ({ ...p, [tName]: 'done' }));
-          setTableMsg(p => ({ ...p, [tName]: 'Already on server' }));
+        d.loaded.forEach(backendName => {
+          // Update SAP table status
+          const sapMatch = sapTables.find(t => t.name === backendName);
+          if (sapMatch) {
+            setTableStatus(p => ({ ...p, [sapMatch.name]: 'done' }));
+            setTableMsg(p => ({ ...p, [sapMatch.name]: 'Already on server' }));
+          }
+          // Update Oracle table status
+          const oracleMatch = oracleTables.find(t => t.name === backendName);
+          if (oracleMatch) {
+            setTableStatus(p => ({ ...p, [oracleMatch.name]: 'done' }));
+            setTableMsg(p => ({ ...p, [oracleMatch.name]: 'Already on server' }));
+          }
+          // Update D365 table status
+          const d365Match = d365Tables.find(t => t.name === backendName);
+          if (d365Match) {
+            setTableStatus(p => ({ ...p, [d365Match.name]: 'done' }));
+            setTableMsg(p => ({ ...p, [d365Match.name]: 'Already on server' }));
+          }
         });
       }).catch(() => { });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2580,8 +2766,11 @@ const O2CTableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, m
 
   const uploadTable = async (tName, file) => {
     if (!file) return;
-    if (!file.name.toLowerCase().endsWith('.csv')) {
-      setTableStatus(p => ({ ...p, [tName]: 'error' })); setTableMsg(p => ({ ...p, [tName]: 'Only .csv accepted.' })); return;
+    const ext = file.name.toLowerCase();
+    if (!ext.endsWith('.csv') && !ext.endsWith('.xlsx') && !ext.endsWith('.xls')) {
+      setTableStatus(p => ({ ...p, [tName]: 'error' }));
+      setTableMsg(p => ({ ...p, [tName]: 'Only .csv or Excel files accepted.' }));
+      return;
     }
     setSelectedFiles(p => ({ ...p, [tName]: file }));
     performUpload(tName, file, {});
@@ -2596,7 +2785,7 @@ const O2CTableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, m
       const rPrev = await fetch(`${API}/o2c/transform/preview_columns`, { method: 'POST', body: formPreview });
       const dPrev = await rPrev.json();
       if (!rPrev.ok) throw new Error(dPrev.detail || `Failed to read CSV columns`);
-      const tDef = tables.find(t => t.name === tableName);
+      const tDef = activeTables.find(t => t.name === tableName);
       setColMapping({ tableName, file, tableDef: tDef, uploadedCols: dPrev.columns, mapping: {} });
     } catch (e) {
       setTableStatus(p => ({ ...p, [tableName]: 'error' }));
@@ -2607,6 +2796,7 @@ const O2CTableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, m
   const performUpload = async (tableName, file, mapping) => {
     setTableStatus(p => ({ ...p, [tableName]: 'uploading' }));
     setTableMsg(p => ({ ...p, [tableName]: '' }));
+
     const form = new FormData();
     form.append('file', file); form.append('table_name', tableName); form.append('username', currentUser || 'Unknown');
     form.append('column_mapping', JSON.stringify(mapping));
@@ -2646,7 +2836,6 @@ const O2CTableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, m
       clearInterval(ticker); onLoadingChange && onLoadingChange(false, 0, '');
       setBuilding(false);
 
-      const isMappingErr = e.message.includes('Column mapping is incorrect');
       // Extract the faulty table name if possible
       const match = e.message.match(/incorrect for (\w+)/);
       const tableName = match ? match[1] : null;
@@ -2661,6 +2850,15 @@ const O2CTableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, m
     }
   };
 
+  const handleClearTable = async (tableName) => {
+    await fetch(`${API}/o2c/transform/clear_table?table_name=${tableName}&username=${encodeURIComponent(currentUser || 'Unknown')}`, { method: 'DELETE' }).catch(console.error);
+    setTableStatus(p => ({ ...p, [tableName]: 'idle' }));
+    setTableMsg(p => ({ ...p, [tableName]: '' }));
+    setSelectedFiles(p => { const copy = { ...p }; delete copy[tableName]; return copy; });
+    setAppliedMappings(p => { const copy = { ...p }; delete copy[tableName]; return copy; });
+    if (fileRefs.current[tableName]?.current) fileRefs.current[tableName].current.value = '';
+  };
+
   const handleClearAll = async () => {
     if (!window.confirm("Are you sure you want to clear all uploaded tables?")) return;
     try {
@@ -2668,12 +2866,13 @@ const O2CTableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, m
       for (const tName of loadedTables) {
         await fetch(`${API}/o2c/transform/clear_table?table_name=${tName}&username=${encodeURIComponent(currentUser || 'Unknown')}`, { method: 'DELETE' });
       }
-      setTableStatus(Object.fromEntries(tables.map(t => [t.name, 'idle'])));
-      setTableMsg(Object.fromEntries(tables.map(t => [t.name, ''])));
+      setTableStatus(Object.fromEntries(allTableNames.map(name => [name, 'idle'])));
+      setTableMsg(Object.fromEntries(allTableNames.map(name => [name, ''])));
       setSelectedFiles({});
       setAppliedMappings({});
       setBuildMsg('All tables cleared.');
-    } catch (e) {
+    } catch (err) {
+      console.error(err);
       setBuildMsg('Failed to clear some tables.');
     }
   };
@@ -2811,12 +3010,13 @@ const O2CTableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, m
                 <option value="Zoho">Zoho</option>
                 <option value="Others">Others</option>
               </select>
-              <div style={{ fontSize: 11, color: '#94a3b8' }}>Upload each as <strong style={{ color: '#475569' }}>.csv</strong></div>
+              <div style={{ fontSize: 11, color: '#94a3b8' }}>Upload each as <strong style={{ color: '#475569' }}>.csv or Excel</strong></div>
             </div>
           </div>
 
-          {erpSystem === 'SAP' ? (
+          {['SAP', 'Oracle', 'Microsoft Dynamic 365', 'Zoho', 'Others'].includes(erpSystem) ? (
             <motion.div
+              key={erpSystem}
               variants={{
                 visible: { transition: { staggerChildren: 0.05 } }
               }}
@@ -2824,109 +3024,114 @@ const O2CTableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, m
               animate="visible"
               style={{ display: 'flex', flexDirection: 'column', border: '1px solid #E2E8F0', borderRadius: 8, overflow: 'hidden' }}
             >
-              {tables.map((t, i) => {
-                const s = si(tableStatus[t.name]);
-                const ref = fileRefs.current[t.name];
-                const isUp = tableStatus[t.name] === 'uploading';
-                return (
-                  <motion.div
-                    key={t.name}
-                    variants={{
-                      hidden: { opacity: 0, x: -10 },
-                      visible: { opacity: 1, x: 0 }
-                    }}
-                    animate={isUp ? {
-                      backgroundColor: ['#F8FAFC', '#D1FAE5', '#F8FAFC'],
-                      transition: { duration: 1.5, repeat: Infinity }
-                    } : {}}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
-                      background: tableStatus[t.name] === 'done' ? '#F0FAF0' : tableStatus[t.name] === 'error' ? '#FDE7E9' : i % 2 === 0 ? '#F8FAFC' : '#fff',
-                      borderBottom: i < tables.length - 1 ? '1px solid #E2E8F0' : 'none', transition: 'background 0.2s'
-                    }}>
-                    <input ref={ref} type="file" accept=".csv" style={{ display: 'none' }}
-                      onChange={e => { uploadTable(t.name, e.target.files[0]); e.target.value = ''; }} />
-                    <button onClick={() => { if (!isUp && ref.current) { ref.current.value = ''; ref.current.click(); } }}
-                      disabled={isUp}
-                      style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28,
-                        borderRadius: 6, border: `1.5px solid ${s.border}`, background: s.bg, color: s.color,
-                        cursor: isUp ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 13, flexShrink: 0
-                      }}
-                      onMouseOver={e => { if (!isUp) e.currentTarget.style.background = '#D1FAE5'; }}
-                      onMouseOut={e => { e.currentTarget.style.background = s.bg; }}>
-                      {isUp ? <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }}>↻</span> : s.icon}
-                    </button>
-                    <div style={{
-                      minWidth: 52, fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: '#006B3C',
-                      background: '#EDFAF4', padding: '3px 8px', borderRadius: 4, textAlign: 'center', flexShrink: 0
-                    }}>{t.isMandatory ? '* ' : ''}{t.name}</div>
-                    <div style={{ fontSize: 13, color: '#475569', flex: 1 }}>
-                      {t.desc}
-                      {appliedMappings[t.name] && Object.keys(appliedMappings[t.name]).length > 0 && (
-                        <div style={{ fontSize: 11, color: '#006B3C', marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                          {Object.entries(appliedMappings[t.name]).map(([k, v]) => (
-                            <span key={k} style={{ background: '#EDFAF4', padding: '2px 6px', borderRadius: 4 }}><strong>{k}</strong> → {v}</span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginLeft: 'auto', flexShrink: 0 }}>
-                      {tableMsg[t.name] && (
-                        <div style={{
-                          fontSize: 11, fontWeight: 600, maxWidth: 220, lineHeight: 1.3,
-                          color: tableStatus[t.name] === 'error' ? '#DC2626' : '#15803D',
-                          background: tableStatus[t.name] === 'error' ? '#FEF2F2' : 'transparent',
-                          padding: tableStatus[t.name] === 'error' ? '3px 6px' : '0',
-                          borderRadius: 4, border: tableStatus[t.name] === 'error' ? '1px solid #FECACA' : 'none'
+              {(() => {
+                try {
+                  if (!activeTables) {
+                    return <div style={{ padding: 16, color: '#d32f2f' }}>Error: activeTables is undefined (erpSystem: "{erpSystem}")</div>;
+                  }
+                  if (activeTables.length === 0) {
+                    return <div style={{ padding: 16, color: '#d32f2f' }}>Error: activeTables is empty (erpSystem: "{erpSystem}")</div>;
+                  }
+                  return activeTables.map((t, i) => {
+                    const s = si(tableStatus[t.name]);
+                    const ref = fileRefs.current[t.name];
+                    const isUp = tableStatus[t.name] === 'uploading';
+                    return (
+                      <motion.div
+                        key={t.name}
+                        variants={{
+                          hidden: { opacity: 0, x: -10 },
+                          visible: { opacity: 1, x: 0 }
+                        }}
+                        animate={isUp ? {
+                          backgroundColor: ['#F8FAFC', '#D1FAE5', '#F8FAFC'],
+                          transition: { duration: 1.5, repeat: Infinity }
+                        } : {}}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
+                          background: tableStatus[t.name] === 'done' ? '#F0FAF0' : tableStatus[t.name] === 'error' ? '#FDE7E9' : i % 2 === 0 ? '#F8FAFC' : '#fff',
+                          borderBottom: i < activeTables.length - 1 ? '1px solid #E2E8F0' : 'none', transition: 'background 0.2s'
                         }}>
-                          {tableMsg[t.name]}
-                        </div>
-                      )}
-                      {(tableStatus[t.name] === 'done' || tableStatus[t.name] === 'error') && (
-                        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                          {selectedFiles[t.name] && (
-                            <button
-                              onClick={() => handleMapColumns(t.name)}
-                              title='Map columns'
-                              style={{
-                                fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4,
-                                background: tableStatus[t.name] === 'error' ? '#FEF2F2' : '#EDFAF4',
-                                color: tableStatus[t.name] === 'error' ? '#DC2626' : '#065F46',
-                                border: tableStatus[t.name] === 'error' ? '1px solid #FCA5A5' : '1px solid #6EE7B7',
-                                cursor: 'pointer'
-                              }}
-                              onMouseOver={e => e.currentTarget.style.background = tableStatus[t.name] === 'error' ? '#FECACA' : '#D1FAE5'}
-                              onMouseOut={e => e.currentTarget.style.background = tableStatus[t.name] === 'error' ? '#FEF2F2' : '#EDFAF4'}>
-                              Map Columns
-                            </button>
+                        <input ref={ref} type="file" accept=".csv,.xlsx,.xls" style={{ display: 'none' }}
+                          onChange={e => { uploadTable(t.name, e.target.files[0]); e.target.value = ''; }} />
+                        <button onClick={() => { if (!isUp && ref.current) { ref.current.value = ''; ref.current.click(); } }}
+                          disabled={isUp}
+                          style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28,
+                            borderRadius: 6, border: `1.5px solid ${s.border}`, background: s.bg, color: s.color,
+                            cursor: isUp ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 13, flexShrink: 0
+                          }}
+                          onMouseOver={e => { if (!isUp) e.currentTarget.style.background = '#D1FAE5'; }}
+                          onMouseOut={e => { e.currentTarget.style.background = s.bg; }}>
+                          {isUp ? <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }}>↻</span> : s.icon}
+                        </button>
+                        <div style={{
+                          minWidth: 52, fontFamily: 'monospace', fontWeight: 700, fontSize: 13, color: '#006B3C',
+                          background: '#EDFAF4', padding: '3px 8px', borderRadius: 4, textAlign: 'center', flexShrink: 0
+                        }}>{t.isMandatory ? '* ' : ''}{t.name}</div>
+                        <div style={{ fontSize: 13, color: '#475569', flex: 1 }}>
+                          {t.desc}
+                          {appliedMappings[t.name] && Object.keys(appliedMappings[t.name]).length > 0 && (
+                            <div style={{ fontSize: 11, color: '#006B3C', marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                              {Object.entries(appliedMappings[t.name]).map(([k, v]) => (
+                                <span key={k} style={{ background: '#EDFAF4', padding: '2px 6px', borderRadius: 4 }}><strong>{k}</strong> → {v}</span>
+                              ))}
+                            </div>
                           )}
-                          <button
-                            onClick={() => {
-                              fetch(`${API}/o2c/transform/clear_table?table_name=${t.name}&username=${encodeURIComponent(currentUser || 'Unknown')}`, { method: 'DELETE' }).catch(console.error);
-                              setTableStatus(p => ({ ...p, [t.name]: 'idle' }));
-                              setTableMsg(p => ({ ...p, [t.name]: '' }));
-                              setSelectedFiles(p => { const copy = { ...p }; delete copy[t.name]; return copy; });
-                              setAppliedMappings(p => { const copy = { ...p }; delete copy[t.name]; return copy; });
-                              if (fileRefs.current[t.name]?.current) fileRefs.current[t.name].current.value = '';
-                            }}
-                            title='Clear to re-upload'
-                            style={{
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              width: 18, height: 18, borderRadius: '50%', border: '1.5px solid #FCA5A5',
-                              background: '#FEE2E2', color: '#DC2626', cursor: 'pointer',
-                              fontWeight: 800, fontSize: 10, padding: 0, lineHeight: 1, flexShrink: 0
-                            }}
-                            onMouseOver={e => e.currentTarget.style.background = '#FECACA'}
-                            onMouseOut={e => e.currentTarget.style.background = '#FEE2E2'}>
-                            ✕
-                          </button>
                         </div>
-                      )}
-                    </div>
-                  </motion.div>
-                );
-              })}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginLeft: 'auto', flexShrink: 0 }}>
+                          {tableMsg[t.name] && (
+                            <div style={{
+                              fontSize: 11, fontWeight: 600, maxWidth: 220, lineHeight: 1.3,
+                              color: tableStatus[t.name] === 'error' ? '#DC2626' : '#15803D',
+                              background: tableStatus[t.name] === 'error' ? '#FEF2F2' : 'transparent',
+                              padding: tableStatus[t.name] === 'error' ? '3px 6px' : '0',
+                              borderRadius: 4, border: tableStatus[t.name] === 'error' ? '1px solid #FECACA' : 'none'
+                            }}>
+                              {tableMsg[t.name]}
+                            </div>
+                          )}
+                          {(tableStatus[t.name] === 'done' || tableStatus[t.name] === 'error') && (
+                            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                              {selectedFiles[t.name] && (
+                                <button
+                                  onClick={() => handleMapColumns(t.name)}
+                                  title='Map columns'
+                                  style={{
+                                    fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4,
+                                    background: tableStatus[t.name] === 'error' ? '#FEF2F2' : '#EDFAF4',
+                                    color: tableStatus[t.name] === 'error' ? '#DC2626' : '#065F46',
+                                    border: tableStatus[t.name] === 'error' ? '1px solid #FCA5A5' : '1px solid #6EE7B7',
+                                    cursor: 'pointer'
+                                  }}
+                                  onMouseOver={e => e.currentTarget.style.background = tableStatus[t.name] === 'error' ? '#FECACA' : '#D1FAE5'}
+                                  onMouseOut={e => e.currentTarget.style.background = tableStatus[t.name] === 'error' ? '#FEF2F2' : '#EDFAF4'}>
+                                  Map Columns
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleClearTable(t.name)}
+                                title='Clear to re-upload'
+                                style={{
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  width: 18, height: 18, borderRadius: '50%', border: '1.5px solid #FCA5A5',
+                                  background: '#FEE2E2', color: '#DC2626', cursor: 'pointer',
+                                  fontWeight: 800, fontSize: 10, padding: 0, lineHeight: 1, flexShrink: 0
+                                }}
+                                onMouseOver={e => e.currentTarget.style.background = '#FECACA'}
+                                onMouseOut={e => e.currentTarget.style.background = '#FEE2E2'}>
+                                ✕
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    );
+                  });
+                } catch (e) {
+                  return <div style={{ padding: 16, color: '#d32f2f', fontWeight: 'bold' }}>Error rendering list: {e.message}</div>;
+                }
+              })()}
             </motion.div>
           ) : (
             <div style={{
@@ -2980,7 +3185,7 @@ const O2CTableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, m
                 }}
                 onMouseOver={e => { if (allDone && !anyUploading) e.currentTarget.style.background = '#004d2c'; }}
                 onMouseOut={e => { e.currentTarget.style.background = allDone && !anyUploading ? '#006B3C' : '#A8A8A8'; }}>
-                {building ? '⏳ Building…' : '⚡ Build Event Log'}
+                {building ? '⏳ Building…' : 'Build Event Log'}
               </button>
             </div>
           </div>
@@ -3047,9 +3252,50 @@ const UploadBanner = ({ onUploaded, serverOk, onLoadingChange, currentUser, myFi
   const [colMapping, setColMapping] = useState(null);
   const inputRef = useRef();
 
+  const findBestMatch = (reqCol, uploadedCols) => {
+    const clean = (s) => s.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const reqClean = clean(reqCol);
+
+    let match = uploadedCols.find(c => c.toUpperCase() === reqCol.toUpperCase());
+    if (match) return match;
+
+    match = uploadedCols.find(c => clean(c) === reqClean);
+    if (match) return match;
+
+    const aliases = {
+      'Subsequent Document': ['SUBSEQUENT_DOCUMENT', 'VBELN_N', 'VBELN_N_VBFA', 'VBELN_VBFA'],
+      'Sales Order Number': ['SALES_ORDER_NUMBER', 'VBELN', 'VBELN_VBAK', 'VBELN_VBAK_VBAK'],
+      'Net Value of the Order Item': ['NETWR', 'NET_VALUE', 'NETVALUE', 'ORDER_VALUE', 'NETWR_VBAP'],
+      'Actual quantity delivered': ['LFIMG', 'DELIVERED_QTY', 'ACTUAL_DELIVERED_QUANTITY'],
+      'Actual billed quantity': ['FKIMG', 'BILLED_QTY', 'ACTUAL_BILLED_QUANTITY'],
+      'Net value of the billing item': ['NETWR_BILLING', 'NETWR_VBRP', 'BILLED_NET_VALUE', 'NET_VALUE_BILLING'],
+      'Amount in Local Currency': ['DMBTR', 'CLEARED_AMOUNT', 'AMOUNT_IN_LOCAL_CURRENCY', 'DMBTR_BSAD'],
+      'VKORG': ['VKORG', 'SALES_ORG', 'SALES_ORGANISATION'],
+      'NAME1': ['NAME1', 'CUSTOMER_NAME', 'NAME'],
+      'MATNR': ['MATNR', 'MATERIAL_NUMBER', 'MATERIAL'],
+      'WERKS': ['WERKS', 'PLANT'],
+      'ERNAM': ['ERNAM', 'ORDER_CREATOR', 'CREATED_BY']
+    };
+
+    const list = aliases[reqCol];
+    if (list) {
+      for (const alias of list) {
+        const aliasClean = clean(alias);
+        const found = uploadedCols.find(c => clean(c) === aliasClean || c.toUpperCase().includes(alias.toUpperCase()));
+        if (found) return found;
+      }
+    }
+    return '';
+  };
+
   const doUpload = async (file, mapping = {}) => {
     if (!file) return;
-    if (!file.name.toLowerCase().endsWith('.csv')) { setStatus('error'); setMsg('Only .csv files accepted.'); return; }
+    const ext = file.name.toLowerCase();
+    if (!ext.endsWith('.csv') && !ext.endsWith('.xlsx') && !ext.endsWith('.xls')) {
+      setStatus('error');
+      setMsg('Only .csv or Excel files accepted.');
+      return;
+    }
     setStatus('uploading'); setMsg('');
     setSelectedFile(file);
     onLoadingChange(true, 10, 'Processing Data...');
@@ -3131,6 +3377,11 @@ const UploadBanner = ({ onUploaded, serverOk, onLoadingChange, currentUser, myFi
       { col: 'NAME1', desc: 'Customer name (from KNA1)', req: false },
       { col: 'MATNR', desc: 'Material number', req: false },
       { col: 'WERKS', desc: 'Plant', req: false },
+      { col: 'Net Value of the Order Item', desc: 'Net Value of Order Item (NETWR from VBAP)', req: false },
+      { col: 'Actual quantity delivered', desc: 'Actual quantity delivered (LFIMG from LIPS)', req: false },
+      { col: 'Actual billed quantity', desc: 'Actual billed quantity (FKIMG from VBRP)', req: false },
+      { col: 'Net value of the billing item', desc: 'Net value of billing item (NETWR from VBRP)', req: false },
+      { col: 'Amount in Local Currency', desc: 'Cleared Amount in Local Currency (DMBTR from BSAD)', req: false },
     ];
     const csvUploads = (myFiles || []).filter(f => !f.source || f.source === 'csv_upload');
 
@@ -3181,7 +3432,7 @@ const UploadBanner = ({ onUploaded, serverOk, onLoadingChange, currentUser, myFi
                   <tbody>
                     {colMapping.tableDef.required.map((r, i) => {
                       const reqCol = r.col;
-                      const autoMatch = colMapping.uploadedCols.find(c => c.toUpperCase() === reqCol.toUpperCase());
+                      const autoMatch = findBestMatch(reqCol, colMapping.uploadedCols);
                       const selected = colMapping.mapping[reqCol] !== undefined ? colMapping.mapping[reqCol] : (autoMatch || '');
                       return (
                         <tr key={reqCol} style={{ borderBottom: '1px solid #F1F5F9' }}>
@@ -3215,7 +3466,7 @@ const UploadBanner = ({ onUploaded, serverOk, onLoadingChange, currentUser, myFi
                   onClick={() => {
                     const finalMapping = {};
                     colMapping.tableDef.required.forEach(r => {
-                      const autoMatch = colMapping.uploadedCols.find(c => c.toUpperCase() === r.col.toUpperCase());
+                      const autoMatch = findBestMatch(r.col, colMapping.uploadedCols);
                       const sel = colMapping.mapping[r.col] !== undefined ? colMapping.mapping[r.col] : (autoMatch || '');
                       if (sel && sel !== r.col) {
                         finalMapping[sel] = r.col;
@@ -3262,7 +3513,7 @@ const UploadBanner = ({ onUploaded, serverOk, onLoadingChange, currentUser, myFi
             cursor: 'pointer', textAlign: 'center', transition: 'all .2s',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, flexDirection: selectedFile ? 'column' : 'row'
           }}>
-          <input ref={inputRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={e => { const f = e.target.files[0]; if (f) { setSelectedFile(f); setStatus('idle'); setMsg(''); } }} />
+          <input ref={inputRef} type="file" accept=".csv,.xlsx,.xls" style={{ display: 'none' }} onChange={e => { const f = e.target.files[0]; if (f) { setSelectedFile(f); setStatus('idle'); setMsg(''); } }} />
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <div style={{ fontSize: 22, fontWeight: 'bold', color: status === 'done' ? '#107C10' : status === 'error' ? '#D13438' : '#006B3C' }}>
@@ -3270,9 +3521,9 @@ const UploadBanner = ({ onUploaded, serverOk, onLoadingChange, currentUser, myFi
             </div>
             <div style={{ textAlign: 'left' }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: '#323130' }}>
-                {selectedFile ? selectedFile.name : status === 'idle' ? 'Click or drag & drop a CSV file here' : status === 'done' ? 'File loaded!' : 'Upload failed'}
+                {selectedFile ? selectedFile.name : status === 'idle' ? 'Click or drag & drop a CSV or Excel file here' : status === 'done' ? 'File loaded!' : 'Upload failed'}
               </div>
-              <div style={{ fontSize: 11, color: C.slate, marginTop: 2 }}>{msg || 'Wide-format O2C event log CSV'}</div>
+              <div style={{ fontSize: 11, color: C.slate, marginTop: 2 }}>{msg || 'Wide-format O2C event log CSV or Excel'}</div>
             </div>
           </div>
 
@@ -3307,14 +3558,14 @@ const UploadBanner = ({ onUploaded, serverOk, onLoadingChange, currentUser, myFi
           )}
         </div>
 
-        {/* Previous CSV Uploads */}
+        {/* Previous CSV/Excel Uploads */}
         <div style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 10, padding: '18px 20px', boxShadow: '0 2px 6px rgba(0,0,0,0.04)' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 12 }}>Previous CSV Uploads</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 12 }}>Previous Uploads</div>
           {fetchingFiles ? (
             <div style={{ color: '#94a3b8', fontSize: 13 }}>Loading...</div>
           ) : csvUploads.length === 0 ? (
             <div style={{ padding: '20px', textAlign: 'center', background: '#F8FAFC', borderRadius: 8, border: '1px dashed #E2E8F0', color: '#94a3b8', fontSize: 13 }}>
-              No previous CSV uploads found.
+              No previous uploads found.
             </div>
           ) : (
             <div style={{ border: '1px solid #E2E8F0', borderRadius: 8, overflow: 'hidden' }}>
@@ -3335,7 +3586,9 @@ const UploadBanner = ({ onUploaded, serverOk, onLoadingChange, currentUser, myFi
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                       <td style={{ padding: '9px 14px' }}>
                         <div style={{ fontWeight: 600, color: '#1e293b', fontSize: 12, wordBreak: 'break-all' }}>{f.filename}</div>
-                        <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 10, background: '#006B3C', color: '#fff', border: '1px solid #B3D1F5' }}>CSV Upload</span>
+                        <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 10, background: '#006B3C', color: '#fff', border: '1px solid #B3D1F5' }}>
+                          {f.source === 'table_build' ? 'Table Build' : (f.filename?.toLowerCase().endsWith('.csv') ? 'CSV Upload' : 'Excel Upload')}
+                        </span>
                       </td>
                       <td style={{ padding: '9px 14px', color: '#64748b', whiteSpace: 'nowrap', fontSize: 11 }}>{f.upload_date}</td>
                       <td style={{ padding: '9px 14px', color: '#1e293b', fontWeight: 600, textAlign: 'right' }}>{f.cases != null ? Number(f.cases).toLocaleString() : '—'}</td>
@@ -3384,54 +3637,50 @@ export default function O2CDashboard({ currentUser, onSignOut, onBackHome }) {
     setScreenshotting(true);
     const el = screenshotRef.current;
 
-    const originalRootStyle = {
-      height: el.style.height,
-      overflow: el.style.overflow,
-    };
+    // Dynamically identify the main scroll container and calculate total height
+    let captureWidth = el.clientWidth;
+    let captureHeight = el.clientHeight;
 
-    el.style.setProperty('height', 'auto', 'important');
-    el.style.setProperty('overflow', 'visible', 'important');
-
-    const scrollContainers = [];
-    const allElements = el.querySelectorAll('*');
-    allElements.forEach((node) => {
+    const scrollEl = Array.from(el.querySelectorAll('div')).find(node => {
       const style = window.getComputedStyle(node);
-      if (
-        style.overflowY === 'auto' ||
-        style.overflowY === 'scroll' ||
-        style.overflow === 'auto' ||
-        style.overflow === 'scroll'
-      ) {
-        scrollContainers.push({
-          node,
-          overflow: node.style.overflow,
-          overflowY: node.style.overflowY,
-          height: node.style.height,
-          maxHeight: node.style.maxHeight,
-        });
-        node.style.setProperty('overflow', 'visible', 'important');
-        node.style.setProperty('overflow-y', 'visible', 'important');
-        node.style.setProperty('height', 'auto', 'important');
-        node.style.setProperty('max-height', 'none', 'important');
-      }
+      return style.overflowY === 'auto' || style.overflowY === 'scroll';
+    });
+
+    if (scrollEl) {
+      captureHeight = el.clientHeight + (scrollEl.scrollHeight - scrollEl.clientHeight);
+    } else {
+      captureHeight = el.scrollHeight;
+    }
+
+    // Find all React Flow containers and tag them and their SVG/path descendants
+    const originalNodes = [];
+    const rfContainers = el.querySelectorAll('.react-flow');
+    rfContainers.forEach((rf) => {
+      originalNodes.push(rf);
+      rf.querySelectorAll('svg, path, g, circle, rect, text').forEach((child) => {
+        originalNodes.push(child);
+      });
+    });
+
+    originalNodes.forEach((node, idx) => {
+      node.setAttribute('data-screenshot-id', `rf-node-${idx}`);
     });
 
     try {
-      await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 800)));
+      await new Promise((resolve) => requestAnimationFrame(resolve));
 
       const canvas = await html2canvas(el, {
-        scale: window.devicePixelRatio || 2,
-        foreignObjectRendering: false,
+        scale: 2,
         useCORS: true,
         allowTaint: false,
         backgroundColor: '#F0F2F5',
         logging: false,
-        scrollX: -window.scrollX,
-        scrollY: -window.scrollY,
-        windowWidth: el.scrollWidth,
-        windowHeight: el.scrollHeight,
-        width: el.scrollWidth,
-        height: el.scrollHeight,
+        width: captureWidth,
+        height: captureHeight,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: captureWidth,
+        windowHeight: captureHeight,
         ignoreElements: (node) => {
           if (node.id && node.id.includes('screenshot-btn')) return true;
           if (node.id === 'screenshot-loading-overlay') return true;
@@ -3440,6 +3689,7 @@ export default function O2CDashboard({ currentUser, onSignOut, onBackHome }) {
           return false;
         },
         onclone: (clonedDoc, clonedEl) => {
+          // Resolve specific overlays or animations
           const overlay = clonedDoc.getElementById('screenshot-loading-overlay');
           if (overlay && overlay.parentNode) {
             overlay.parentNode.removeChild(overlay);
@@ -3452,7 +3702,7 @@ export default function O2CDashboard({ currentUser, onSignOut, onBackHome }) {
             }
           }
 
-          // Traverse up to clear layout boundaries in the clone
+          // Traverse up from clonedEl to clear layout boundaries in the cloned document
           let curr = clonedEl;
           while (curr && curr.style) {
             curr.style.setProperty('height', 'auto', 'important');
@@ -3461,32 +3711,59 @@ export default function O2CDashboard({ currentUser, onSignOut, onBackHome }) {
             curr = curr.parentNode;
           }
 
-          const copyStyles = (selector) => {
-            const originalEls = el.querySelectorAll(selector);
-            const clonedEls = clonedDoc.querySelectorAll(selector);
-            for (let i = 0; i < originalEls.length && i < clonedEls.length; i++) {
-              const oEl = originalEls[i];
-              const cEl = clonedEls[i];
-              const oStyle = window.getComputedStyle(oEl);
+          // Make clonedEl itself expand fully
+          clonedEl.style.setProperty('height', 'auto', 'important');
+          clonedEl.style.setProperty('max-height', 'none', 'important');
+          clonedEl.style.setProperty('overflow', 'visible', 'important');
 
-              // Copy layout & positioning styles
+          // Find the main scroll container in the cloned DOM and expand it
+          const clonedScrollEl = Array.from(clonedEl.querySelectorAll('div')).find(node => {
+            const style = window.getComputedStyle(node);
+            return style.overflowY === 'auto' || style.overflowY === 'scroll';
+          });
+
+          if (clonedScrollEl) {
+            clonedScrollEl.style.setProperty('height', 'auto', 'important');
+            clonedScrollEl.style.setProperty('max-height', 'none', 'important');
+            clonedScrollEl.style.setProperty('overflow', 'visible', 'important');
+            clonedScrollEl.style.setProperty('overflow-x', 'visible', 'important');
+            clonedScrollEl.style.setProperty('overflow-y', 'visible', 'important');
+          }
+
+          // Copy dynamic computed styles using 1-to-1 screenshot ID lookup
+          const clonedNodes = clonedEl.querySelectorAll('[data-screenshot-id]');
+          clonedNodes.forEach((cEl) => {
+            const screenId = cEl.getAttribute('data-screenshot-id');
+            const oEl = el.querySelector(`[data-screenshot-id="${screenId}"]`);
+            if (oEl) {
+              const oStyle = window.getComputedStyle(oEl);
+              const tagName = cEl.tagName.toLowerCase();
+
+              // 1. Positioning and layout
               cEl.style.position = oStyle.position;
-              cEl.style.width = oStyle.width;
-              cEl.style.height = oStyle.height;
-              cEl.style.top = oStyle.top;
-              cEl.style.left = oStyle.left;
+              cEl.style.display = oStyle.display;
+              cEl.style.flexDirection = oStyle.flexDirection;
+              cEl.style.alignItems = oStyle.alignItems;
+              cEl.style.justifyContent = oStyle.justifyContent;
+              cEl.style.gap = oStyle.gap;
+
+              if (oStyle.position === 'absolute' || oStyle.position === 'fixed' || oStyle.display === 'flex' || oStyle.display === 'grid' || tagName === 'div' || tagName === 'svg' || tagName === 'canvas') {
+                cEl.style.width = oStyle.width;
+                cEl.style.height = oStyle.height;
+                cEl.style.top = oStyle.top;
+                cEl.style.left = oStyle.left;
+                cEl.style.right = oStyle.right;
+                cEl.style.bottom = oStyle.bottom;
+              }
+
+              // 2. Transforms & scaling
               cEl.style.transform = oStyle.transform;
               cEl.style.transformOrigin = oStyle.transformOrigin;
-              cEl.style.display = oStyle.display;
+
+              // 3. Visuals
               cEl.style.opacity = oStyle.opacity;
               cEl.style.overflow = oStyle.overflow;
-
-              // SVG specific styles
-              if (oStyle.stroke) cEl.style.stroke = oStyle.stroke;
-              if (oStyle.strokeWidth) cEl.style.strokeWidth = oStyle.strokeWidth;
-              if (oStyle.fill) cEl.style.fill = oStyle.fill;
-
-              // Styling details
+              cEl.style.visibility = oStyle.visibility;
               cEl.style.background = oStyle.background;
               cEl.style.backgroundColor = oStyle.backgroundColor;
               cEl.style.color = oStyle.color;
@@ -3494,18 +3771,78 @@ export default function O2CDashboard({ currentUser, onSignOut, onBackHome }) {
               cEl.style.borderRadius = oStyle.borderRadius;
               cEl.style.boxShadow = oStyle.boxShadow;
               cEl.style.padding = oStyle.padding;
-            }
-          };
+              cEl.style.margin = oStyle.margin;
+              cEl.style.boxSizing = oStyle.boxSizing;
 
-          copyStyles('.react-flow__renderer');
-          copyStyles('.react-flow__viewport');
-          copyStyles('.react-flow__edges');
-          copyStyles('.react-flow__nodes');
-          copyStyles('.react-flow__edge');
-          copyStyles('.react-flow__edge-path');
-          copyStyles('.react-flow__node');
-          copyStyles('.react-flow__background');
-          copyStyles('.react-flow__container');
+              // 4. Typography
+              cEl.style.fontFamily = oStyle.fontFamily;
+              cEl.style.fontSize = oStyle.fontSize;
+              cEl.style.fontWeight = oStyle.fontWeight;
+              cEl.style.lineHeight = oStyle.lineHeight;
+              cEl.style.textAlign = oStyle.textAlign;
+
+              // 5. SVG specific styling
+              if (tagName === 'path' || tagName === 'svg' || tagName === 'g' || tagName === 'text' || tagName === 'circle' || tagName === 'rect') {
+                if (oStyle.stroke && oStyle.stroke !== 'none') {
+                  cEl.setAttribute('stroke', oStyle.stroke);
+                  cEl.style.stroke = oStyle.stroke;
+                }
+                if (oStyle.strokeWidth) {
+                  cEl.setAttribute('stroke-width', oStyle.strokeWidth);
+                  cEl.style.strokeWidth = oStyle.strokeWidth;
+                }
+                if (oStyle.strokeDasharray) {
+                  cEl.setAttribute('stroke-dasharray', oStyle.strokeDasharray);
+                  cEl.style.strokeDasharray = oStyle.strokeDasharray;
+                }
+                if (oStyle.fill) {
+                  cEl.setAttribute('fill', oStyle.fill);
+                  cEl.style.fill = oStyle.fill;
+                }
+                if (oStyle.textAnchor) {
+                  cEl.setAttribute('text-anchor', oStyle.textAnchor);
+                  cEl.style.textAnchor = oStyle.textAnchor;
+                }
+                if (oStyle.dominantBaseline) {
+                  cEl.setAttribute('dominant-baseline', oStyle.dominantBaseline);
+                  cEl.style.dominantBaseline = oStyle.dominantBaseline;
+                }
+
+                // Clean up absolute marker URLs to prevent html2canvas / SVG-in-Image CORS sandboxing failures
+                const markerEnd = oStyle.markerEnd || oEl.getAttribute('marker-end');
+                if (markerEnd && markerEnd !== 'none') {
+                  const match = markerEnd.match(/#([^'")\s]+)/);
+                  if (match) {
+                    const markerId = match[1];
+                    cEl.style.setProperty('marker-end', `url(#${markerId})`, 'important');
+                    cEl.setAttribute('marker-end', `url(#${markerId})`);
+                  } else {
+                    cEl.style.setProperty('marker-end', 'none', 'important');
+                    cEl.removeAttribute('marker-end');
+                  }
+                } else {
+                  cEl.style.setProperty('marker-end', 'none', 'important');
+                  cEl.removeAttribute('marker-end');
+                }
+              }
+
+              // Explicitly set SVG container attributes (width & height) and overflow to prevent html2canvas collapsing
+              if (tagName === 'svg') {
+                const w = parseFloat(oStyle.width);
+                const h = parseFloat(oStyle.height);
+                if (!isNaN(w)) cEl.setAttribute('width', w);
+                if (!isNaN(h)) cEl.setAttribute('height', h);
+                cEl.setAttribute('overflow', 'visible');
+              }
+
+              // Replace missing SVG grid patterns with CSS background radial gradient dots
+              if (cEl.classList.contains('react-flow__background')) {
+                cEl.style.setProperty('background-image', 'radial-gradient(#C8E6DA 1.5px, transparent 1.5px)', 'important');
+                cEl.style.setProperty('background-size', '24px 24px', 'important');
+                cEl.style.setProperty('background-color', '#FAFAFA', 'important');
+              }
+            }
+          });
         }
       });
 
@@ -3532,16 +3869,10 @@ export default function O2CDashboard({ currentUser, onSignOut, onBackHome }) {
       console.error('Screenshot failed:', err);
       alert('Screenshot failed: ' + err.message);
     } finally {
-      el.style.setProperty('height', originalRootStyle.height || '');
-      el.style.setProperty('overflow', originalRootStyle.overflow || '');
-
-      scrollContainers.forEach(({ node, overflow, overflowY, height, maxHeight }) => {
-        node.style.overflow = overflow;
-        node.style.overflowY = overflowY;
-        node.style.height = height;
-        node.style.maxHeight = maxHeight;
+      // Clean up original element attributes
+      originalNodes.forEach((node) => {
+        node.removeAttribute('data-screenshot-id');
       });
-
       setScreenshotting(false);
     }
   };
@@ -4062,7 +4393,7 @@ export default function O2CDashboard({ currentUser, onSignOut, onBackHome }) {
               <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>
                 User: <strong style={{ color: '#fff' }}>{currentUser}</strong>
               </div>
-              {dataLoaded && (
+              {dataLoaded && !loading && !tabSkeleton && !pmLoading && (
                 <button
                   id="o2c-screenshot-btn"
                   onClick={handleScreenshot}
