@@ -468,8 +468,12 @@ const buildFlowMap = (bNodes, bEdges, setRfNodes, setRfEdges, dir) => {
   const mxF = Math.max(1, ...(bNodes || []).map(n => n.frequency || 0));
   const mxE = Math.max(1, ...(bEdges || []).map(e => e.frequency || 0));
 
-  const nodes = (bNodes || []).map(n => {
-    const pos = dir === 'LR' ? (n.position_h || { x: 0, y: 0 }) : (n.position_v || { x: 0, y: 0 });
+  const nodes = (bNodes || []).map((n, index) => {
+    const basePos = dir === 'LR' ? (n.position_h || { x: 0, y: 0 }) : (n.position_v || { x: 0, y: 0 });
+    const pos = {
+      x: basePos.x + (index * 0.1),
+      y: basePos.y + (index * 0.1)
+    };
     return {
       id: n.id, type: 'processNode',
       position: pos,
@@ -2561,17 +2565,134 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
       ]
     }
   ];
+  const zohoTables = [
+    {
+      name: 'Purchase Requisitions', isMandatory: true, required: [
+        { col: 'PurchReqId', note: 'PR number / Requisition identifier — join key' },
+        { col: 'PRLineNum', note: 'PR item number — join key' },
+        { col: 'CreatedDateTime', note: 'PR requirement date' },
+        { col: 'ReleaseDate', note: 'PR release date' },
+        { col: 'CreatedBy', note: 'PR creator' },
+        { col: 'CreationDate', note: 'PR creation date' },
+        { col: 'DeletionFlag', note: 'PR deletion flag' },
+      ]
+    },
+    {
+      name: 'Purchasing Document Headers / Purchasing Document Items', isMandatory: true, required: [
+        { col: 'PurchId', note: 'PO number — join key' },
+        { col: 'LineNum', note: 'PO line number — join key' },
+        { col: 'ItemId', note: 'Material identifier' },
+        { col: 'Plant', note: 'Plant' },
+        { col: 'MaterialGroup', note: 'Material group' },
+        { col: 'PurchReqId', note: 'PR number' },
+        { col: 'PRLineNum', note: 'PR item number' },
+        { col: 'DeletionFlag', note: 'PO deletion flag' },
+        { col: 'POChangeDate', note: 'PO creation/change date' },
+        { col: 'CreatedDateTime', note: 'PO document date' },
+        { col: 'DocType', note: 'Document type' },
+        { col: 'VendorId', note: 'Vendor ID' },
+        { col: 'CompanyCode', note: 'Company code' },
+        { col: 'PurchGroup', note: 'Purchasing group' },
+        { col: 'CreatedBy', note: 'PO creator' },
+        { col: 'Qty', note: 'PO quantity' },
+        { col: 'PurchPrice', note: 'Net Price' },
+        { col: 'NetValue', note: 'Net Value' },
+        { col: 'GrossValue', note: 'Gross Value' },
+      ]
+    },
+    {
+      name: 'Goods Receipts/ Invoice Receipt events', required: [
+        { col: 'PurchId', note: 'PO number — join key' },
+        { col: 'LineNum', note: 'PO line number — join key' },
+        { col: 'MovementType', note: 'Movement type: 1=GR, 2=Invoice' },
+        { col: 'PostingDate', note: 'Posting date' },
+        { col: 'DebitCredit', note: 'Debit/Credit: S=normal, H=reversal' },
+        { col: 'PostingUser', note: 'Posting user' },
+        { col: 'PackingSlipId', note: 'Accounting document number' },
+        { col: 'FiscalYear', note: 'Fiscal year' },
+        { col: 'Qty', note: 'Quantity' },
+        { col: 'LocalAmount', note: 'Amount in local currency' },
+        { col: 'DocAmount', note: 'Amount in document currency' },
+      ]
+    },
+    {
+      name: 'Vendor Master', required: [
+        { col: 'VendorId', note: 'Vendor ID — join key' },
+        { col: 'VendorName', note: 'Vendor name' },
+      ]
+    },
+  ];
+
+  const othererpTables = [
+    {
+      name: 'Purchase Requisitions', isMandatory: true, required: [
+        { col: 'PurchReqId', note: 'PR number / Requisition identifier — join key' },
+        { col: 'PRLineNum', note: 'PR item number — join key' },
+        { col: 'CreatedDateTime', note: 'PR requirement date' },
+        { col: 'ReleaseDate', note: 'PR release date' },
+        { col: 'CreatedBy', note: 'PR creator' },
+        { col: 'CreationDate', note: 'PR creation date' },
+        { col: 'DeletionFlag', note: 'PR deletion flag' },
+      ]
+    },
+    {
+      name: 'Purchasing Document Headers / Purchasing Document Items', isMandatory: true, required: [
+        { col: 'PurchId', note: 'PO number — join key' },
+        { col: 'LineNum', note: 'PO line number — join key' },
+        { col: 'ItemId', note: 'Material identifier' },
+        { col: 'Plant', note: 'Plant' },
+        { col: 'MaterialGroup', note: 'Material group' },
+        { col: 'PurchReqId', note: 'PR number' },
+        { col: 'PRLineNum', note: 'PR item number' },
+        { col: 'DeletionFlag', note: 'PO deletion flag' },
+        { col: 'POChangeDate', note: 'PO creation/change date' },
+        { col: 'CreatedDateTime', note: 'PO document date' },
+        { col: 'DocType', note: 'Document type' },
+        { col: 'VendorId', note: 'Vendor ID' },
+        { col: 'CompanyCode', note: 'Company code' },
+        { col: 'PurchGroup', note: 'Purchasing group' },
+        { col: 'CreatedBy', note: 'PO creator' },
+        { col: 'Qty', note: 'PO quantity' },
+        { col: 'PurchPrice', note: 'Net Price' },
+        { col: 'NetValue', note: 'Net Value' },
+        { col: 'GrossValue', note: 'Gross Value' },
+      ]
+    },
+    {
+      name: 'Goods Receipts/ Invoice Receipt events', required: [
+        { col: 'PurchId', note: 'PO number — join key' },
+        { col: 'LineNum', note: 'PO line number — join key' },
+        { col: 'MovementType', note: 'Movement type: 1=GR, 2=Invoice' },
+        { col: 'PostingDate', note: 'Posting date' },
+        { col: 'DebitCredit', note: 'Debit/Credit: S=normal, H=reversal' },
+        { col: 'PostingUser', note: 'Posting user' },
+        { col: 'PackingSlipId', note: 'Accounting document number' },
+        { col: 'FiscalYear', note: 'Fiscal year' },
+        { col: 'Qty', note: 'Quantity' },
+        { col: 'LocalAmount', note: 'Amount in local currency' },
+        { col: 'DocAmount', note: 'Amount in document currency' },
+      ]
+    },
+    {
+      name: 'Vendor Master', required: [
+        { col: 'VendorId', note: 'Vendor ID — join key' },
+        { col: 'VendorName', note: 'Vendor name' },
+      ]
+    },
+  ];
 
   const [erpSystem, setErpSystem] = useState('');
 
   const getTablesForSystem = (sys) => {
     if (sys === 'Oracle') return oracleTables;
     if (sys === 'Microsoft Dynamic 365') return d365Tables;
+    if (sys === 'Zoho') return zohoTables;
+    if (sys === 'Others') return othererpTables;
     return sapTables;
   };
 
   const tables = getTablesForSystem(erpSystem);
-  const allPossibleTables = sapTables.concat(oracleTables).concat(d365Tables);
+  const allPossibleTables = sapTables.concat(oracleTables).concat(d365Tables).concat(zohoTables).concat(othererpTables);
 
   const [tableStatus, setTableStatus] = useState(Object.fromEntries(allPossibleTables.map(t => [t.name, 'idle'])));
   const [tableMsg, setTableMsg] = useState(Object.fromEntries(allPossibleTables.map(t => [t.name, ''])));
@@ -2581,6 +2702,70 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
   const [tableCols, setTableCols] = useState({});
   const [selectedFiles, setSelectedFiles] = useState({});
   const [appliedMappings, setAppliedMappings] = useState({});
+
+  const getBackendTableName = (frontName) => {
+    if (frontName === 'Purchase Requisitions') return 'EBAN';
+    if (frontName === 'Goods Receipts/ Invoice Receipt events') return 'EKBE';
+    if (frontName === 'Vendor Master') return 'LFA1';
+    return frontName;
+  };
+
+  const getBackendColumnMapping = (tableName, userMapping) => {
+    const translation = {
+      'PurchReqId': 'BANFN',
+      'PRLineNum': 'BNFPO',
+      'CreatedDateTime': 'BADAT',
+      'ReleaseDate': 'FRGDT',
+      'CreatedBy': 'ERNAM',
+      'CreationDate': 'ERDAT',
+      'DeletionFlag': 'LOEKZ',
+      'PurchId': 'EBELN',
+      'LineNum': 'EBELP',
+      'ItemId': 'MATNR',
+      'Plant': 'WERKS',
+      'MaterialGroup': 'MATKL',
+      'POChangeDate': 'AEDAT',
+      'DocType': 'BSART',
+      'VendorId': 'LIFNR',
+      'CompanyCode': 'BUKRS',
+      'PurchGroup': 'EKGRP',
+      'Qty': 'MENGE',
+      'PurchPrice': 'NETPR',
+      'NetValue': 'NETWR',
+      'GrossValue': 'BRTWR',
+      'MovementType': 'VGABE',
+      'PostingDate': 'BUDAT',
+      'DebitCredit': 'SHKZG',
+      'PostingUser': 'ERNAM',
+      'PackingSlipId': 'BELNR',
+      'FiscalYear': 'GJAHR',
+      'LocalAmount': 'DMBTR',
+      'DocAmount': 'WRBTR',
+      'VendorName': 'NAME1'
+    };
+
+    const genericTranslation = {
+      'PurchId': 'EBELN',
+      'LineNum': 'EBELP',
+      'ItemId': 'MATNR',
+      'Qty': 'MENGE',
+      'PurchPrice': 'NETPR',
+      'PackingSlipId': 'BELNR',
+      'DeliveryDate': 'BUDAT',
+      'AccountNum': 'LIFNR',
+      'VendorName': 'NAME1',
+      'PurchReqId': 'BANFN',
+      'CreatedDateTime': 'BADAT',
+      'CreatedBy': 'ERNAM',
+    };
+
+    const finalMapping = {};
+    Object.entries(userMapping).forEach(([fileCol, reqCol]) => {
+      const sapCol = translation[reqCol] || genericTranslation[reqCol] || reqCol;
+      finalMapping[fileCol] = sapCol;
+    });
+    return finalMapping;
+  };
 
   const fileRefs = useRef(Object.fromEntries(allPossibleTables.map(t => [t.name, React.createRef()])));
 
@@ -2633,17 +2818,35 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
   const performUpload = async (tableName, file, mapping) => {
     setTableStatus(p => ({ ...p, [tableName]: 'uploading' }));
     setTableMsg(p => ({ ...p, [tableName]: '' }));
-    const form = new FormData();
-    form.append('file', file); form.append('table_name', tableName); form.append('username', currentUser || 'Unknown');
-    form.append('column_mapping', JSON.stringify(mapping));
-    try {
+
+    const backendMapping = getBackendColumnMapping(tableName, mapping);
+
+    const uploadSingle = async (backendName) => {
+      const form = new FormData();
+      form.append('file', file);
+      form.append('table_name', backendName);
+      form.append('username', currentUser || 'Unknown');
+      form.append('column_mapping', JSON.stringify(backendMapping));
       const r = await fetch(`${API}/p2p/transform/upload_table`, { method: 'POST', body: form });
       const d = await r.json();
       if (!r.ok) throw new Error(d.detail || `HTTP ${r.status}`);
-      setTableStatus(p => ({ ...p, [tableName]: 'done' }));
-      setTableMsg(p => ({ ...p, [tableName]: `${Number(d.rows).toLocaleString()} rows` }));
-      if (d.columns) {
-        setTableCols(p => ({ ...p, [tableName]: d.columns }));
+      return d;
+    };
+
+    try {
+      if (tableName === 'Purchasing Document Headers / Purchasing Document Items') {
+        const d1 = await uploadSingle('EKKO');
+        const d2 = await uploadSingle('EKPO');
+        setTableStatus(p => ({ ...p, [tableName]: 'done' }));
+        setTableMsg(p => ({ ...p, [tableName]: `${Number(d1.rows).toLocaleString()} rows` }));
+      } else {
+        const backendName = getBackendTableName(tableName);
+        const d = await uploadSingle(backendName);
+        setTableStatus(p => ({ ...p, [tableName]: 'done' }));
+        setTableMsg(p => ({ ...p, [tableName]: `${Number(d.rows).toLocaleString()} rows` }));
+        if (d.columns) {
+          setTableCols(p => ({ ...p, [tableName]: d.columns }));
+        }
       }
       setColMapping(null);
     } catch (e) {
@@ -2692,7 +2895,12 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
     try {
       const loadedTables = Object.keys(tableStatus).filter(t => tableStatus[t] === 'done' || tableStatus[t] === 'error');
       for (const tName of loadedTables) {
-        await fetch(`${API}/p2p/transform/clear_table?table_name=${tName}&username=${encodeURIComponent(currentUser || 'Unknown')}`, { method: 'DELETE' });
+        if (tName === 'Purchasing Document Headers / Purchasing Document Items') {
+          await fetch(`${API}/p2p/transform/clear_table?table_name=EKKO&username=${encodeURIComponent(currentUser || 'Unknown')}`, { method: 'DELETE' });
+          await fetch(`${API}/p2p/transform/clear_table?table_name=EKPO&username=${encodeURIComponent(currentUser || 'Unknown')}`, { method: 'DELETE' });
+        } else {
+          await fetch(`${API}/p2p/transform/clear_table?table_name=${getBackendTableName(tName)}&username=${encodeURIComponent(currentUser || 'Unknown')}`, { method: 'DELETE' });
+        }
       }
       setTableStatus(Object.fromEntries(tables.map(t => [t.name, 'idle'])));
       setTableMsg(Object.fromEntries(tables.map(t => [t.name, ''])));
@@ -2789,7 +2997,17 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
                       finalMapping[sel] = r.col;
                     }
                   });
-                  await fetch(`${API}/p2p/transform/clear_table?table_name=${colMapping.tableDef.name}&username=${encodeURIComponent(currentUser || 'Unknown')}`, { method: 'DELETE' }).catch(console.error);
+
+                  const clearTarget = async (backendName) => {
+                    await fetch(`${API}/p2p/transform/clear_table?table_name=${backendName}&username=${encodeURIComponent(currentUser || 'Unknown')}`, { method: 'DELETE' }).catch(console.error);
+                  };
+                  if (colMapping.tableDef.name === 'Purchasing Document Headers / Purchasing Document Items') {
+                    await clearTarget('EKKO');
+                    await clearTarget('EKPO');
+                  } else {
+                    await clearTarget(getBackendTableName(colMapping.tableDef.name));
+                  }
+
                   setAppliedMappings(p => ({ ...p, [colMapping.tableDef.name]: finalMapping }));
                   performUpload(colMapping.tableDef.name, colMapping.file, finalMapping);
                 }}
@@ -2843,12 +3061,13 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
               <div style={{ fontSize: 11, color: '#94a3b8' }}>Upload each as <strong style={{ color: '#475569' }}>.csv or Excel</strong></div>
             </div>
           </div>
-          {['SAP', 'Oracle', 'Microsoft Dynamic 365'].includes(erpSystem) ? (
+          {['SAP', 'Oracle', 'Microsoft Dynamic 365', 'Zoho', 'Others'].includes(erpSystem) ? (
             <motion.div
+              key={erpSystem}
               variants={{
                 visible: { transition: { staggerChildren: 0.05 } }
               }}
-              initial="visible"
+              initial="hidden"
               animate="visible"
               style={{ display: 'flex', flexDirection: 'column', border: '1px solid #E2E8F0', borderRadius: 8, overflow: 'hidden' }}
             >
@@ -2866,7 +3085,7 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
                     animate={isUp ? {
                       backgroundColor: ['#F8FAFC', '#EFF6FF', '#F8FAFC'],
                       transition: { duration: 1.5, repeat: Infinity }
-                    } : undefined}
+                    } : {}}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
                       background: tableStatus[t.name] === 'done' ? '#F0FAF0' : tableStatus[t.name] === 'error' ? '#FDE7E9' : i % 2 === 0 ? '#F8FAFC' : '#fff',
@@ -2935,8 +3154,16 @@ const TableUploadScreen = ({ onBuilt, onBack, onLoadingChange, currentUser, myFi
                             </button>
                           )}
                           <button
-                            onClick={() => {
-                              fetch(`${API}/p2p/transform/clear_table?table_name=${t.name}&username=${encodeURIComponent(currentUser || 'Unknown')}`, { method: 'DELETE' }).catch(console.error);
+                            onClick={async () => {
+                              const clearTarget = async (backendName) => {
+                                await fetch(`${API}/p2p/transform/clear_table?table_name=${backendName}&username=${encodeURIComponent(currentUser || 'Unknown')}`, { method: 'DELETE' }).catch(console.error);
+                              };
+                              if (t.name === 'Purchasing Document Headers / Purchasing Document Items') {
+                                await clearTarget('EKKO');
+                                await clearTarget('EKPO');
+                              } else {
+                                await clearTarget(getBackendTableName(t.name));
+                              }
                               setTableStatus(p => ({ ...p, [t.name]: 'idle' }));
                               setTableMsg(p => ({ ...p, [t.name]: '' }));
                               setSelectedFiles(p => { const copy = { ...p }; delete copy[t.name]; return copy; });
@@ -3086,10 +3313,10 @@ const UploadBanner = React.memo(({ onUploaded, serverOk, onLoadingChange, curren
   const findBestMatch = (reqCol, uploadedCols) => {
     const clean = (s) => s.toUpperCase().replace(/[^A-Z0-9]/g, '');
     const reqClean = clean(reqCol);
-    
+
     let match = uploadedCols.find(c => c.toUpperCase() === reqCol.toUpperCase());
     if (match) return match;
-    
+
     match = uploadedCols.find(c => clean(c) === reqClean);
     if (match) return match;
 
@@ -3486,60 +3713,50 @@ export default function P2PDashboard({ currentUser, onSignOut, onBackHome }) {
     setScreenshotting(true);
     const el = screenshotRef.current;
 
-    const originalRootStyle = {
-      height: el.style.height,
-      overflowX: el.style.overflowX,
-      overflowY: el.style.overflowY,
-      maxHeight: el.style.maxHeight,
-    };
+    // Dynamically identify the main scroll container and calculate total height
+    let captureWidth = el.clientWidth;
+    let captureHeight = el.clientHeight;
 
-    el.style.setProperty('height', 'auto', 'important');
-    el.style.setProperty('overflow-x', 'visible', 'important');
-    el.style.setProperty('overflow-y', 'visible', 'important');
-    el.style.setProperty('max-height', 'none', 'important');
-
-    const scrollContainers = [];
-    const allElements = el.querySelectorAll('*');
-    allElements.forEach((node) => {
+    const scrollEl = Array.from(el.querySelectorAll('div')).find(node => {
       const style = window.getComputedStyle(node);
-      if (
-        style.overflowY === 'auto' ||
-        style.overflowY === 'scroll' ||
-        style.overflowX === 'auto' ||
-        style.overflowX === 'scroll' ||
-        style.overflow === 'auto' ||
-        style.overflow === 'scroll'
-      ) {
-        scrollContainers.push({
-          node,
-          overflowX: node.style.overflowX,
-          overflowY: node.style.overflowY,
-          height: node.style.height,
-          maxHeight: node.style.maxHeight,
-        });
-        node.style.setProperty('overflow-x', 'visible', 'important');
-        node.style.setProperty('overflow-y', 'visible', 'important');
-        node.style.setProperty('height', 'auto', 'important');
-        node.style.setProperty('max-height', 'none', 'important');
-      }
+      return style.overflowY === 'auto' || style.overflowY === 'scroll';
+    });
+
+    if (scrollEl) {
+      captureHeight = el.clientHeight + (scrollEl.scrollHeight - scrollEl.clientHeight);
+    } else {
+      captureHeight = el.scrollHeight;
+    }
+
+    // Find all React Flow containers and tag them and their SVG/path descendants
+    const originalNodes = [];
+    const rfContainers = el.querySelectorAll('.react-flow');
+    rfContainers.forEach((rf) => {
+      originalNodes.push(rf);
+      rf.querySelectorAll('svg, path, g, circle, rect, text').forEach((child) => {
+        originalNodes.push(child);
+      });
+    });
+
+    originalNodes.forEach((node, idx) => {
+      node.setAttribute('data-screenshot-id', `rf-node-${idx}`);
     });
 
     try {
-      await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 800)));
+      await new Promise((resolve) => requestAnimationFrame(resolve));
 
       const canvas = await html2canvas(el, {
-        scale: window.devicePixelRatio || 2,
-        foreignObjectRendering: false,
+        scale: 2,
         useCORS: true,
         allowTaint: false,
         backgroundColor: '#F0F2F5',
         logging: false,
-        scrollX: -window.scrollX,
-        scrollY: -window.scrollY,
-        windowWidth: el.scrollWidth,
-        windowHeight: el.scrollHeight,
-        width: el.scrollWidth,
-        height: el.scrollHeight,
+        width: captureWidth,
+        height: captureHeight,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: captureWidth,
+        windowHeight: captureHeight,
         ignoreElements: (node) => {
           if (node.id && node.id.includes('screenshot-btn')) return true;
           if (node.id === 'screenshot-loading-overlay') return true;
@@ -3548,6 +3765,7 @@ export default function P2PDashboard({ currentUser, onSignOut, onBackHome }) {
           return false;
         },
         onclone: (clonedDoc, clonedEl) => {
+          // Resolve specific overlays or animations
           const overlay = clonedDoc.getElementById('screenshot-loading-overlay');
           if (overlay && overlay.parentNode) {
             overlay.parentNode.removeChild(overlay);
@@ -3560,7 +3778,7 @@ export default function P2PDashboard({ currentUser, onSignOut, onBackHome }) {
             }
           }
 
-          // Traverse up to clear layout boundaries in the clone
+          // Traverse up from clonedEl to clear layout boundaries in the cloned document
           let curr = clonedEl;
           while (curr && curr.style) {
             curr.style.setProperty('height', 'auto', 'important');
@@ -3569,32 +3787,59 @@ export default function P2PDashboard({ currentUser, onSignOut, onBackHome }) {
             curr = curr.parentNode;
           }
 
-          const copyStyles = (selector) => {
-            const originalEls = el.querySelectorAll(selector);
-            const clonedEls = clonedDoc.querySelectorAll(selector);
-            for (let i = 0; i < originalEls.length && i < clonedEls.length; i++) {
-              const oEl = originalEls[i];
-              const cEl = clonedEls[i];
-              const oStyle = window.getComputedStyle(oEl);
+          // Make clonedEl itself expand fully
+          clonedEl.style.setProperty('height', 'auto', 'important');
+          clonedEl.style.setProperty('max-height', 'none', 'important');
+          clonedEl.style.setProperty('overflow', 'visible', 'important');
 
-              // Copy layout & positioning styles
+          // Find the main scroll container in the cloned DOM and expand it
+          const clonedScrollEl = Array.from(clonedEl.querySelectorAll('div')).find(node => {
+            const style = window.getComputedStyle(node);
+            return style.overflowY === 'auto' || style.overflowY === 'scroll';
+          });
+
+          if (clonedScrollEl) {
+            clonedScrollEl.style.setProperty('height', 'auto', 'important');
+            clonedScrollEl.style.setProperty('max-height', 'none', 'important');
+            clonedScrollEl.style.setProperty('overflow', 'visible', 'important');
+            clonedScrollEl.style.setProperty('overflow-x', 'visible', 'important');
+            clonedScrollEl.style.setProperty('overflow-y', 'visible', 'important');
+          }
+
+          // Copy dynamic computed styles using 1-to-1 screenshot ID lookup
+          const clonedNodes = clonedEl.querySelectorAll('[data-screenshot-id]');
+          clonedNodes.forEach((cEl) => {
+            const screenId = cEl.getAttribute('data-screenshot-id');
+            const oEl = el.querySelector(`[data-screenshot-id="${screenId}"]`);
+            if (oEl) {
+              const oStyle = window.getComputedStyle(oEl);
+              const tagName = cEl.tagName.toLowerCase();
+
+              // 1. Positioning and layout
               cEl.style.position = oStyle.position;
-              cEl.style.width = oStyle.width;
-              cEl.style.height = oStyle.height;
-              cEl.style.top = oStyle.top;
-              cEl.style.left = oStyle.left;
+              cEl.style.display = oStyle.display;
+              cEl.style.flexDirection = oStyle.flexDirection;
+              cEl.style.alignItems = oStyle.alignItems;
+              cEl.style.justifyContent = oStyle.justifyContent;
+              cEl.style.gap = oStyle.gap;
+
+              if (oStyle.position === 'absolute' || oStyle.position === 'fixed' || oStyle.display === 'flex' || oStyle.display === 'grid' || tagName === 'div' || tagName === 'svg' || tagName === 'canvas') {
+                cEl.style.width = oStyle.width;
+                cEl.style.height = oStyle.height;
+                cEl.style.top = oStyle.top;
+                cEl.style.left = oStyle.left;
+                cEl.style.right = oStyle.right;
+                cEl.style.bottom = oStyle.bottom;
+              }
+
+              // 2. Transforms & scaling
               cEl.style.transform = oStyle.transform;
               cEl.style.transformOrigin = oStyle.transformOrigin;
-              cEl.style.display = oStyle.display;
+
+              // 3. Visuals
               cEl.style.opacity = oStyle.opacity;
               cEl.style.overflow = oStyle.overflow;
-
-              // SVG specific styles
-              if (oStyle.stroke) cEl.style.stroke = oStyle.stroke;
-              if (oStyle.strokeWidth) cEl.style.strokeWidth = oStyle.strokeWidth;
-              if (oStyle.fill) cEl.style.fill = oStyle.fill;
-
-              // Styling details
+              cEl.style.visibility = oStyle.visibility;
               cEl.style.background = oStyle.background;
               cEl.style.backgroundColor = oStyle.backgroundColor;
               cEl.style.color = oStyle.color;
@@ -3602,18 +3847,78 @@ export default function P2PDashboard({ currentUser, onSignOut, onBackHome }) {
               cEl.style.borderRadius = oStyle.borderRadius;
               cEl.style.boxShadow = oStyle.boxShadow;
               cEl.style.padding = oStyle.padding;
-            }
-          };
+              cEl.style.margin = oStyle.margin;
+              cEl.style.boxSizing = oStyle.boxSizing;
 
-          copyStyles('.react-flow__renderer');
-          copyStyles('.react-flow__viewport');
-          copyStyles('.react-flow__edges');
-          copyStyles('.react-flow__nodes');
-          copyStyles('.react-flow__edge');
-          copyStyles('.react-flow__edge-path');
-          copyStyles('.react-flow__node');
-          copyStyles('.react-flow__background');
-          copyStyles('.react-flow__container');
+              // 4. Typography
+              cEl.style.fontFamily = oStyle.fontFamily;
+              cEl.style.fontSize = oStyle.fontSize;
+              cEl.style.fontWeight = oStyle.fontWeight;
+              cEl.style.lineHeight = oStyle.lineHeight;
+              cEl.style.textAlign = oStyle.textAlign;
+
+              // 5. SVG specific styling
+              if (tagName === 'path' || tagName === 'svg' || tagName === 'g' || tagName === 'text' || tagName === 'circle' || tagName === 'rect') {
+                if (oStyle.stroke && oStyle.stroke !== 'none') {
+                  cEl.setAttribute('stroke', oStyle.stroke);
+                  cEl.style.stroke = oStyle.stroke;
+                }
+                if (oStyle.strokeWidth) {
+                  cEl.setAttribute('stroke-width', oStyle.strokeWidth);
+                  cEl.style.strokeWidth = oStyle.strokeWidth;
+                }
+                if (oStyle.strokeDasharray) {
+                  cEl.setAttribute('stroke-dasharray', oStyle.strokeDasharray);
+                  cEl.style.strokeDasharray = oStyle.strokeDasharray;
+                }
+                if (oStyle.fill) {
+                  cEl.setAttribute('fill', oStyle.fill);
+                  cEl.style.fill = oStyle.fill;
+                }
+                if (oStyle.textAnchor) {
+                  cEl.setAttribute('text-anchor', oStyle.textAnchor);
+                  cEl.style.textAnchor = oStyle.textAnchor;
+                }
+                if (oStyle.dominantBaseline) {
+                  cEl.setAttribute('dominant-baseline', oStyle.dominantBaseline);
+                  cEl.style.dominantBaseline = oStyle.dominantBaseline;
+                }
+
+                // Clean up absolute marker URLs to prevent html2canvas / SVG-in-Image CORS sandboxing failures
+                const markerEnd = oStyle.markerEnd || oEl.getAttribute('marker-end');
+                if (markerEnd && markerEnd !== 'none') {
+                  const match = markerEnd.match(/#([^'")\s]+)/);
+                  if (match) {
+                    const markerId = match[1];
+                    cEl.style.setProperty('marker-end', `url(#${markerId})`, 'important');
+                    cEl.setAttribute('marker-end', `url(#${markerId})`);
+                  } else {
+                    cEl.style.setProperty('marker-end', 'none', 'important');
+                    cEl.removeAttribute('marker-end');
+                  }
+                } else {
+                  cEl.style.setProperty('marker-end', 'none', 'important');
+                  cEl.removeAttribute('marker-end');
+                }
+              }
+
+              // Explicitly set SVG container attributes (width & height) and overflow to prevent html2canvas collapsing
+              if (tagName === 'svg') {
+                const w = parseFloat(oStyle.width);
+                const h = parseFloat(oStyle.height);
+                if (!isNaN(w)) cEl.setAttribute('width', w);
+                if (!isNaN(h)) cEl.setAttribute('height', h);
+                cEl.setAttribute('overflow', 'visible');
+              }
+
+              // Replace missing SVG grid patterns with CSS background radial gradient dots
+              if (cEl.classList.contains('react-flow__background')) {
+                cEl.style.setProperty('background-image', 'radial-gradient(#C8D3E8 1.5px, transparent 1.5px)', 'important');
+                cEl.style.setProperty('background-size', '24px 24px', 'important');
+                cEl.style.setProperty('background-color', '#FAFAFA', 'important');
+              }
+            }
+          });
         }
       });
 
@@ -3640,34 +3945,10 @@ export default function P2PDashboard({ currentUser, onSignOut, onBackHome }) {
       console.error('Screenshot failed:', err);
       alert('Screenshot failed: ' + err.message);
     } finally {
-      // Restore root element style
-      if (originalRootStyle.height) el.style.setProperty('height', originalRootStyle.height);
-      else el.style.removeProperty('height');
-
-      if (originalRootStyle.overflowX) el.style.setProperty('overflow-x', originalRootStyle.overflowX);
-      else el.style.removeProperty('overflow-x');
-
-      if (originalRootStyle.overflowY) el.style.setProperty('overflow-y', originalRootStyle.overflowY);
-      else el.style.removeProperty('overflow-y');
-
-      if (originalRootStyle.maxHeight) el.style.setProperty('max-height', originalRootStyle.maxHeight);
-      else el.style.removeProperty('max-height');
-
-      // Restore scroll containers style
-      scrollContainers.forEach(({ node, overflowX, overflowY, height, maxHeight }) => {
-        if (overflowX) node.style.setProperty('overflow-x', overflowX);
-        else node.style.removeProperty('overflow-x');
-
-        if (overflowY) node.style.setProperty('overflow-y', overflowY);
-        else node.style.removeProperty('overflow-y');
-
-        if (height) node.style.setProperty('height', height);
-        else node.style.removeProperty('height');
-
-        if (maxHeight) node.style.setProperty('max-height', maxHeight);
-        else node.style.removeProperty('max-height');
+      // Clean up original element attributes
+      originalNodes.forEach((node) => {
+        node.removeAttribute('data-screenshot-id');
       });
-
       setScreenshotting(false);
     }
   };
@@ -4188,7 +4469,7 @@ export default function P2PDashboard({ currentUser, onSignOut, onBackHome }) {
               </div>
             )}
 
-            {dataLoaded && (
+            {dataLoaded && !loading && !tabSkeleton && !pmLoading && (
               <button
                 id="p2p-screenshot-btn"
                 onClick={handleScreenshot}
