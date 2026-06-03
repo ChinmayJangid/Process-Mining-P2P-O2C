@@ -645,21 +645,30 @@ def _run_o2c_pipeline(tables: dict, username: str) -> pd.DataFrame:
     return combined
 
 
+def _read_csv(content: bytes, filename: str) -> pd.DataFrame:
+    fn = filename.lower()
+    if fn.endswith(".xlsx") or fn.endswith(".xls"):
+        df = pd.read_excel(io.BytesIO(content))
+        df = df.dropna(how="all")
+        return df
+    for enc in ("utf-8", "latin-1", "windows-1252"):
+        try:
+            return pd.read_csv(io.BytesIO(content), encoding=enc, low_memory=False)
+        except (UnicodeDecodeError, pd.errors.ParserError, Exception):
+            continue
+    raise ValueError(f"Cannot decode {filename}")
+
+
 # ─── FastAPI Endpoints ────────────────────────────────────────────────────────
 
 @o2c_transformer_router.post("/preview_columns")
 async def preview_columns(file: UploadFile = File(...)):
     raw = await file.read()
-    df = None
-    for enc in ("utf-8", "latin-1", "windows-1252"):
-        try:
-            df = pd.read_csv(io.BytesIO(raw), encoding=enc, low_memory=False)
-            break
-        except Exception:
-            continue
-    if df is None:
-        raise HTTPException(400, "Could not decode CSV")
-    return {"status": "ok", "columns": list(df.columns)}
+    try:
+        df = _read_csv(raw, file.filename)
+        return {"status": "ok", "columns": list(df.columns)}
+    except Exception as e:
+        raise HTTPException(400, f"Could not decode file: {e}")
 
 
 @o2c_transformer_router.post("/upload_table")
@@ -684,17 +693,15 @@ async def upload_o2c_table(
             f"Use the ✕ button to clear it first before uploading again."
         )
 
-    # ── 3. Parse CSV ─────────────────────────────────────────────────────────
+    # ── 3. Parse File ─────────────────────────────────────────────────────────
+    fn = file.filename.lower()
+    if not (fn.endswith(".csv") or fn.endswith(".xlsx") or fn.endswith(".xls")):
+        raise HTTPException(400, "Only CSV and Excel files are supported.")
     raw = await file.read()
-    df = None
-    for enc in ("utf-8", "latin-1", "windows-1252"):
-        try:
-            df = pd.read_csv(io.BytesIO(raw), encoding=enc, low_memory=False)
-            break
-        except Exception:
-            continue
-    if df is None:
-        raise HTTPException(400, "Could not decode CSV — try saving as UTF-8.")
+    try:
+        df = _read_csv(raw, file.filename)
+    except Exception as e:
+        raise HTTPException(400, f"Could not decode file: {e}")
 
     # Normalise column names: strip whitespace BEFORE mapping
     df.columns = [str(c).strip() for c in df.columns]
