@@ -439,91 +439,133 @@ export default function HRJDashboard({ currentUser, onSignOut, onBackHome }) {
     setScreenshotting(true);
     const el = screenshotRef.current;
 
-    const originalRootStyle = {
-      height: el.style.height,
-      overflowX: el.style.overflowX,
-      overflowY: el.style.overflowY,
-      maxHeight: el.style.maxHeight,
-    };
+    // Dynamically identify the main scroll container and calculate total height
+    let captureWidth = el.clientWidth;
+    let captureHeight = el.clientHeight;
 
-    el.style.setProperty('height', 'auto', 'important');
-    el.style.setProperty('overflow-x', 'visible', 'important');
-    el.style.setProperty('overflow-y', 'visible', 'important');
-    el.style.setProperty('max-height', 'none', 'important');
-
-    const scrollContainers = [];
-    const allElements = el.querySelectorAll('div[style*="overflow"]');
-    allElements.forEach((node) => {
+    const scrollEl = Array.from(el.querySelectorAll('div')).find(node => {
       const style = window.getComputedStyle(node);
-      if (
-        style.overflowY === 'auto' ||
-        style.overflowY === 'scroll' ||
-        style.overflowX === 'auto' ||
-        style.overflowX === 'scroll' ||
-        style.overflow === 'auto' ||
-        style.overflow === 'scroll'
-      ) {
-        scrollContainers.push({
-          node,
-          overflowX: node.style.overflowX,
-          overflowY: node.style.overflowY,
-          height: node.style.height,
-          maxHeight: node.style.maxHeight,
-        });
-        node.style.setProperty('overflow-x', 'visible', 'important');
-        node.style.setProperty('overflow-y', 'visible', 'important');
-        node.style.setProperty('height', 'auto', 'important');
-        node.style.setProperty('max-height', 'none', 'important');
-      }
+      return style.overflowY === 'auto' || style.overflowY === 'scroll';
+    });
+
+    if (scrollEl) {
+      captureHeight = el.clientHeight + (scrollEl.scrollHeight - scrollEl.clientHeight);
+    } else {
+      captureHeight = el.scrollHeight;
+    }
+
+    // Find all React Flow containers and tag them and their SVG/path descendants
+    const originalNodes = [];
+    const rfContainers = el.querySelectorAll('.react-flow');
+    rfContainers.forEach((rf) => {
+      originalNodes.push(rf);
+      rf.querySelectorAll('svg, path, g, circle, rect, text').forEach((child) => {
+        originalNodes.push(child);
+      });
+    });
+
+    originalNodes.forEach((node, idx) => {
+      node.setAttribute('data-screenshot-id', `rf-node-${idx}`);
     });
 
     try {
-      await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 100)));
+      await new Promise((resolve) => requestAnimationFrame(resolve));
 
       const canvas = await html2canvas(el, {
-        scale: 1,
+        scale: 2,
         useCORS: true,
         allowTaint: false,
         backgroundColor: '#F0F2F5',
         logging: false,
+        width: captureWidth,
+        height: captureHeight,
         scrollX: 0,
         scrollY: 0,
-        windowWidth: el.scrollWidth,
-        windowHeight: el.scrollHeight,
-        width: el.scrollWidth,
-        height: el.scrollHeight,
+        windowWidth: captureWidth,
+        windowHeight: captureHeight,
         ignoreElements: (node) => {
           if (node.id && node.id.includes('screenshot-btn')) return true;
+          if (node.id === 'screenshot-loading-overlay') return true;
           if (node.classList && (node.classList.contains('no-screenshot') || node.classList.contains('screenshot-btn'))) return true;
+          if (node.style?.position === 'fixed' || window.getComputedStyle(node).position === 'fixed') return true;
           return false;
         },
-        onclone: (clonedDoc) => {
-          const copyStyles = (selector) => {
-            const originalEls = el.querySelectorAll(selector);
-            const clonedEls = clonedDoc.querySelectorAll(selector);
-            for (let i = 0; i < originalEls.length && i < clonedEls.length; i++) {
-              const oEl = originalEls[i];
-              const cEl = clonedEls[i];
-              const oStyle = window.getComputedStyle(oEl);
+        onclone: (clonedDoc, clonedEl) => {
+          // Resolve specific overlays or animations
+          const overlay = clonedDoc.getElementById('screenshot-loading-overlay');
+          if (overlay && overlay.parentNode) {
+            overlay.parentNode.removeChild(overlay);
+          }
+          const anims = clonedDoc.querySelectorAll('animateMotion, animate');
+          for (let i = 0; i < anims.length; i++) {
+            const node = anims[i];
+            if (node && node.parentNode) {
+              node.parentNode.removeChild(node);
+            }
+          }
 
-              // Copy layout & positioning styles
+          // Traverse up from clonedEl to clear layout boundaries in the cloned document
+          let curr = clonedEl;
+          while (curr && curr.style) {
+            curr.style.setProperty('height', 'auto', 'important');
+            curr.style.setProperty('overflow', 'visible', 'important');
+            curr.style.setProperty('max-height', 'none', 'important');
+            curr = curr.parentNode;
+          }
+
+          // Make clonedEl itself expand fully
+          clonedEl.style.setProperty('height', 'auto', 'important');
+          clonedEl.style.setProperty('max-height', 'none', 'important');
+          clonedEl.style.setProperty('overflow', 'visible', 'important');
+
+          // Find the main scroll container in the cloned DOM and expand it
+          const clonedScrollEl = Array.from(clonedEl.querySelectorAll('div')).find(node => {
+            const style = window.getComputedStyle(node);
+            return style.overflowY === 'auto' || style.overflowY === 'scroll';
+          });
+
+          if (clonedScrollEl) {
+            clonedScrollEl.style.setProperty('height', 'auto', 'important');
+            clonedScrollEl.style.setProperty('max-height', 'none', 'important');
+            clonedScrollEl.style.setProperty('overflow', 'visible', 'important');
+            clonedScrollEl.style.setProperty('overflow-x', 'visible', 'important');
+            clonedScrollEl.style.setProperty('overflow-y', 'visible', 'important');
+          }
+
+          // Copy dynamic computed styles using 1-to-1 screenshot ID lookup
+          const clonedNodes = clonedEl.querySelectorAll('[data-screenshot-id]');
+          clonedNodes.forEach((cEl) => {
+            const screenId = cEl.getAttribute('data-screenshot-id');
+            const oEl = el.querySelector(`[data-screenshot-id="${screenId}"]`);
+            if (oEl) {
+              const oStyle = window.getComputedStyle(oEl);
+              const tagName = cEl.tagName.toLowerCase();
+
+              // 1. Positioning and layout
               cEl.style.position = oStyle.position;
-              cEl.style.width = oStyle.width;
-              cEl.style.height = oStyle.height;
-              cEl.style.top = oStyle.top;
-              cEl.style.left = oStyle.left;
+              cEl.style.display = oStyle.display;
+              cEl.style.flexDirection = oStyle.flexDirection;
+              cEl.style.alignItems = oStyle.alignItems;
+              cEl.style.justifyContent = oStyle.justifyContent;
+              cEl.style.gap = oStyle.gap;
+
+              if (oStyle.position === 'absolute' || oStyle.position === 'fixed' || oStyle.display === 'flex' || oStyle.display === 'grid' || tagName === 'div' || tagName === 'svg' || tagName === 'canvas') {
+                cEl.style.width = oStyle.width;
+                cEl.style.height = oStyle.height;
+                cEl.style.top = oStyle.top;
+                cEl.style.left = oStyle.left;
+                cEl.style.right = oStyle.right;
+                cEl.style.bottom = oStyle.bottom;
+              }
+
+              // 2. Transforms & scaling
               cEl.style.transform = oStyle.transform;
               cEl.style.transformOrigin = oStyle.transformOrigin;
-              cEl.style.display = oStyle.display;
+
+              // 3. Visuals
               cEl.style.opacity = oStyle.opacity;
               cEl.style.overflow = oStyle.overflow;
-
-              // SVG specific styles
-              if (oStyle.stroke) cEl.style.stroke = oStyle.stroke;
-              if (oStyle.strokeWidth) cEl.style.strokeWidth = oStyle.strokeWidth;
-              if (oStyle.fill) cEl.style.fill = oStyle.fill;
-
-              // Styling details
+              cEl.style.visibility = oStyle.visibility;
               cEl.style.background = oStyle.background;
               cEl.style.backgroundColor = oStyle.backgroundColor;
               cEl.style.color = oStyle.color;
@@ -531,18 +573,78 @@ export default function HRJDashboard({ currentUser, onSignOut, onBackHome }) {
               cEl.style.borderRadius = oStyle.borderRadius;
               cEl.style.boxShadow = oStyle.boxShadow;
               cEl.style.padding = oStyle.padding;
-            }
-          };
+              cEl.style.margin = oStyle.margin;
+              cEl.style.boxSizing = oStyle.boxSizing;
 
-          copyStyles('.react-flow__renderer');
-          copyStyles('.react-flow__viewport');
-          copyStyles('.react-flow__edges');
-          copyStyles('.react-flow__nodes');
-          copyStyles('.react-flow__edge');
-          copyStyles('.react-flow__edge-path');
-          copyStyles('.react-flow__node');
-          copyStyles('.react-flow__background');
-          copyStyles('.react-flow__container');
+              // 4. Typography
+              cEl.style.fontFamily = oStyle.fontFamily;
+              cEl.style.fontSize = oStyle.fontSize;
+              cEl.style.fontWeight = oStyle.fontWeight;
+              cEl.style.lineHeight = oStyle.lineHeight;
+              cEl.style.textAlign = oStyle.textAlign;
+
+              // 5. SVG specific styling
+              if (tagName === 'path' || tagName === 'svg' || tagName === 'g' || tagName === 'text' || tagName === 'circle' || tagName === 'rect') {
+                if (oStyle.stroke && oStyle.stroke !== 'none') {
+                  cEl.setAttribute('stroke', oStyle.stroke);
+                  cEl.style.stroke = oStyle.stroke;
+                }
+                if (oStyle.strokeWidth) {
+                  cEl.setAttribute('stroke-width', oStyle.strokeWidth);
+                  cEl.style.strokeWidth = oStyle.strokeWidth;
+                }
+                if (oStyle.strokeDasharray) {
+                  cEl.setAttribute('stroke-dasharray', oStyle.strokeDasharray);
+                  cEl.style.strokeDasharray = oStyle.strokeDasharray;
+                }
+                if (oStyle.fill) {
+                  cEl.setAttribute('fill', oStyle.fill);
+                  cEl.style.fill = oStyle.fill;
+                }
+                if (oStyle.textAnchor) {
+                  cEl.setAttribute('text-anchor', oStyle.textAnchor);
+                  cEl.style.textAnchor = oStyle.textAnchor;
+                }
+                if (oStyle.dominantBaseline) {
+                  cEl.setAttribute('dominant-baseline', oStyle.dominantBaseline);
+                  cEl.style.dominantBaseline = oStyle.dominantBaseline;
+                }
+                
+                // Clean up absolute marker URLs to prevent html2canvas / SVG-in-Image CORS sandboxing failures
+                const markerEnd = oStyle.markerEnd || oEl.getAttribute('marker-end');
+                if (markerEnd && markerEnd !== 'none') {
+                  const match = markerEnd.match(/#([^'")\s]+)/);
+                  if (match) {
+                    const markerId = match[1];
+                    cEl.style.setProperty('marker-end', `url(#${markerId})`, 'important');
+                    cEl.setAttribute('marker-end', `url(#${markerId})`);
+                  } else {
+                    cEl.style.setProperty('marker-end', 'none', 'important');
+                    cEl.removeAttribute('marker-end');
+                  }
+                } else {
+                  cEl.style.setProperty('marker-end', 'none', 'important');
+                  cEl.removeAttribute('marker-end');
+                }
+              }
+
+              // Explicitly set SVG container attributes (width & height) and overflow to prevent html2canvas collapsing
+              if (tagName === 'svg') {
+                const w = parseFloat(oStyle.width);
+                const h = parseFloat(oStyle.height);
+                if (!isNaN(w)) cEl.setAttribute('width', w);
+                if (!isNaN(h)) cEl.setAttribute('height', h);
+                cEl.setAttribute('overflow', 'visible');
+              }
+
+              // Replace missing SVG grid patterns with CSS background radial gradient dots
+              if (cEl.classList.contains('react-flow__background')) {
+                cEl.style.setProperty('background-image', 'radial-gradient(#ccc 1.2px, transparent 1.2px)', 'important');
+                cEl.style.setProperty('background-size', '20px 20px', 'important');
+                cEl.style.setProperty('background-color', '#FAFAFA', 'important');
+              }
+            }
+          });
         }
       });
 
@@ -568,34 +670,10 @@ export default function HRJDashboard({ currentUser, onSignOut, onBackHome }) {
     } catch (err) {
       console.error('Screenshot failed:', err);
     } finally {
-      // Restore root element style
-      if (originalRootStyle.height) el.style.setProperty('height', originalRootStyle.height);
-      else el.style.removeProperty('height');
-
-      if (originalRootStyle.overflowX) el.style.setProperty('overflow-x', originalRootStyle.overflowX);
-      else el.style.removeProperty('overflow-x');
-
-      if (originalRootStyle.overflowY) el.style.setProperty('overflow-y', originalRootStyle.overflowY);
-      else el.style.removeProperty('overflow-y');
-
-      if (originalRootStyle.maxHeight) el.style.setProperty('max-height', originalRootStyle.maxHeight);
-      else el.style.removeProperty('max-height');
-
-      // Restore scroll containers style
-      scrollContainers.forEach(({ node, overflowX, overflowY, height, maxHeight }) => {
-        if (overflowX) node.style.setProperty('overflow-x', overflowX);
-        else node.style.removeProperty('overflow-x');
-
-        if (overflowY) node.style.setProperty('overflow-y', overflowY);
-        else node.style.removeProperty('overflow-y');
-
-        if (height) node.style.setProperty('height', height);
-        else node.style.removeProperty('height');
-
-        if (maxHeight) node.style.setProperty('max-height', maxHeight);
-        else node.style.removeProperty('max-height');
+      // Clean up original element attributes
+      originalNodes.forEach((node) => {
+        node.removeAttribute('data-screenshot-id');
       });
-
       setScreenshotting(false);
     }
   };
@@ -706,11 +784,11 @@ export default function HRJDashboard({ currentUser, onSignOut, onBackHome }) {
   const { rfNodes, rfEdges } = useMemo(() => {
     const stepGap = 280;
     const laneGap = 165;
-    const nodes = Object.keys(graphData.nodeFreq).map(act => {
+    const nodes = Object.keys(graphData.nodeFreq).map((act, index) => {
       const layout = HRJ_LAYOUT[act] || { step: 0, lane: 2 };
       const isHappy = !['Background Check Issue', 'Provisioning Delay'].includes(act);
-      const x = layout.step * stepGap + 40;
-      const y = layout.lane * laneGap + 180;
+      const x = layout.step * stepGap + 40 + (index * 0.1);
+      const y = layout.lane * laneGap + 180 + (index * 0.1);
       return {
         id: act,
         type: 'processNode',
@@ -1164,7 +1242,7 @@ export default function HRJDashboard({ currentUser, onSignOut, onBackHome }) {
           <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>
             User: <strong style={{ color: '#fff' }}>{currentUser}</strong>
           </div>
-          {step === 'dashboard' && (
+          {step === 'dashboard' && !chartsLoading && (
             <button
               id="hrj-screenshot-btn"
               onClick={handleScreenshot}
